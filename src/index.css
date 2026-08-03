@@ -1,0 +1,156 @@
+:root {
+  /* Surface & Neutral Layers */
+  --surface: #f5f3ec;
+  --panel-hi: #faf9f4;
+  --panel-lo: #f1eee6;
+  --panel-mute: #efece4;
+  --panel-sunken: #e6e2da;
+  --hairline: rgba(0, 0, 0, 0.12);
+  --border-soft: rgba(0, 0, 0, 0.16);
+  --card-border: #c3bfb8;
+
+  /* Ink & Text */
+  --ink: #16140f;
+  --ink-dark-1: #1d1a14;
+  --text-60: rgba(0, 0, 0, 0.6);
+  --text-50: rgba(0, 0, 0, 0.5);
+  --text-42: rgba(0, 0, 0, 0.42);
+
+  /* State Tokens (Color reinforces value) */
+  --nominal: #3b7a4b;
+  --nominal-ink: #2f6a41;
+  --alarm: #b4231c;
+  --alarm-ink: #8f1b16;
+  --restored: #1d6e8c;
+  --restored-ink: #12566b;
+  --restored-on-dark: #8ecae6;
+  --accent: #b8641b; /* RESERVED — capacity/scan bar */
+
+  /* Ghost & Disabled */
+  --ghost-border: #b4b0a8;
+  --ghost-1: #9a958c;
+  --ghost-2: #7a756c;
+  --ghost-3: #6f6a60;
+
+  /* Typography */
+  --font-grotesk: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #0d0c0a;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.55;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Desaturation Filter for 640px Muted Gate Check */
+.desaturated {
+  filter: grayscale(1) contrast(1.08);
+}
+
+/* Alarm Hatch Pattern (Red) */
+.hatch-alarm {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(180, 35, 28, 0.20) 0,
+    rgba(180, 35, 28, 0.20) 3px,
+    transparent 3px,
+    transparent 10px
+  );
+  background-color: var(--panel-sunken);
+}
+
+/* Neutral Hatch Pattern */
+.hatch-neutral {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.06) 0,
+    rgba(0, 0, 0, 0.06) 4px,
+    transparent 4px,
+    transparent 11px
+  );
+}
+
+/* No-Data Blind Hatch */
+.hatch-no-data {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.04) 0,
+    rgba(0, 0, 0, 0.04) 5px,
+    transparent 5px,
+    transparent 12px
+  );
+}
+
+/* AD Row Hatch Swatch */
+.hatch-ad-swatch {
+  width: 16px;
+  height: 9px;
+  border: 1px solid #9a958c;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.22) 0,
+    rgba(0, 0, 0, 0.22) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+  display: inline-block;
+}
+
+/* Keyframe Animations */
+@keyframes cw-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes cw-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes cw-flick {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes cw-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-scan {
+  animation: cw-scan 1.7s linear infinite;
+}
+
+.animate-pulse {
+  animation: cw-pulse 1.2s ease-in-out infinite;
+}
+
+.animate-flicker {
+  animation: cw-flick 1.4s steps(2) infinite;
+}
+
+.animate-spin {
+  animation: cw-spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan, .animate-pulse, .animate-flicker, .animate-spin {
+    animation: none !important;
+  }
+}

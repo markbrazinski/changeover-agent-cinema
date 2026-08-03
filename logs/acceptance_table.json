@@ -26,7 +26,7 @@
         "active_source": "backup",
         "last_action": "failover_and_verify_restored",
         "human_authorizer": "operator:mark",
-        "timestamp": 1785794681.724339,
+        "timestamp": 1785797629.2007701,
         "restored": true
       }
     },
@@ -64,7 +64,7 @@
         "active_source": "backup",
         "last_action": "failover_and_verify_restored",
         "human_authorizer": "operator:mark",
-        "timestamp": 1785794685.3615701,
+        "timestamp": 1785797633.073754,
         "restored": true
       }
     },

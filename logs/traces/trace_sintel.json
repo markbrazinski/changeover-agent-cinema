@@ -6,10 +6,10 @@
     },
     "result_or_miss": {
       "caption_offset_seconds": 2.9960000000000004,
-      "liveness_gap_seconds": 2.09808349609375e-05
+      "liveness_gap_seconds": 1.9311904907226562e-05
     },
     "latency_ms": 1.5,
-    "ts": 1785794681.775101
+    "ts": 1785797629.25054
   },
   {
     "tool": "grafana_mcp.query",
@@ -17,8 +17,8 @@
       "query": "invalid_caption_offset_seconds{channel=\"sintel\"}"
     },
     "result_or_miss": "MISS: empty result",
-    "latency_ms": 312.66,
-    "ts": 1785794685.142782
+    "latency_ms": 211.91,
+    "ts": 1785797632.5415099
   },
   {
     "tool": "grafana_mcp.query",
@@ -32,13 +32,13 @@
           "channel": "sintel"
         },
         "value": [
-          1785794685.276,
+          1785797632.86,
           "2.9960000000000004"
         ]
       }
     ],
-    "latency_ms": 172.42,
-    "ts": 1785794685.318202
+    "latency_ms": 483.09,
+    "ts": 1785797633.026199
   },
   {
     "tool": "backup_verifier.verify",
@@ -54,6 +54,6 @@
       "is_healthy": true
     },
     "latency_ms": 15.0,
-    "ts": 1785794685.361025
+    "ts": 1785797633.07207
   }
 ]

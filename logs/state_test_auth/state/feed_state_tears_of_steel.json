@@ -3,6 +3,6 @@
   "active_source": "backup",
   "last_action": "failover_and_verify_restored",
   "human_authorizer": "operator:mark",
-  "timestamp": 1785797633.192024,
+  "timestamp": 1785795228.84686,
   "restored": true
 }

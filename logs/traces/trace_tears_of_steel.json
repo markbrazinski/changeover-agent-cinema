@@ -6,10 +6,10 @@
     },
     "result_or_miss": {
       "caption_offset_seconds": 2.9960000000000004,
-      "liveness_gap_seconds": 3.0279159545898438e-05
+      "liveness_gap_seconds": 1.8835067749023438e-05
     },
     "latency_ms": 1.5,
-    "ts": 1785794678.302159
+    "ts": 1785797625.3240058
   },
   {
     "tool": "grafana_mcp.query",
@@ -17,8 +17,8 @@
       "query": "invalid_caption_offset_seconds{channel=\"tears_of_steel\"}"
     },
     "result_or_miss": "MISS: empty result",
-    "latency_ms": 313.53,
-    "ts": 1785794681.471228
+    "latency_ms": 283.38,
+    "ts": 1785797628.9771361
   },
   {
     "tool": "grafana_mcp.query",
@@ -32,13 +32,13 @@
           "channel": "tears_of_steel"
         },
         "value": [
-          1785794681.604,
+          1785797629.135,
           "2.9960000000000004"
         ]
       }
     ],
-    "latency_ms": 201.28,
-    "ts": 1785794681.674527
+    "latency_ms": 179.86,
+    "ts": 1785797629.159899
   },
   {
     "tool": "backup_verifier.verify",
@@ -54,6 +54,6 @@
       "is_healthy": true
     },
     "latency_ms": 15.0,
-    "ts": 1785794681.723573
+    "ts": 1785797629.199991
   }
 ]

@@ -1,0 +1,11 @@
+[
+  {
+    "tool": "test_tool",
+    "args": {
+      "arg1": "val1"
+    },
+    "result_or_miss": "SUCCESS",
+    "latency_ms": 12.34,
+    "ts": 1785795213.0984042
+  }
+]
