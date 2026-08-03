@@ -7,233 +7,211 @@ interface FacilityViewProps {
 }
 
 export const FacilityView: React.FC<FacilityViewProps> = ({
-  capacityUsed = 0,
+  capacityUsed = 1,
   ch14Restored = false,
   ch27Degraded = false,
 }) => {
   return (
     <div
       style={{
-        width: '100%',
-        maxWidth: '760px',
-        backgroundColor: '#16140f',
-        backgroundImage: 'linear-gradient(180deg, #1d1a14 0%, #16140f 100%)',
+        backgroundColor: '#110f0c',
         color: '#f5f3ec',
-        borderRadius: '13px 13px 0 0',
-        border: '2.5px solid var(--ink)',
-        borderBottom: 'none',
-        padding: '13px 17px 15px 17px',
+        padding: '16px 20px',
+        borderBottom: '2.5px solid var(--ink)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
       }}
     >
-      {/* Header Row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <div>
-          <span
+      {/* Facility View Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
             style={{
+              padding: '3px 8px',
+              backgroundColor: 'var(--alarm)',
+              color: '#f5f3ec',
               fontFamily: 'var(--font-mono)',
               fontSize: '10px',
               fontWeight: 700,
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
+              borderRadius: '3px',
+              letterSpacing: '1px',
             }}
           >
-            FACILITY VIEW
-          </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
-              opacity: 0.6,
-              marginLeft: '8px',
-            }}
-          >
-            2 channels · shared backup
+            FACILITY VIEW · CONTENTION SCENARIO
+          </div>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', opacity: 0.7 }}>
+            M=1 SHARED BACKUP POOL vs N=2 CONCURRENT FAILURES
           </span>
         </div>
 
-        {/* Capacity Meter (Accent Reserved) */}
+        {/* Capacity Bar */}
         <div
           style={{
-            border: '1px solid rgba(245, 243, 236, 0.3)',
-            borderRadius: '4px',
-            padding: '4px 8px',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            padding: '4px 10px',
+            borderRadius: '4px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '10px',
           }}
         >
-          <div style={{ display: 'flex', gap: '4px' }}>
+          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>SHARED POOL CAPACITY:</span>
+          <span>{ch14Restored ? '1 of 1 allocated (0 free)' : '0 of 1 free (scarcity real)'}</span>
+        </div>
+      </div>
+
+      {/* Two Full-Size Channel Cards (CH-14 vs CH-27) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        {/* CH-14 TEARS OF STEEL (Emergency / Public-Information Tier) */}
+        <div
+          style={{
+            backgroundColor: '#1c1a15',
+            border: ch14Restored ? '2.5px solid var(--restored-on-dark)' : '2.5px solid var(--alarm)',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#f5f3ec' }}>
+              CH-14 · TEARS OF STEEL
+            </div>
             <div
               style={{
-                width: '9px',
-                height: '9px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8.5px',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                backgroundColor: 'rgba(184, 100, 27, 0.25)',
                 border: '1px solid var(--accent)',
-                backgroundColor: capacityUsed >= 1 ? 'var(--accent)' : 'transparent',
-              }}
-            />
-            <div
-              style={{
-                width: '9px',
-                height: '9px',
-                border: '1px solid rgba(245, 243, 236, 0.4)',
-                backgroundColor: capacityUsed >= 2 ? 'var(--accent)' : 'transparent',
-              }}
-            />
-          </div>
-          <span style={{ color: capacityUsed >= 1 ? 'var(--accent)' : '#f5f3ec' }}>
-            capacity {1 - Math.min(capacityUsed, 1)} of 1 free · {capacityUsed > 0 ? '2 need it' : '0 active'}
-          </span>
-        </div>
-      </div>
-
-      {/* Two Channel Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '11px' }}>
-        {/* CH-14 (Emergency / Public Information Tier - Operator Declared) */}
-        <div
-          style={{
-            borderRadius: '7px',
-            border: ch14Restored ? '2.5px solid var(--restored-on-dark)' : '2.5px solid #1d6e8c',
-            backgroundColor: '#1c1913',
-            padding: '10px',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '1px' }}>
-                CH-14
-              </span>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '6.5px',
-                  border: '1px solid #1d6e8c',
-                  padding: '1px 4px',
-                  borderRadius: '3px',
-                  color: 'var(--restored-on-dark)',
-                }}
-              >
-                operator-declared
-              </span>
-            </div>
-
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                fontWeight: 700,
-                color: ch14Restored ? 'var(--restored-on-dark)' : 'var(--alarm)',
-              }}
-            >
-              {ch14Restored ? '▸ RESTORED' : 'CAPTIONS FROZEN'}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Mini Still Tile */}
-            <div
-              className={!ch14Restored ? 'hatch-alarm' : ''}
-              style={{
-                width: '96px',
-                height: '54px',
-                borderRadius: '4px',
-                border: ch14Restored ? '1.5px solid var(--restored-on-dark)' : '2px solid var(--alarm)',
-                backgroundColor: '#0b0f11',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '7px',
-                fontFamily: 'var(--font-mono)',
                 color: '#f5f3ec',
               }}
             >
-              {ch14Restored ? 'BACKUP LIVE' : 'FROZEN'}
+              Emergency / public-information tier (operator-declared policy)
             </div>
+          </div>
 
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', opacity: 0.8 }}>
-                Emergency / public-info
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, marginTop: '2px', color: ch14Restored ? 'var(--restored-on-dark)' : 'var(--alarm)' }}>
-                {ch14Restored ? '+0.486s restored' : '+2.996s offset'}
-              </div>
+          {/* Video Player */}
+          <div style={{ height: '110px', borderRadius: '4px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <video
+              src={ch14Restored ? 'http://localhost:8008/films/tears_of_steel/backup.mp4' : 'http://localhost:8008/films/tears_of_steel/source.mp4'}
+              autoPlay
+              muted
+              loop
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: ch14Restored ? 'rgba(29, 110, 140, 0.92)' : 'rgba(180, 35, 28, 0.92)',
+                color: '#f5f3ec',
+                padding: '4px 8px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                fontWeight: 700,
+                textAlign: 'center',
+              }}
+            >
+              {ch14Restored ? '✓ CAPTIONS RESTORED VIA BACKUP (+0.486s)' : '⚠ CAPTIONS FROZEN (+2.996s)'}
             </div>
+          </div>
+
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9.5px',
+              color: ch14Restored ? 'var(--restored-on-dark)' : 'var(--alarm)',
+              fontWeight: 700,
+            }}
+          >
+            {ch14Restored ? '✓ RESTORED — Backup stream allocated & verified' : '▲ ALARM — Caption freeze divergence +2.996s'}
           </div>
         </div>
 
-        {/* CH-27 (General Entertainment Tier) */}
+        {/* CH-27 SINTEL (General Entertainment Tier) */}
         <div
           style={{
-            borderRadius: '7px',
-            border: ch27Degraded ? '2.5px solid var(--alarm)' : '1.5px solid rgba(245, 243, 236, 0.28)',
-            backgroundColor: '#1b1712',
-            padding: '10px',
+            backgroundColor: '#1c1a15',
+            border: ch27Degraded ? '2.5px solid var(--alarm)' : '2.5px solid var(--alarm)',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '1px' }}>
-              CH-27
-            </span>
-
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: '#f5f3ec' }}>
+              CH-27 · SINTEL
+            </div>
+            <div
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                fontWeight: 700,
-                color: 'var(--alarm)',
+                fontSize: '8.5px',
+                padding: '2px 6px',
+                borderRadius: '3px',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: 'rgba(255, 255, 255, 0.7)',
               }}
             >
-              {ch27Degraded ? 'DEGRADED · FLAGGED' : 'CAPTIONS FROZEN'}
-            </span>
+              General entertainment tier
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Mini Still Tile */}
+          {/* Video Player */}
+          <div style={{ height: '110px', borderRadius: '4px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <video
+              src="http://localhost:8008/films/sintel/source.mp4"
+              autoPlay
+              muted
+              loop
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
             <div
-              className="hatch-alarm"
               style={{
-                width: '96px',
-                height: '54px',
-                borderRadius: '4px',
-                border: '2px solid var(--alarm)',
-                backgroundColor: '#0b0f11',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '7px',
-                fontFamily: 'var(--font-mono)',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: 'rgba(180, 35, 28, 0.92)',
                 color: '#f5f3ec',
+                padding: '4px 8px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '10px',
+                fontWeight: 700,
+                textAlign: 'center',
               }}
             >
-              FROZEN
+              ⚠ CAPTIONS FROZEN (+2.996s)
             </div>
+          </div>
 
-            <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', opacity: 0.8 }}>
-                General entertainment
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, marginTop: '2px', color: 'var(--alarm)' }}>
-                +2.996s offset
-              </div>
-            </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9.5px',
+              color: 'var(--alarm)',
+              fontWeight: 700,
+            }}
+          >
+            {ch27Degraded ? '▲ HELD DEGRADED + FLAGGED — Backup capacity exhausted by priority channel' : '▲ ALARM — Caption freeze divergence +2.996s'}
           </div>
         </div>
       </div>
 
-      {/* Demo Scope Foot Disclosure (Mandatory Honesty Labels) */}
-      <div
-        style={{
-          marginTop: '12px',
-          paddingTop: '8px',
-          borderTop: '1px dashed rgba(245, 243, 236, 0.2)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '6.5px',
-          opacity: 0.6,
-          lineHeight: 1.4,
-        }}
-      >
-        backup is a pre-cut file standing in for a scarce live caption source · SIGN = feed-liveness on a stand-in feed · AD not monitored in this build · tiers operator-declared before incident
+      {/* Foot Disclosure */}
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', color: 'rgba(255,255,255,0.4)', textAlign: 'right' }}>
+        Priority rules pre-declared by operator policy before incident · Agent cannot alter criticality tiers
       </div>
     </div>
   );

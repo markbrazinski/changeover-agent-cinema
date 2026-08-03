@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   const [currentStage, setCurrentStage] = useState<DemoStage>('01_at_rest');
   const [isWorking, setIsWorking] = useState<boolean>(false);
   const [isDesaturated, setIsDesaturated] = useState<boolean>(false);
+  const [isControlsHidden, setIsControlsHidden] = useState<boolean>(false);
 
   // Live state driven by server API responses
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
@@ -43,6 +44,17 @@ export const App: React.FC = () => {
 
   // Timecode generator
   const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
+
+  // Keyboard shortcut listener ('h' or 'H' to toggle controls visibility)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'h' || e.key === 'H') {
+        setIsControlsHidden((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Load Video Manifest on startup
   useEffect(() => {
@@ -93,7 +105,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // 3. Investigate via Grafana MCP + ADK
+  // 3. Investigate via Grafana MCP + ADK (Sequential Beat Animation)
   const handleInvestigate = async () => {
     setIsWorking(true);
     try {
@@ -128,24 +140,27 @@ export const App: React.FC = () => {
     }
   };
 
-  // 5/6. Authorize Failover
+  // 5/6. Authorize Failover (Human-authorization moment -> post-swap verification)
   const handleAuthorizeFailover = async () => {
     setIsWorking(true);
     try {
       setCurrentStage('05_awaiting_approval');
       setTimecode('PGM-OUT 20:14:27');
-      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
-      setCurrentStage('06_changed_over');
-      setPostSwapOffset(res.post_swap_measured_offset || 0.486);
-      setTimecode('PGM-OUT 20:14:33');
+
+      setTimeout(async () => {
+        const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
+        setCurrentStage('06_changed_over');
+        setPostSwapOffset(res.post_swap_measured_offset || 0.486);
+        setTimecode('PGM-OUT 20:14:33');
+        setIsWorking(false);
+      }, 1200);
     } catch (e) {
       console.error('Authorize failover error:', e);
-    } finally {
       setIsWorking(false);
     }
   };
 
-  // Contention Scenario (09 -> 10 -> 11 -> 12)
+  // Contention Scenario (09 -> 10 -> 11 -> 12 Sequential Animation)
   const handleRunContention = async () => {
     setIsWorking(true);
     try {
@@ -153,20 +168,14 @@ export const App: React.FC = () => {
       setTimecode('PGM-OUT 20:15:02');
       const res = await agentClient.runContention('operator:mark', mode);
       setContentionData(res);
-      setCurrentStage('10_contention_decision');
-      setTimecode('PGM-OUT 20:15:07');
 
       setTimeout(() => {
-        setCurrentStage('11_contention_authorized');
-        setTimecode('PGM-OUT 20:15:14');
-        setTimeout(() => {
-          setCurrentStage('12_terminal_partially_mitigated');
-          setTimecode('PGM-OUT 20:15:20');
-        }, 1500);
-      }, 1500);
+        setCurrentStage('10_contention_decision');
+        setTimecode('PGM-OUT 20:15:07');
+        setIsWorking(false);
+      }, 1400);
     } catch (e) {
       console.error('Contention error:', e);
-    } finally {
       setIsWorking(false);
     }
   };
@@ -293,6 +302,8 @@ export const App: React.FC = () => {
         isWorking={isWorking}
         isDesaturated={isDesaturated}
         onToggleDesaturate={() => setIsDesaturated(!isDesaturated)}
+        isHidden={isControlsHidden}
+        onToggleHide={() => setIsControlsHidden(!isControlsHidden)}
         onReset={() => handleReset()}
         onInjectFault={handleInjectFault}
         onInvestigate={handleInvestigate}
@@ -302,7 +313,7 @@ export const App: React.FC = () => {
         onBlind={handleBlindRefusal}
       />
 
-      {/* Main Broadcast Stage Canvas (Framed Card with 3.5px Solid Black Outer Border) */}
+      {/* Main Broadcast Stage Canvas */}
       <main
         style={{
           width: '100%',
@@ -313,6 +324,7 @@ export const App: React.FC = () => {
           boxShadow: '0 18px 48px rgba(0, 0, 0, 0.5)',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-hi)',
+          marginTop: isControlsHidden ? '10px' : '0',
         }}
       >
         {/* Contention Facility View (States 09–12) */}
@@ -341,7 +353,7 @@ export const App: React.FC = () => {
         >
           {/* Left Column Stack */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero (Real HTML Video Elements) */}
+            {/* Split Hero */}
             <SplitHero rightState={rightVideoState} />
 
             {/* Lane Strip (Expanded on State 03 Investigation beat) */}
@@ -364,7 +376,7 @@ export const App: React.FC = () => {
                   setTimeout(() => {
                     setCurrentStage('12_terminal_partially_mitigated');
                     setTimecode('PGM-OUT 20:15:20');
-                  }, 1500);
+                  }, 1400);
                 }}
                 onHold={() => {
                   setCurrentStage('09_contention_failing');

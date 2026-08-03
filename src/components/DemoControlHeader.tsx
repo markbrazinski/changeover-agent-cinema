@@ -8,6 +8,8 @@ interface DemoControlHeaderProps {
   isWorking: boolean;
   isDesaturated: boolean;
   onToggleDesaturate: () => void;
+  isHidden: boolean;
+  onToggleHide: () => void;
   onReset: () => void;
   onInjectFault: () => void;
   onInvestigate: () => void;
@@ -24,6 +26,8 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
   isWorking,
   isDesaturated,
   onToggleDesaturate,
+  isHidden,
+  onToggleHide,
   onReset,
   onInjectFault,
   onInvestigate,
@@ -32,6 +36,37 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
   onContention,
   onBlind,
 }) => {
+  if (isHidden) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          zIndex: 9999,
+        }}
+      >
+        <button
+          onClick={onToggleHide}
+          style={{
+            padding: '5px 10px',
+            backgroundColor: 'rgba(22, 20, 15, 0.85)',
+            color: '#f5f3ec',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            borderRadius: '4px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          }}
+        >
+          Show Operator Controls (Press 'H')
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -45,9 +80,10 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '10px',
+        position: 'relative',
       }}
     >
-      {/* Top Bar: Mode Switcher & Muted Gate Check */}
+      {/* Top Bar: Mode Switcher & Controls Hide Button */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)' }}>
@@ -89,23 +125,43 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </div>
         </div>
 
-        {/* 640px Muted Gate Toggle */}
-        <button
-          onClick={onToggleDesaturate}
-          style={{
-            padding: '5px 12px',
-            backgroundColor: isDesaturated ? '#f5f3ec' : 'rgba(255, 255, 255, 0.1)',
-            color: isDesaturated ? '#16140f' : '#f5f3ec',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          640px Muted Gate: {isDesaturated ? 'ON (grayscale)' : 'OFF'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* 640px Muted Gate Toggle */}
+          <button
+            onClick={onToggleDesaturate}
+            style={{
+              padding: '5px 12px',
+              backgroundColor: isDesaturated ? '#f5f3ec' : 'rgba(255, 255, 255, 0.1)',
+              color: isDesaturated ? '#16140f' : '#f5f3ec',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            640px Muted Gate: {isDesaturated ? 'ON' : 'OFF'}
+          </button>
+
+          {/* Hide Bar Toggle */}
+          <button
+            onClick={onToggleHide}
+            style={{
+              padding: '5px 12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              color: '#f5f3ec',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '9px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Hide Controls (Press 'H')
+          </button>
+        </div>
       </div>
 
       {/* Action Buttons Pipeline */}
