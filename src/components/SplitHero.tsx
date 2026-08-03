@@ -39,7 +39,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       style={{
         width: '100%',
         backgroundColor: 'var(--panel-hi)',
-        padding: '20px 24px 22px 24px',
+        padding: '18px 20px 16px 20px',
         position: 'relative',
       }}
     >
@@ -65,12 +65,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-        {/* LEFT COLUMN: Clean PGM 1 (What most people see) */}
-        <div style={{ paddingRight: '16px' }}>
+        {/* LEFT COLUMN: WHAT MOST PEOPLE SEE */}
+        <div style={{ paddingRight: '14px' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
@@ -78,15 +78,15 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               marginBottom: '8px',
             }}
           >
-            CLEAN PGM 1 · MAIN FEED
+            WHAT MOST PEOPLE SEE
           </div>
 
-          {/* Left Real Video Element (Scaled to 320px height) */}
+          {/* Left Real Video Element */}
           <div
             style={{
-              height: '320px',
-              borderRadius: '6px',
-              border: '2px solid #3b3a34',
+              height: '240px',
+              borderRadius: '8px',
+              border: '2.5px solid var(--ink)',
               backgroundColor: '#0b0f11',
               position: 'relative',
               overflow: 'hidden',
@@ -109,14 +109,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Source Chip Overlay */}
             <div
               style={{
-                margin: '12px',
+                margin: '10px',
                 alignSelf: 'flex-start',
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '8px',
                 padding: '4px 10px',
-                borderRadius: '3px',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
@@ -124,7 +124,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               }}
             >
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--nominal)' }} />
-              PRIMARY FEED · {channelName}
+              PGM 1 · MAIN
             </div>
 
             {/* Bottom Caption Overlay Bar */}
@@ -147,16 +147,16 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           {/* Left Status Pill */}
           <div
             style={{
-              marginTop: '12px',
+              marginTop: '10px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 14px',
+              padding: '5px 12px',
               borderRadius: '20px',
               border: '1.5px solid var(--nominal)',
               backgroundColor: 'var(--panel-hi)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               letterSpacing: '0.5px',
               color: 'var(--nominal-ink)',
@@ -167,12 +167,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: What this viewer gets */}
-        <div style={{ borderLeft: '2px dashed var(--ink)', paddingLeft: '16px' }}>
+        {/* RIGHT COLUMN: WHAT THIS VIEWER GETS */}
+        <div style={{ borderLeft: '2.5px dashed var(--ink)', paddingLeft: '14px' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
@@ -183,12 +183,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             WHAT THIS VIEWER GETS
           </div>
 
-          {/* Right Video Tile (Scaled to 320px height) */}
+          {/* Right Video Tile */}
           <div
             className={rightState === 'frozen' ? 'hatch-alarm' : rightState === 'blind' ? 'hatch-no-data animate-flicker' : ''}
             style={{
-              height: '320px',
-              borderRadius: '6px',
+              height: '240px',
+              borderRadius: '8px',
               border:
                 rightState === 'frozen'
                   ? '3.5px solid var(--alarm)'
@@ -196,7 +196,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   ? '2.5px solid var(--ink)'
                   : rightState === 'blind'
                   ? '3px dashed var(--ghost-3)'
-                  : '2px solid #3b3a34',
+                  : '2.5px solid var(--ink)',
               backgroundColor: '#0b0f11',
               position: 'relative',
               overflow: 'hidden',
@@ -227,14 +227,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Source Chip Overlay */}
             <div
               style={{
-                margin: '12px',
+                margin: '10px',
                 alignSelf: 'flex-start',
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '8px',
                 padding: '4px 10px',
-                borderRadius: '3px',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
@@ -254,7 +254,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                       : 'var(--nominal)',
                 }}
               />
-              {rightState === 'restored' ? 'BACKUP FEED ACTIVE' : rightState === 'frozen' ? 'FAILING STREAM' : 'SAME STREAM'} · {channelName}
+              {rightState === 'restored' ? 'BACKUP FEED ACTIVE' : rightState === 'frozen' ? 'SAME STREAM' : 'SAME STREAM'}
             </div>
 
             {/* Blind State Content */}
@@ -288,14 +288,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {rightState === 'frozen' && (
               <div
                 style={{
-                  backgroundColor: 'rgba(8, 6, 4, 0.92)',
-                  color: 'var(--alarm)',
+                  backgroundColor: 'rgba(8, 6, 4, 0.94)',
+                  color: '#f5f3ec',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '13px',
                   fontWeight: 700,
                   textAlign: 'center',
-                  borderTop: '2px solid var(--alarm)',
+                  borderTop: '2.5px solid var(--alarm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -304,7 +304,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 }}
               >
                 <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
-                CAPTIONS FROZEN (OFFSET +2.996s)
+                CAPTIONS FROZEN
               </div>
             )}
 
@@ -347,11 +347,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           {/* Right Status Pill */}
           <div
             style={{
-              marginTop: '12px',
+              marginTop: '10px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 14px',
+              padding: '5px 12px',
               borderRadius: '20px',
               border:
                 rightState === 'frozen'
@@ -371,7 +371,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   ? 'var(--ghost-2)'
                   : 'var(--nominal-ink)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               letterSpacing: '0.5px',
             }}
@@ -392,7 +392,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               }}
             />
             {rightState === 'frozen'
-              ? 'CAPTIONS FROZEN · ALARM'
+              ? 'CAPTIONS FROZEN'
               : rightState === 'restored'
               ? '✓ ACCESS RESTORED'
               : rightState === 'blind'

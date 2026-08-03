@@ -2,13 +2,13 @@ import React from 'react';
 
 export interface SpineStep {
   title: string;
-  sub?: string;
-  tone: 'done' | 'active' | 'fill' | 'pending' | 'refuse';
+  sub: string;
+  tone?: 'done' | 'active' | 'fill' | 'pending' | 'refuse';
 }
 
 interface AgentSpineProps {
-  substate: string;
-  steps: SpineStep[];
+  substate?: string;
+  steps?: SpineStep[];
   showGate?: boolean;
   onApprove?: () => void;
   onHold?: () => void;
@@ -17,7 +17,7 @@ interface AgentSpineProps {
 }
 
 export const AgentSpine: React.FC<AgentSpineProps> = ({
-  substate = 'ANOMALY DETECTED',
+  substate = '01_AT_REST',
   steps = [],
   showGate = false,
   onApprove,
@@ -28,376 +28,165 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
   return (
     <div
       style={{
-        width: '238px',
-        borderLeft: '2.5px solid var(--ink)',
-        paddingLeft: '14px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        justifyContent: 'space-between',
+        height: '100%',
+        paddingLeft: '16px',
+        borderLeft: '2.5px solid var(--ink)',
       }}
     >
-      {/* Head */}
-      <div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            letterSpacing: '1.5px',
-          }}
-        >
+      {/* Top Header & Steps */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <div
             style={{
               width: '12px',
               height: '12px',
-              borderRadius: '3px',
-              border: '1.5px solid var(--ink)',
-              position: 'relative',
+              border: '2px solid var(--ink)',
+              borderRadius: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <div
-              style={{
-                width: '4px',
-                height: '4px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent)',
-                position: 'absolute',
-                top: '2px',
-                right: '2px',
-              }}
-            />
+            <div style={{ width: '4px', height: '4px', backgroundColor: 'var(--ink)' }} />
           </div>
-          AGENT SPINE
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, letterSpacing: '1px' }}>
+            AGENT SPINE
+          </span>
         </div>
 
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '7.5px',
-            color: 'var(--text-42)',
-            marginTop: '2px',
-          }}
-        >
-          T+00:14 · {substate}
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--text-50)', letterSpacing: '0.5px' }}>
+          T+00:14 · REASONING
         </div>
-      </div>
 
-      {/* Stacked Step Tiles */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {steps.map((step, idx) => {
-          if (step.tone === 'refuse') {
+        {/* Stacked Step Tiles */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {steps.map((step, idx) => {
+            const isDone = step.tone === 'done';
+            const isActive = step.tone === 'active';
+            const isFill = step.tone === 'fill';
+            const isRefuse = step.tone === 'refuse';
+
             return (
               <div
                 key={idx}
                 style={{
-                  borderRadius: '5px',
-                  padding: '8px 9px',
-                  border: '3px double var(--ink)',
-                  backgroundColor: '#e9e6df',
-                  color: 'var(--ink)',
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  border: isRefuse
+                    ? '2px solid var(--alarm)'
+                    : isActive
+                    ? '2px solid var(--ink)'
+                    : isDone
+                    ? '1.5px solid #c3bfb8'
+                    : '1.5px dashed #c3bfb8',
+                  backgroundColor: isActive ? 'var(--ink)' : isFill ? 'var(--panel-sunken)' : 'var(--panel-hi)',
+                  color: isActive ? '#f5f3ec' : 'var(--ink)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px',
                 }}
               >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '9px',
-                    fontWeight: 700,
-                    letterSpacing: '0.4px',
-                  }}
-                >
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700 }}>
                   {step.title}
                 </div>
-                {step.sub && (
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '7.5px',
-                      color: 'var(--text-60)',
-                      marginTop: '2px',
-                    }}
-                  >
-                    {step.sub}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          if (step.tone === 'active') {
-            return (
-              <div
-                key={idx}
-                style={{
-                  borderRadius: '5px',
-                  padding: '8px 9px',
-                  border: '2px solid var(--ink)',
-                  backgroundColor: 'var(--ink)',
-                  color: '#f5f3ec',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Accent Scan Sweep Bar */}
-                <div
-                  className="animate-scan"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '2.5px',
-                    backgroundColor: 'var(--accent)',
-                  }}
-                />
                 <div
                   style={{
                     fontFamily: 'var(--font-mono)',
                     fontSize: '8px',
-                    fontWeight: 700,
-                    letterSpacing: '0.3px',
-                  }}
-                >
-                  {step.title}
-                </div>
-                {step.sub && (
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '7.5px',
-                      opacity: 0.75,
-                      marginTop: '2px',
-                    }}
-                  >
-                    {step.sub}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          if (step.tone === 'fill') {
-            return (
-              <div
-                key={idx}
-                style={{
-                  borderRadius: '5px',
-                  padding: '8px 9px',
-                  border: '2px solid var(--ink)',
-                  backgroundColor: 'var(--ink)',
-                  color: '#f5f3ec',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '8px',
-                    fontWeight: 700,
-                  }}
-                >
-                  {step.title}
-                </div>
-                {step.sub && (
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '7.5px',
-                      opacity: 0.7,
-                      marginTop: '2px',
-                    }}
-                  >
-                    {step.sub}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          if (step.tone === 'done') {
-            return (
-              <div
-                key={idx}
-                style={{
-                  borderRadius: '5px',
-                  padding: '8px 9px',
-                  border: '1.5px solid var(--card-border)',
-                  backgroundColor: 'var(--panel-hi)',
-                  color: 'var(--text-60)',
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '8px',
-                    fontWeight: 600,
-                    color: 'var(--ink)',
-                  }}
-                >
-                  {step.title}
-                </div>
-                {step.sub && (
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '7.5px',
-                      color: 'var(--text-50)',
-                      marginTop: '2px',
-                    }}
-                  >
-                    {step.sub}
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // Pending Tone
-          return (
-            <div
-              key={idx}
-              style={{
-                borderRadius: '5px',
-                padding: '8px 9px',
-                border: '1.5px dashed var(--ghost-border)',
-                backgroundColor: 'transparent',
-                color: 'var(--text-50)',
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  fontWeight: 600,
-                }}
-              >
-                {step.title}
-              </div>
-              {step.sub && (
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '7.5px',
-                    opacity: 0.7,
-                    marginTop: '2px',
+                    opacity: isActive ? 0.8 : 0.65,
                   }}
                 >
                   {step.sub}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Docked Action Gate */}
-      {showGate && (
-        <div
-          style={{
-            marginTop: '4px',
-            borderRadius: '6px',
-            border: '2px solid var(--ink)',
-            backgroundColor: 'var(--panel-hi)',
-            padding: '10px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-          }}
-        >
+        {/* Docked Approve / Hold Action Gate (State 05) */}
+        {showGate && (
           <div
             style={{
+              padding: '12px',
+              borderRadius: '6px',
+              backgroundColor: 'var(--panel-sunken)',
+              border: '2px solid var(--ink)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              marginTop: '4px',
+            }}
+          >
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, textAlign: 'center' }}>
+              SUMMON: AUTHORIZE CHANGE
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <button
+                onClick={onApprove}
+                style={{
+                  padding: '8px',
+                  backgroundColor: 'var(--nominal)',
+                  color: '#f5f3ec',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                APPROVE
+              </button>
+
+              <button
+                onClick={onHold}
+                style={{
+                  padding: '8px',
+                  backgroundColor: 'var(--panel-hi)',
+                  color: 'var(--ink)',
+                  border: '1.5px solid var(--ink)',
+                  borderRadius: '4px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                HOLD
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Hold Note Banner (Refusal / Blind) */}
+        {holdNote && (
+          <div
+            style={{
+              padding: '8px 10px',
+              borderRadius: '4px',
+              border: isSolidHoldNote ? '2px solid var(--ink)' : '1.5px dashed var(--alarm)',
+              backgroundColor: isSolidHoldNote ? 'var(--panel-hi)' : 'var(--surface)',
+              color: isSolidHoldNote ? 'var(--ink)' : 'var(--alarm)',
               fontFamily: 'var(--font-mono)',
               fontSize: '8px',
               fontWeight: 700,
-              color: 'var(--ink)',
-              letterSpacing: '0.5px',
             }}
           >
-            AUTHORIZATION REQUIRED
+            {holdNote}
           </div>
+        )}
+      </div>
 
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              onClick={onApprove}
-              style={{
-                flex: 1,
-                padding: '6px 0',
-                backgroundColor: 'var(--ink)',
-                color: '#f5f3ec',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                fontWeight: 700,
-                borderRadius: '4px',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Approve
-            </button>
-            <button
-              onClick={onHold}
-              style={{
-                flex: 1,
-                padding: '6px 0',
-                backgroundColor: 'transparent',
-                color: 'var(--ink)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                fontWeight: 700,
-                borderRadius: '4px',
-                border: '1.5px solid var(--ink)',
-                cursor: 'pointer',
-              }}
-            >
-              Hold
-            </button>
-          </div>
-
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '7px',
-              color: 'var(--text-50)',
-              borderTop: '1px dashed var(--border-soft)',
-              paddingTop: '6px',
-            }}
-          >
-            will not switch without you
-          </div>
+      {/* Footer Invariant Line with Dashed Separator Line */}
+      <div style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', color: 'var(--text-42)', lineHeight: 1.4 }}>
+          value carries state · alarm never sole-encodes · accent #b8641b reserved
         </div>
-      )}
-
-      {/* Docked Hold Note */}
-      {holdNote && (
-        <div
-          style={{
-            borderRadius: '5px',
-            padding: '8px 9px',
-            border: isSolidHoldNote ? '2px solid var(--ink)' : '1.5px dashed var(--ghost-border)',
-            backgroundColor: isSolidHoldNote ? 'var(--ink)' : 'var(--panel-hi)',
-            color: isSolidHoldNote ? '#f5f3ec' : 'var(--text-60)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '7.5px',
-          }}
-        >
-          {holdNote}
-        </div>
-      )}
-
-      {/* Foot Invariant */}
-      <div
-        style={{
-          marginTop: 'auto',
-          paddingTop: '8px',
-          borderTop: '1px dashed var(--border-soft)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '6.5px',
-          color: 'var(--text-42)',
-          letterSpacing: '0.3px',
-        }}
-      >
-        evidence intact · action stopped · accent #b8641b reserved
       </div>
     </div>
   );

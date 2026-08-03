@@ -220,10 +220,10 @@ export const App: React.FC = () => {
         title: '▶ querying Grafana…',
         sub: queryTrace.length > 0
           ? `${queryTrace[0]?.result_or_miss || 'MISS: empty result'} (${Math.round(queryTrace[0]?.latency_ms || 192)}ms) → RETRY success (${Math.round(queryTrace[1]?.latency_ms || 180)}ms)`
-          : 'MISS: invalid query (192ms) → RETRY success (180ms)',
+          : 'caption_sync climbing ▲',
         tone: 'active',
       },
-      { title: 'SIGN flat → not program-wide', sub: 'isolated to captions layer', tone: 'pending' }
+      { title: 'SIGN flat → not program-wide', sub: 'isolated to captions', tone: 'pending' }
     );
   } else if (currentStage === '04_backup_verified') {
     spineSteps.push(
@@ -281,6 +281,7 @@ export const App: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         width: '100%',
+        maxWidth: '1060px',
         margin: '0 auto',
       }}
     >
@@ -301,16 +302,17 @@ export const App: React.FC = () => {
         onBlind={handleBlindRefusal}
       />
 
-      {/* Main Broadcast Stage Canvas (Edge-to-Edge Widescreen Frame) */}
+      {/* Main Broadcast Stage Canvas (Framed Card with 3.5px Solid Black Outer Border) */}
       <main
         style={{
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
-          borderRadius: '0 0 13px 13px',
+          border: '3.5px solid var(--ink)',
+          borderRadius: '14px',
+          boxShadow: '0 18px 48px rgba(0, 0, 0, 0.5)',
           overflow: 'hidden',
-          backgroundColor: 'var(--panel-mute)',
+          backgroundColor: 'var(--panel-hi)',
         }}
       >
         {/* Contention Facility View (States 09–12) */}
@@ -328,15 +330,13 @@ export const App: React.FC = () => {
           hasRefusalBadge={currentStage === '07_refusal_wont_switch' || currentStage === '08_refusal_wont_guess'}
         />
 
-        {/* Body Container: Grid 1fr / 340px */}
+        {/* Body Container: Grid 1fr / 290px with Continuous Solid Separator Line */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 340px',
+            gridTemplateColumns: '1fr 290px',
             backgroundColor: 'var(--panel-hi)',
-            borderLeft: '2.5px solid var(--ink)',
-            borderRight: '2.5px solid var(--ink)',
-            borderBottom: currentStage === '12_terminal_partially_mitigated' ? 'none' : '2.5px solid var(--ink)',
+            borderTop: '2.5px solid var(--ink)',
           }}
         >
           {/* Left Column Stack */}
@@ -347,7 +347,7 @@ export const App: React.FC = () => {
             {/* Lane Strip (Expanded on State 03 Investigation beat) */}
             <LaneStrip isExpanded={currentStage === '03_investigating'} />
 
-            {/* Evidence Chart (Two-line CAP + SIGN + AD static row) */}
+            {/* Evidence Chart (Enclosed Rounded Card Box) */}
             <EvidenceChart
               primaryOffset={captionOffset}
               postSwapOffset={postSwapOffset}
@@ -373,7 +373,7 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          {/* Right Column: Agent Spine */}
+          {/* Right Column: Agent Spine Side Rail */}
           <div style={{ padding: '16px 16px 16px 0' }}>
             <AgentSpine
               substate={currentStage.toUpperCase()}
