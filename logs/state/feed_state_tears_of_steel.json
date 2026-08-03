@@ -1,8 +1,8 @@
 {
   "channel": "tears_of_steel",
-  "active_source": "backup",
-  "last_action": "failover_and_verify_restored",
-  "human_authorizer": "operator:mark",
-  "timestamp": 1785799431.208341,
-  "restored": true
+  "active_source": "primary",
+  "last_action": "initialized",
+  "human_authorizer": null,
+  "timestamp": 1785800152.446847,
+  "restored": false
 }

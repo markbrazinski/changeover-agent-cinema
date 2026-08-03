@@ -36,10 +36,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
     <div
       style={{
         width: '100%',
-        maxWidth: '1200px',
         backgroundColor: '#0f0e0b',
         color: '#f5f3ec',
-        padding: '12px 18px',
+        padding: '12px 20px',
         borderRadius: '13px 13px 0 0',
         border: '2.5px solid var(--ink)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
@@ -60,12 +59,12 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             <button
               onClick={() => onSetMode('deterministic')}
               style={{
-                padding: '4px 10px',
+                padding: '5px 12px',
                 backgroundColor: mode === 'deterministic' ? '#f5f3ec' : 'transparent',
                 color: mode === 'deterministic' ? '#16140f' : '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '9px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -75,12 +74,12 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             <button
               onClick={() => onSetMode('real')}
               style={{
-                padding: '4px 10px',
+                padding: '5px 12px',
                 backgroundColor: mode === 'real' ? 'var(--alarm)' : 'transparent',
                 color: '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '9px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -94,13 +93,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         <button
           onClick={onToggleDesaturate}
           style={{
-            padding: '4px 10px',
+            padding: '5px 12px',
             backgroundColor: isDesaturated ? '#f5f3ec' : 'rgba(255, 255, 255, 0.1)',
             color: isDesaturated ? '#16140f' : '#f5f3ec',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -110,18 +109,18 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
       </div>
 
       {/* Action Buttons Pipeline */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
         <button
           onClick={onReset}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: 'rgba(255,255,255,0.12)',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -133,13 +132,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onInjectFault}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: 'var(--alarm)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -151,13 +150,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onInvestigate}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: 'var(--accent)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -169,13 +168,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onVerifyBackup}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: 'rgba(255,255,255,0.12)',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -187,13 +186,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onAuthorize}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: 'var(--nominal)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -205,13 +204,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onContention}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: '#1d6e8c',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -223,13 +222,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onBlind}
           disabled={isWorking}
           style={{
-            padding: '6px 12px',
+            padding: '7px 14px',
             backgroundColor: '#3b3a34',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -244,10 +243,10 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           style={{
             backgroundColor: 'var(--accent)',
             color: '#f5f3ec',
-            padding: '5px 10px',
+            padding: '6px 12px',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8.5px',
+            fontSize: '9px',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',

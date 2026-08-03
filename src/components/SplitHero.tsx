@@ -39,7 +39,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       style={{
         width: '100%',
         backgroundColor: 'var(--panel-hi)',
-        padding: '18px 20px 20px 20px',
+        padding: '20px 24px 22px 24px',
         position: 'relative',
       }}
     >
@@ -53,10 +53,10 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           backgroundColor: 'var(--ink)',
           color: '#f5f3ec',
           fontFamily: 'var(--font-mono)',
-          fontSize: '8.5px',
+          fontSize: '9px',
           fontWeight: 700,
           letterSpacing: '2px',
-          padding: '3px 12px',
+          padding: '3px 14px',
           borderRadius: '12px',
           zIndex: 10,
         }}
@@ -66,11 +66,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
         {/* LEFT COLUMN: Clean PGM 1 (What most people see) */}
-        <div style={{ paddingRight: '14px' }}>
+        <div style={{ paddingRight: '16px' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '9px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
@@ -81,10 +81,10 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             CLEAN PGM 1 · MAIN FEED
           </div>
 
-          {/* Left Real Video Element (Scaled to 210px height) */}
+          {/* Left Real Video Element (Scaled to 320px height) */}
           <div
             style={{
-              height: '210px',
+              height: '320px',
               borderRadius: '6px',
               border: '2px solid #3b3a34',
               backgroundColor: '#0b0f11',
@@ -109,17 +109,17 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Source Chip Overlay */}
             <div
               style={{
-                margin: '10px',
+                margin: '12px',
                 alignSelf: 'flex-start',
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '7.5px',
-                padding: '3px 8px',
+                fontSize: '8px',
+                padding: '4px 10px',
                 borderRadius: '3px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '6px',
                 zIndex: 2,
               }}
             >
@@ -130,11 +130,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Bottom Caption Overlay Bar */}
             <div
               style={{
-                backgroundColor: 'rgba(22, 20, 15, 0.88)',
+                backgroundColor: 'rgba(22, 20, 15, 0.90)',
                 color: '#f5f3ec',
-                padding: '8px 12px',
+                padding: '10px 14px',
                 fontFamily: 'var(--font-grotesk)',
-                fontSize: '12px',
+                fontSize: '13px',
                 textAlign: 'center',
                 borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                 zIndex: 2,
@@ -147,16 +147,16 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           {/* Left Status Pill */}
           <div
             style={{
-              marginTop: '10px',
+              marginTop: '12px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '5px 12px',
+              padding: '6px 14px',
               borderRadius: '20px',
               border: '1.5px solid var(--nominal)',
               backgroundColor: 'var(--panel-hi)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '9px',
               fontWeight: 700,
               letterSpacing: '0.5px',
               color: 'var(--nominal-ink)',
@@ -168,11 +168,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         </div>
 
         {/* RIGHT COLUMN: What this viewer gets */}
-        <div style={{ borderLeft: '2px dashed var(--ink)', paddingLeft: '14px' }}>
+        <div style={{ borderLeft: '2px dashed var(--ink)', paddingLeft: '16px' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '9px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
@@ -183,15 +183,15 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             WHAT THIS VIEWER GETS
           </div>
 
-          {/* Right Video Tile (Scaled to 210px height) */}
+          {/* Right Video Tile (Scaled to 320px height) */}
           <div
             className={rightState === 'frozen' ? 'hatch-alarm' : rightState === 'blind' ? 'hatch-no-data animate-flicker' : ''}
             style={{
-              height: '210px',
+              height: '320px',
               borderRadius: '6px',
               border:
                 rightState === 'frozen'
-                  ? '3px solid var(--alarm)'
+                  ? '3.5px solid var(--alarm)'
                   : rightState === 'restored'
                   ? '2.5px solid var(--ink)'
                   : rightState === 'blind'
@@ -227,17 +227,17 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Source Chip Overlay */}
             <div
               style={{
-                margin: '10px',
+                margin: '12px',
                 alignSelf: 'flex-start',
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '7.5px',
-                padding: '3px 8px',
+                fontSize: '8px',
+                padding: '4px 10px',
                 borderRadius: '3px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
+                gap: '6px',
                 zIndex: 2,
               }}
             >
@@ -274,11 +274,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   zIndex: 3,
                 }}
               >
-                <div className="animate-spin" style={{ width: '26px', height: '22px', border: '2px solid var(--ghost-border)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '8px' }} />
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, letterSpacing: '2px', color: '#f5f3ec' }}>
+                <div className="animate-spin" style={{ width: '28px', height: '28px', border: '2.5px solid var(--ghost-border)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '10px' }} />
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '16px', fontWeight: 700, letterSpacing: '2px', color: '#f5f3ec' }}>
                   WHICH LAYER?
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', opacity: 0.7, marginTop: '4px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', opacity: 0.7, marginTop: '6px' }}>
                   telemetry unreadable · cannot confirm
                 </div>
               </div>
@@ -290,20 +290,20 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'rgba(8, 6, 4, 0.92)',
                   color: 'var(--alarm)',
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '12px',
+                  fontSize: '13px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2px solid var(--alarm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
+                  gap: '8px',
                   zIndex: 2,
                 }}
               >
-                <div className="animate-pulse" style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
+                <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
                 CAPTIONS FROZEN (OFFSET +2.996s)
               </div>
             )}
@@ -313,9 +313,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'var(--surface)',
                   color: 'var(--ink)',
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '12px',
+                  fontSize: '13px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--ink)',
@@ -331,9 +331,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'rgba(22, 20, 15, 0.88)',
                   color: '#f5f3ec',
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   fontFamily: 'var(--font-grotesk)',
-                  fontSize: '12px',
+                  fontSize: '13px',
                   textAlign: 'center',
                   borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                   zIndex: 2,
@@ -347,11 +347,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           {/* Right Status Pill */}
           <div
             style={{
-              marginTop: '10px',
+              marginTop: '12px',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '5px 12px',
+              padding: '6px 14px',
               borderRadius: '20px',
               border:
                 rightState === 'frozen'
@@ -371,7 +371,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   ? 'var(--ghost-2)'
                   : 'var(--nominal-ink)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '9px',
               fontWeight: 700,
               letterSpacing: '0.5px',
             }}

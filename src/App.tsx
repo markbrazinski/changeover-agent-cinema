@@ -281,7 +281,6 @@ export const App: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         width: '100%',
-        maxWidth: '1280px',
         margin: '0 auto',
       }}
     >
@@ -302,14 +301,13 @@ export const App: React.FC = () => {
         onBlind={handleBlindRefusal}
       />
 
-      {/* Main Broadcast Stage Canvas (1200px Viewport Fit Frame) */}
+      {/* Main Broadcast Stage Canvas (Edge-to-Edge Widescreen Frame) */}
       <main
         style={{
           width: '100%',
-          maxWidth: '1200px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
           borderRadius: '0 0 13px 13px',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-mute)',
@@ -330,11 +328,11 @@ export const App: React.FC = () => {
           hasRefusalBadge={currentStage === '07_refusal_wont_switch' || currentStage === '08_refusal_wont_guess'}
         />
 
-        {/* Body Container: Grid 1fr / 310px */}
+        {/* Body Container: Grid 1fr / 340px */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 310px',
+            gridTemplateColumns: '1fr 340px',
             backgroundColor: 'var(--panel-hi)',
             borderLeft: '2.5px solid var(--ink)',
             borderRight: '2.5px solid var(--ink)',
