@@ -281,7 +281,7 @@ export const App: React.FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         width: '100%',
-        maxWidth: '780px',
+        maxWidth: '1280px',
         margin: '0 auto',
       }}
     >
@@ -302,13 +302,14 @@ export const App: React.FC = () => {
         onBlind={handleBlindRefusal}
       />
 
-      {/* Main Broadcast Stage Canvas (760px Fixed Frame) */}
+      {/* Main Broadcast Stage Canvas (1200px Viewport Fit Frame) */}
       <main
         style={{
-          width: '760px',
+          width: '100%',
+          maxWidth: '1200px',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
+          boxShadow: '0 16px 40px rgba(0, 0, 0, 0.5)',
           borderRadius: '0 0 13px 13px',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-mute)',
@@ -329,11 +330,11 @@ export const App: React.FC = () => {
           hasRefusalBadge={currentStage === '07_refusal_wont_switch' || currentStage === '08_refusal_wont_guess'}
         />
 
-        {/* Body Container: Grid 1fr / 238px */}
+        {/* Body Container: Grid 1fr / 310px */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 238px',
+            gridTemplateColumns: '1fr 310px',
             backgroundColor: 'var(--panel-hi)',
             borderLeft: '2.5px solid var(--ink)',
             borderRight: '2.5px solid var(--ink)',
@@ -375,7 +376,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Right Column: Agent Spine */}
-          <div style={{ padding: '15px 14px 15px 0' }}>
+          <div style={{ padding: '16px 16px 16px 0' }}>
             <AgentSpine
               substate={currentStage.toUpperCase()}
               steps={spineSteps}

@@ -36,22 +36,22 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
     <div
       style={{
         width: '100%',
-        maxWidth: '760px',
+        maxWidth: '1200px',
         backgroundColor: '#0f0e0b',
         color: '#f5f3ec',
-        padding: '10px 14px',
+        padding: '12px 18px',
         borderRadius: '13px 13px 0 0',
         border: '2.5px solid var(--ink)',
         borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '10px',
       }}
     >
       {/* Top Bar: Mode Switcher & Muted Gate Check */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: 'var(--accent)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)' }}>
             DEMO OPERATOR CONTROL
           </span>
 
@@ -60,12 +60,12 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             <button
               onClick={() => onSetMode('deterministic')}
               style={{
-                padding: '3px 8px',
+                padding: '4px 10px',
                 backgroundColor: mode === 'deterministic' ? '#f5f3ec' : 'transparent',
                 color: mode === 'deterministic' ? '#16140f' : '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '7.5px',
+                fontSize: '8.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -75,12 +75,12 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             <button
               onClick={() => onSetMode('real')}
               style={{
-                padding: '3px 8px',
+                padding: '4px 10px',
                 backgroundColor: mode === 'real' ? 'var(--alarm)' : 'transparent',
                 color: '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '7.5px',
+                fontSize: '8.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -94,13 +94,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         <button
           onClick={onToggleDesaturate}
           style={{
-            padding: '3px 8px',
+            padding: '4px 10px',
             backgroundColor: isDesaturated ? '#f5f3ec' : 'rgba(255, 255, 255, 0.1)',
             color: isDesaturated ? '#16140f' : '#f5f3ec',
             border: '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '7.5px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -110,18 +110,18 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
       </div>
 
       {/* Action Buttons Pipeline */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
         <button
           onClick={onReset}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: 'rgba(255,255,255,0.12)',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -133,13 +133,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onInjectFault}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: 'var(--alarm)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -151,13 +151,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onInvestigate}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: 'var(--accent)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -169,13 +169,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onVerifyBackup}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: 'rgba(255,255,255,0.12)',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.2)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -187,13 +187,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onAuthorize}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: 'var(--nominal)',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -205,13 +205,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onContention}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: '#1d6e8c',
             color: '#f5f3ec',
             border: 'none',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -223,13 +223,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           onClick={onBlind}
           disabled={isWorking}
           style={{
-            padding: '5px 10px',
+            padding: '6px 12px',
             backgroundColor: '#3b3a34',
             color: '#f5f3ec',
             border: '1px solid rgba(255,255,255,0.3)',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             cursor: 'pointer',
           }}
@@ -244,17 +244,17 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           style={{
             backgroundColor: 'var(--accent)',
             color: '#f5f3ec',
-            padding: '4px 8px',
+            padding: '5px 10px',
             borderRadius: '4px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
+            fontSize: '8.5px',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
           }}
         >
-          <div className="animate-spin" style={{ width: '10px', height: '10px', border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
+          <div className="animate-spin" style={{ width: '12px', height: '12px', border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
           WORKING... ({mode === 'real' ? 'Executing real Grafana Cloud query + Gemini ADK reasoning' : 'Processing deterministic server state'})
         </div>
       )}
