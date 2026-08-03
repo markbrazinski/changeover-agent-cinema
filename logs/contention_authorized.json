@@ -1,5 +1,5 @@
 {
-  "timestamp": 1785797633.1743731,
+  "timestamp": 1785799431.1899872,
   "pool_id": "shared_pool_1",
   "demand": 2,
   "capacity": 1,
@@ -13,19 +13,19 @@
   "status": "authorized_and_executed",
   "priority_execution": {
     "status": "executed",
-    "previous_source": "primary",
-    "new_source": "backup",
+    "previous_source": "backup",
+    "new_source": "primary",
     "human_authorizer": "operator:mark",
     "state": {
       "channel": "tears_of_steel",
       "active_source": "backup",
       "last_action": "failover_and_verify_restored",
       "human_authorizer": "operator:mark",
-      "timestamp": 1785797633.192024,
+      "timestamp": 1785799431.208341,
       "restored": true
     },
     "post_swap_measured_offset": 0.48600000000000065,
     "restored": true
   },
-  "degraded_untouched_proof": true
+  "degraded_untouched_proof": false
 }

@@ -1,16 +1,39 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 export type VideoState = 'clean' | 'fine' | 'frozen' | 'restored' | 'blind';
 
 interface SplitHeroProps {
   rightState: VideoState;
   channelName?: string;
+  sourceVideoUrl?: string;
+  backupVideoUrl?: string;
+  captionsVttUrl?: string;
+  isFaultInjected?: boolean;
 }
 
 export const SplitHero: React.FC<SplitHeroProps> = ({
   rightState = 'frozen',
   channelName = 'TEARS OF STEEL',
+  sourceVideoUrl = 'http://localhost:8008/films/tears_of_steel/source.mp4',
+  backupVideoUrl = 'http://localhost:8008/films/tears_of_steel/backup.mp4',
+  captionsVttUrl = 'http://localhost:8008/films/tears_of_steel/captions.vtt',
+  isFaultInjected = false,
 }) => {
+  const leftVideoRef = useRef<HTMLVideoElement>(null);
+  const rightVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Sync playback between left and right video elements
+  useEffect(() => {
+    const left = leftVideoRef.current;
+    const right = rightVideoRef.current;
+    if (left && right) {
+      left.currentTime = 10.0;
+      right.currentTime = 10.0;
+      left.play().catch(() => {});
+      right.play().catch(() => {});
+    }
+  }, [sourceVideoUrl, rightState]);
+
   return (
     <div
       style={{
@@ -44,13 +67,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         THE SPLIT
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 0,
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
         {/* LEFT COLUMN: Clean PGM 1 (What most people see) */}
         <div style={{ paddingRight: '11px' }}>
           <div
@@ -67,14 +84,13 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             CLEAN PGM 1 · MAIN FEED
           </div>
 
-          {/* Left Video Tile (Clean) */}
+          {/* Left Real Video Element */}
           <div
             style={{
               height: '158px',
               borderRadius: '6px',
               border: '2px solid #3b3a34',
               backgroundColor: '#0b0f11',
-              backgroundImage: 'radial-gradient(circle at 50% 40%, #1e262c 0%, #0b0f11 80%)',
               position: 'relative',
               overflow: 'hidden',
               display: 'flex',
@@ -82,12 +98,23 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               justifyContent: 'space-between',
             }}
           >
-            {/* Source Chip */}
+            <video
+              ref={leftVideoRef}
+              src={sourceVideoUrl}
+              muted
+              loop
+              playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+            >
+              <track src={captionsVttUrl} kind="subtitles" srcLang="en" label="English" default />
+            </video>
+
+            {/* Source Chip Overlay */}
             <div
               style={{
                 margin: '8px',
                 alignSelf: 'flex-start',
-                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '7px',
@@ -96,22 +123,24 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
+                zIndex: 2,
               }}
             >
               <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: 'var(--nominal)' }} />
               PRIMARY FEED · {channelName}
             </div>
 
-            {/* Bottom Caption Bar */}
+            {/* Bottom Caption Overlay Bar */}
             <div
               style={{
-                backgroundColor: 'rgba(22, 20, 15, 0.85)',
+                backgroundColor: 'rgba(22, 20, 15, 0.88)',
                 color: '#f5f3ec',
                 padding: '6px 10px',
                 fontFamily: 'var(--font-grotesk)',
                 fontSize: '11px',
                 textAlign: 'center',
                 borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+                zIndex: 2,
               }}
             >
               — sample caption dialogue, in sync —
@@ -142,12 +171,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         </div>
 
         {/* RIGHT COLUMN: What this viewer gets */}
-        <div
-          style={{
-            borderLeft: '2px dashed var(--ink)',
-            paddingLeft: '11px',
-          }}
-        >
+        <div style={{ borderLeft: '2px dashed var(--ink)', paddingLeft: '11px' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
@@ -162,42 +186,109 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             WHAT THIS VIEWER GETS
           </div>
 
-          {/* Right Video Tile */}
-          {rightState === 'frozen' && (
+          {/* Right Video Tile (Real Media + Freeze Behavior) */}
+          <div
+            className={rightState === 'frozen' ? 'hatch-alarm' : rightState === 'blind' ? 'hatch-no-data animate-flicker' : ''}
+            style={{
+              height: '158px',
+              borderRadius: '6px',
+              border:
+                rightState === 'frozen'
+                  ? '3px solid var(--alarm)'
+                  : rightState === 'restored'
+                  ? '2.5px solid var(--ink)'
+                  : rightState === 'blind'
+                  ? '3px dashed var(--ghost-3)'
+                  : '2px solid #3b3a34',
+              backgroundColor: '#0b0f11',
+              position: 'relative',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {rightState !== 'blind' && (
+              <video
+                ref={rightVideoRef}
+                src={rightState === 'restored' ? backupVideoUrl : sourceVideoUrl}
+                muted
+                loop
+                playsInline
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  filter: rightState === 'frozen' ? 'brightness(0.82)' : 'none',
+                }}
+              />
+            )}
+
+            {/* Source Chip Overlay */}
             <div
-              className="hatch-alarm"
               style={{
-                height: '158px',
-                borderRadius: '6px',
-                border: '3px solid var(--alarm)',
-                boxShadow: 'inset 0 0 12px rgba(180, 35, 28, 0.3)',
-                position: 'relative',
-                overflow: 'hidden',
+                margin: '8px',
+                alignSelf: 'flex-start',
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                color: '#f5f3ec',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '7px',
+                padding: '2px 6px',
+                borderRadius: '3px',
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '4px',
+                zIndex: 2,
               }}
             >
               <div
                 style={{
-                  margin: '8px',
-                  alignSelf: 'flex-start',
-                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                  color: '#f5f3ec',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '7px',
-                  padding: '2px 6px',
-                  borderRadius: '3px',
+                  width: '5px',
+                  height: '5px',
+                  borderRadius: rightState === 'frozen' ? '0' : '50%',
+                  backgroundColor:
+                    rightState === 'frozen'
+                      ? 'var(--alarm)'
+                      : rightState === 'restored'
+                      ? 'var(--restored)'
+                      : 'var(--nominal)',
+                }}
+              />
+              {rightState === 'restored' ? 'BACKUP FEED ACTIVE' : rightState === 'frozen' ? 'FAILING STREAM' : 'SAME STREAM'} · {channelName}
+            </div>
+
+            {/* Blind State Content */}
+            {rightState === 'blind' && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '4px',
+                  justifyContent: 'center',
+                  color: 'var(--ghost-border)',
+                  zIndex: 3,
                 }}
               >
-                <div style={{ width: '5px', height: '5px', backgroundColor: 'var(--alarm)' }} />
-                FAILING STREAM · {channelName}
+                <div className="animate-spin" style={{ width: '22px', height: '22px', border: '2px solid var(--ghost-border)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '8px' }} />
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 700, letterSpacing: '2px', color: '#f5f3ec' }}>
+                  WHICH LAYER?
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', opacity: 0.7, marginTop: '4px' }}>
+                  telemetry unreadable · cannot confirm
+                </div>
               </div>
+            )}
 
-              {/* Frozen Bottom Bar */}
+            {/* Frozen / Restored / Normal Bottom Caption Overlay Bar */}
+            {rightState === 'frozen' && (
               <div
                 style={{
                   backgroundColor: 'rgba(8, 6, 4, 0.92)',
@@ -212,46 +303,15 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '6px',
+                  zIndex: 2,
                 }}
               >
                 <div className="animate-pulse" style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
-                CAPTIONS FROZEN
+                CAPTIONS FROZEN (OFFSET +2.996s)
               </div>
-            </div>
-          )}
+            )}
 
-          {rightState === 'restored' && (
-            <div
-              style={{
-                height: '158px',
-                borderRadius: '6px',
-                border: '2.5px solid var(--ink)',
-                backgroundColor: '#0b0f11',
-                backgroundImage: 'radial-gradient(circle at 50% 40%, #172a38 0%, #0b0f11 80%)',
-                position: 'relative',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div
-                style={{
-                  margin: '8px',
-                  alignSelf: 'flex-start',
-                  backgroundColor: 'var(--restored)',
-                  color: '#f5f3ec',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '7px',
-                  fontWeight: 700,
-                  padding: '2px 6px',
-                  borderRadius: '3px',
-                }}
-              >
-                BACKUP FEED ACTIVE
-              </div>
-
-              {/* Restored Surface Bar */}
+            {rightState === 'restored' && (
               <div
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -262,84 +322,30 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--ink)',
+                  zIndex: 2,
                 }}
               >
                 ✓ CAPTIONS RESTORED
               </div>
-            </div>
-          )}
+            )}
 
-          {rightState === 'blind' && (
-            <div
-              className="hatch-no-data animate-flicker"
-              style={{
-                height: '158px',
-                borderRadius: '6px',
-                border: '3px dashed var(--ghost-3)',
-                backgroundColor: '#07090b',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--ghost-border)',
-                textAlign: 'center',
-                padding: '12px',
-              }}
-            >
-              <div className="animate-spin" style={{ width: '22px', height: '22px', border: '2px solid var(--ghost-border)', borderTopColor: 'transparent', borderRadius: '50%', marginBottom: '8px' }} />
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 700, letterSpacing: '2px', color: '#f5f3ec' }}>
-                WHICH LAYER?
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', opacity: 0.7, marginTop: '4px' }}>
-                telemetry unreadable · cannot confirm
-              </div>
-            </div>
-          )}
-
-          {(rightState === 'clean' || rightState === 'fine') && (
-            <div
-              style={{
-                height: '158px',
-                borderRadius: '6px',
-                border: '2px solid #3b3a34',
-                backgroundColor: '#0b0f11',
-                backgroundImage: 'radial-gradient(circle at 50% 40%, #1e262c 0%, #0b0f11 80%)',
-                position: 'relative',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            {(rightState === 'clean' || rightState === 'fine') && (
               <div
                 style={{
-                  margin: '8px',
-                  alignSelf: 'flex-start',
-                  backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                  color: '#f5f3ec',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '7px',
-                  padding: '2px 6px',
-                  borderRadius: '3px',
-                }}
-              >
-                SAME STREAM · {channelName}
-              </div>
-
-              <div
-                style={{
-                  backgroundColor: 'rgba(22, 20, 15, 0.85)',
+                  backgroundColor: 'rgba(22, 20, 15, 0.88)',
                   color: '#f5f3ec',
                   padding: '6px 10px',
                   fontFamily: 'var(--font-grotesk)',
                   fontSize: '11px',
                   textAlign: 'center',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+                  zIndex: 2,
                 }}
               >
                 — sample caption dialogue, in sync —
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Right Status Pill */}
           <div
@@ -358,8 +364,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   : rightState === 'blind'
                   ? '2px dashed var(--ghost-3)'
                   : '1.5px solid var(--nominal)',
-              backgroundColor:
-                rightState === 'frozen' ? 'var(--ink)' : 'var(--panel-hi)',
+              backgroundColor: rightState === 'frozen' ? 'var(--ink)' : 'var(--panel-hi)',
               color:
                 rightState === 'frozen'
                   ? '#f5f3ec'

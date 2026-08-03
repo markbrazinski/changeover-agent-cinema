@@ -6,54 +6,18 @@
     },
     "result_or_miss": {
       "caption_offset_seconds": 2.9960000000000004,
-      "liveness_gap_seconds": 1.8835067749023438e-05
+      "liveness_gap_seconds": 2.4080276489257812e-05
     },
     "latency_ms": 1.5,
-    "ts": 1785797625.3240058
+    "ts": 1785799431.180844
   },
   {
-    "tool": "grafana_mcp.query",
+    "tool": "grafana_mcp.investigate",
     "args": {
-      "query": "invalid_caption_offset_seconds{channel=\"tears_of_steel\"}"
+      "channel": "tears_of_steel"
     },
-    "result_or_miss": "MISS: empty result",
-    "latency_ms": 283.38,
-    "ts": 1785797628.9771361
-  },
-  {
-    "tool": "grafana_mcp.query",
-    "args": {
-      "query": "caption_cue_sync_offset_seconds{channel=\"tears_of_steel\"}"
-    },
-    "result_or_miss": [
-      {
-        "metric": {
-          "__name__": "caption_cue_sync_offset_seconds",
-          "channel": "tears_of_steel"
-        },
-        "value": [
-          1785797629.135,
-          "2.9960000000000004"
-        ]
-      }
-    ],
-    "latency_ms": 179.86,
-    "ts": 1785797629.159899
-  },
-  {
-    "tool": "backup_verifier.verify",
-    "args": {
-      "backup_mp4": "films/tears_of_steel/backup.mp4"
-    },
-    "result_or_miss": {
-      "backup_path": "films/tears_of_steel/backup.mp4",
-      "has_video": true,
-      "stream_count": 2,
-      "duration_seconds": 180.0,
-      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
-      "is_healthy": true
-    },
-    "latency_ms": 15.0,
-    "ts": 1785797629.199991
+    "result_or_miss": "BLIND: endpoint unreachable",
+    "latency_ms": 0.0,
+    "ts": 1785799431.183017
   }
 ]

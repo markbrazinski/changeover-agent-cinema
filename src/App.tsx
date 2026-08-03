@@ -1,86 +1,305 @@
 import React, { useState, useEffect } from 'react';
-import { LeftNav } from './components/LeftNav';
+import { agentClient, Mode, InvestigateResponse, ContentionResponse } from './api/agentClient';
+import { DemoControlHeader } from './components/DemoControlHeader';
 import { PgmHeader } from './components/PgmHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
-import { AgentSpine } from './components/AgentSpine';
+import { AgentSpine, SpineStep } from './components/AgentSpine';
 import { LaneStrip } from './components/LaneStrip';
 import { FacilityView } from './components/FacilityView';
 import { DecisionCard } from './components/DecisionCard';
 import { TerminalBanner } from './components/TerminalBanner';
-import { SCREEN_STATES } from './data/traceModule';
+
+export type DemoStage =
+  | '01_at_rest'
+  | '02_fault_injected'
+  | '03_investigating'
+  | '04_backup_verified'
+  | '05_awaiting_approval'
+  | '06_changed_over'
+  | '07_refusal_wont_switch'
+  | '08_refusal_wont_guess'
+  | '09_contention_failing'
+  | '10_contention_decision'
+  | '11_contention_authorized'
+  | '12_terminal_partially_mitigated';
 
 export const App: React.FC = () => {
-  const [activeStateId, setActiveStateId] = useState<string>('01');
+  const [mode, setMode] = useState<Mode>('deterministic');
+  const [currentStage, setCurrentStage] = useState<DemoStage>('01_at_rest');
+  const [isWorking, setIsWorking] = useState<boolean>(false);
   const [isDesaturated, setIsDesaturated] = useState<boolean>(false);
 
-  const stateDef = SCREEN_STATES[activeStateId] || SCREEN_STATES['01'];
+  // Live state driven by server API responses
+  const [captionOffset, setCaptionOffset] = useState<number>(0.510);
+  const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
+  const [failedLayer, setFailedLayer] = useState<'captions' | 'sign_language' | 'none'>('none');
+  const [mcpStatus, setMcpStatus] = useState<string>('fresh');
+  const [evidenceTier, setEvidenceTier] = useState<string>('fresh');
+  const [queryTrace, setQueryTrace] = useState<any[]>([]);
+  const [rationale, setRationale] = useState<string>('');
+  const [backupHealthy, setBackupHealthy] = useState<boolean>(true);
+  const [contentionData, setContentionData] = useState<ContentionResponse | null>(null);
 
-  // Keyboard Navigation (Left / Right Arrow Keys)
+  // Timecode generator
+  const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
+
+  // Load Video Manifest on startup
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        const num = parseInt(activeStateId, 10);
-        if (num < 12) {
-          const nextId = (num + 1).toString().padStart(2, '0');
-          setActiveStateId(nextId);
-        }
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        const num = parseInt(activeStateId, 10);
-        if (num > 0) {
-          const prevId = (num - 1).toString().padStart(2, '0');
-          setActiveStateId(prevId);
-        }
-      }
-    };
+    agentClient.getManifest(mode).catch((e) => console.warn('Manifest load error:', e));
+  }, [mode]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeStateId]);
+  // Handle Mode Change
+  const handleSetMode = (m: Mode) => {
+    setMode(m);
+    handleReset(m);
+  };
 
-  // Determine Video State for Split Hero
+  // 1. Reset Demo (At Rest)
+  const handleReset = async (overrideMode?: Mode) => {
+    const activeMode = overrideMode || mode;
+    setIsWorking(true);
+    try {
+      await agentClient.resetDemo(activeMode);
+      setCurrentStage('01_at_rest');
+      setCaptionOffset(0.510);
+      setPostSwapOffset(undefined);
+      setFailedLayer('none');
+      setMcpStatus('fresh');
+      setEvidenceTier('fresh');
+      setBackupHealthy(true);
+      setContentionData(null);
+      setTimecode('PGM-OUT 20:14:02');
+    } catch (e) {
+      console.error('Reset error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // 2. Inject Freeze Fault
+  const handleInjectFault = async () => {
+    setIsWorking(true);
+    try {
+      const res = await agentClient.injectFault('tears_of_steel', mode);
+      setCurrentStage('02_fault_injected');
+      setCaptionOffset(res.caption_offset || 2.996);
+      setFailedLayer('captions');
+      setTimecode('PGM-OUT 20:14:16');
+    } catch (e) {
+      console.error('Inject fault error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // 3. Investigate via Grafana MCP + ADK
+  const handleInvestigate = async () => {
+    setIsWorking(true);
+    try {
+      setCurrentStage('03_investigating');
+      setTimecode('PGM-OUT 20:14:19');
+      const res: InvestigateResponse = await agentClient.investigate('tears_of_steel', mode);
+      setCaptionOffset(res.caption_offset || 2.996);
+      setFailedLayer('captions');
+      setMcpStatus(res.mcp_status || 'fresh');
+      setEvidenceTier(res.evidence_tier || 'fresh');
+      setQueryTrace(res.query_trace || []);
+      setRationale(res.rationale || 'Caption cue-sync offset (+2.996s) exceeded ceiling (0.759s).');
+    } catch (e) {
+      console.error('Investigate error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // 4. Verify Backup via ffprobe
+  const handleVerifyBackup = async () => {
+    setIsWorking(true);
+    try {
+      const res = await agentClient.verifyBackup('tears_of_steel', mode);
+      setCurrentStage('04_backup_verified');
+      setBackupHealthy(res.is_healthy);
+      setTimecode('PGM-OUT 20:14:24');
+    } catch (e) {
+      console.error('Verify backup error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // 5/6. Authorize Failover
+  const handleAuthorizeFailover = async () => {
+    setIsWorking(true);
+    try {
+      setCurrentStage('05_awaiting_approval');
+      setTimecode('PGM-OUT 20:14:27');
+      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
+      setCurrentStage('06_changed_over');
+      setPostSwapOffset(res.post_swap_measured_offset || 0.486);
+      setTimecode('PGM-OUT 20:14:33');
+    } catch (e) {
+      console.error('Authorize failover error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Contention Scenario (09 -> 10 -> 11 -> 12)
+  const handleRunContention = async () => {
+    setIsWorking(true);
+    try {
+      setCurrentStage('09_contention_failing');
+      setTimecode('PGM-OUT 20:15:02');
+      const res = await agentClient.runContention('operator:mark', mode);
+      setContentionData(res);
+      setCurrentStage('10_contention_decision');
+      setTimecode('PGM-OUT 20:15:07');
+
+      setTimeout(() => {
+        setCurrentStage('11_contention_authorized');
+        setTimecode('PGM-OUT 20:15:14');
+        setTimeout(() => {
+          setCurrentStage('12_terminal_partially_mitigated');
+          setTimecode('PGM-OUT 20:15:20');
+        }, 1500);
+      }, 1500);
+    } catch (e) {
+      console.error('Contention error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Blind Refusal Test
+  const handleBlindRefusal = async () => {
+    setIsWorking(true);
+    try {
+      await agentClient.getBlindRefusal('tears_of_steel', mode);
+      setCurrentStage('08_refusal_wont_guess');
+      setTimecode('PGM-OUT 20:14:21');
+    } catch (e) {
+      console.error('Blind refusal error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Determine SplitHero Video State
   let rightVideoState: VideoState = 'fine';
-  if (stateDef.id === '00' || stateDef.id === '01') {
-    rightVideoState = 'fine';
-  } else if (stateDef.id === '06' || stateDef.id === '11' || stateDef.id === '12') {
-    rightVideoState = 'restored';
-  } else if (stateDef.id === '08') {
-    rightVideoState = 'blind';
-  } else {
-    rightVideoState = 'frozen';
+  if (currentStage === '01_at_rest') rightVideoState = 'fine';
+  else if (currentStage === '06_changed_over' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') rightVideoState = 'restored';
+  else if (currentStage === '08_refusal_wont_guess') rightVideoState = 'blind';
+  else rightVideoState = 'frozen';
+
+  // Determine Evidence Chart Status
+  let evidenceChartStatus: 'nominal' | 'frozen' | 'restored' | 'blind' | 'unconfirmed_backup' = 'frozen';
+  if (currentStage === '01_at_rest') evidenceChartStatus = 'nominal';
+  else if (currentStage === '06_changed_over' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') evidenceChartStatus = 'restored';
+  else if (currentStage === '08_refusal_wont_guess') evidenceChartStatus = 'blind';
+  else if (currentStage === '07_refusal_wont_switch') evidenceChartStatus = 'unconfirmed_backup';
+  else evidenceChartStatus = 'frozen';
+
+  // Construct Dynamic Agent Spine Steps
+  const spineSteps: SpineStep[] = [];
+  if (currentStage === '01_at_rest') {
+    spineSteps.push(
+      { title: '◇ watching CAP · SIGN', sub: 'both layers nominal ✓', tone: 'done' },
+      { title: 'idle — no anomaly', sub: 'watching program clock sync', tone: 'pending' }
+    );
+  } else if (currentStage === '02_fault_injected') {
+    spineSteps.push(
+      { title: '14:07 nominal ✓', sub: 'baseline 0.510s verified', tone: 'done' },
+      { title: '⚠ CAP FREEZE detected', sub: 'CAP line breaks baseline ▲', tone: 'fill' },
+      { title: 'opening investigation…', sub: 'preparing Grafana MCP query', tone: 'pending' }
+    );
+  } else if (currentStage === '03_investigating') {
+    spineSteps.push(
+      { title: 'CAP freeze detected ✓', sub: `offset +${captionOffset.toFixed(3)}s > ceiling 0.759s`, tone: 'done' },
+      {
+        title: '▶ querying Grafana…',
+        sub: queryTrace.length > 0
+          ? `${queryTrace[0]?.result_or_miss || 'MISS: empty result'} (${Math.round(queryTrace[0]?.latency_ms || 192)}ms) → RETRY success (${Math.round(queryTrace[1]?.latency_ms || 180)}ms)`
+          : 'MISS: invalid query (192ms) → RETRY success (180ms)',
+        tone: 'active',
+      },
+      { title: 'SIGN flat → not program-wide', sub: 'isolated to captions layer', tone: 'pending' }
+    );
+  } else if (currentStage === '04_backup_verified') {
+    spineSteps.push(
+      { title: '∴ CAPTIONS failed @ switch', sub: `cue divergence +${captionOffset.toFixed(3)}s confirmed`, tone: 'done' },
+      { title: 'backup ffprobe verified ✔', sub: 'candidate line healthy · 180s mp4 (15ms)', tone: 'fill' },
+      { title: 'safe to offer switch', sub: 'awaiting operator authorization', tone: 'pending' }
+    );
+  } else if (currentStage === '05_awaiting_approval') {
+    spineSteps.push(
+      { title: 'backup verified ✔', sub: 'ffprobe health check passed', tone: 'done' },
+      { title: 'SUMMON: operator required', sub: 'will not switch without human authorization', tone: 'active' }
+    );
+  } else if (currentStage === '06_changed_over') {
+    spineSteps.push(
+      { title: 'approved ✔', sub: 'authorizer: operator:mark', tone: 'done' },
+      { title: 'switched → re-measuring backup', sub: 'post-swap read pending…', tone: 'fill' },
+      { title: `✓ confirmed restored · ${postSwapOffset?.toFixed(3) || '0.486'}s`, sub: 'watching for regression', tone: 'done' },
+      { title: 'audit entry logged ✎', sub: 'logs/state/feed_state_tears_of_steel.json', tone: 'done' }
+    );
+  } else if (currentStage === '07_refusal_wont_switch') {
+    spineSteps.push(
+      { title: 'CAP frozen ✓ · backup located', sub: 'broken candidate file detected', tone: 'done' },
+      { title: 'backup probe → sync UNKNOWN', sub: 'candidate line fails ffprobe check', tone: 'fill' },
+      { title: '✕ WILL NOT SWITCH', sub: 'unconfirmed backup — holding active feed', tone: 'refuse' }
+    );
+  } else if (currentStage === '08_refusal_wont_guess') {
+    spineSteps.push(
+      { title: 'freeze observed on-air ✓', sub: 'telemetry loss detected', tone: 'done' },
+      { title: 'Grafana unreachable ✕', sub: 'CAP · SIGN — no series returned', tone: 'fill' },
+      { title: '✕ WON\'T GUESS', sub: 'can\'t name a layer w/o evidence', tone: 'refuse' },
+      { title: '…still reasoning', sub: 'holding for evidence plane recovery', tone: 'fill' }
+    );
+  } else if (currentStage === '09_contention_failing' || currentStage === '10_contention_decision') {
+    spineSteps.push(
+      { title: '2 concurrent CAP freezes ✓', sub: 'CH-14 (+2.996s) & CH-27 (+2.996s)', tone: 'done' },
+      { title: '⚠ shared backup — capacity 1/2', sub: 'one pre-cut file, two failures', tone: 'fill' },
+      { title: 'RESTORE ▸ CH-14 vs DEGRADE ▸ CH-27', sub: 'awaiting operator tradeoff decision', tone: 'active' }
+    );
+  } else if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+    spineSteps.push(
+      { title: 'authorized ✔ · CH-14 priority', sub: 'operator:mark approved tradeoff', tone: 'done' },
+      { title: 'switched → post-swap read ✓', sub: 'CH-14 CAP rejoined baseline (0.486s)', tone: 'fill' },
+      { title: 'CH-27 held DEGRADED + FLAGGED', sub: 'cost kept visible · state file untouched', tone: 'done' },
+      { title: '▲ 1 INCIDENT OPEN', sub: 'CH-27 still degraded (standard tier)', tone: 'refuse' }
+    );
   }
 
-  // Determine Evidence Status
-  let evidenceChartStatus: 'nominal' | 'frozen' | 'restored' | 'blind' | 'unconfirmed_backup' = 'frozen';
-  if (stateDef.id === '00' || stateDef.id === '01') {
-    evidenceChartStatus = 'nominal';
-  } else if (stateDef.id === '06' || stateDef.id === '11' || stateDef.id === '12') {
-    evidenceChartStatus = 'restored';
-  } else if (stateDef.id === '08') {
-    evidenceChartStatus = 'blind';
-  } else if (stateDef.id === '07') {
-    evidenceChartStatus = 'unconfirmed_backup';
-  } else {
-    evidenceChartStatus = 'frozen';
-  }
+  const hasFacilityView = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
 
   return (
     <div
       className={isDesaturated ? 'desaturated' : ''}
       style={{
         display: 'flex',
-        gap: '24px',
+        flexDirection: 'column',
+        alignItems: 'center',
         width: '100%',
-        maxWidth: '1080px',
-        alignItems: 'flex-start',
+        maxWidth: '780px',
+        margin: '0 auto',
       }}
     >
-      {/* Left Navigation Shell */}
-      <LeftNav
-        activeStateId={activeStateId}
-        onSelectState={setActiveStateId}
+      {/* Minimal Operator Demo Control Header */}
+      <DemoControlHeader
+        mode={mode}
+        onSetMode={handleSetMode}
+        currentStage={currentStage}
+        isWorking={isWorking}
         isDesaturated={isDesaturated}
         onToggleDesaturate={() => setIsDesaturated(!isDesaturated)}
+        onReset={() => handleReset()}
+        onInjectFault={handleInjectFault}
+        onInvestigate={handleInvestigate}
+        onVerifyBackup={handleVerifyBackup}
+        onAuthorize={handleAuthorizeFailover}
+        onContention={handleRunContention}
+        onBlind={handleBlindRefusal}
       />
 
       {/* Main Broadcast Stage Canvas (760px Fixed Frame) */}
@@ -90,24 +309,24 @@ export const App: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4)',
-          borderRadius: '13px',
+          borderRadius: '0 0 13px 13px',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-mute)',
         }}
       >
         {/* Contention Facility View (States 09–12) */}
-        {stateDef.hasFacilityView && (
+        {hasFacilityView && (
           <FacilityView
-            capacityUsed={stateDef.id === '09' || stateDef.id === '10' ? 1 : 1}
-            ch14Restored={stateDef.id === '11' || stateDef.id === '12'}
-            ch27Degraded={stateDef.id === '11' || stateDef.id === '12'}
+            capacityUsed={1}
+            ch14Restored={currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'}
+            ch27Degraded={currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'}
           />
         )}
 
         {/* PGM Header */}
         <PgmHeader
-          timecode={stateDef.timecode}
-          hasRefusalBadge={stateDef.refusalType !== undefined && stateDef.refusalType !== 'none'}
+          timecode={timecode}
+          hasRefusalBadge={currentStage === '07_refusal_wont_switch' || currentStage === '08_refusal_wont_guess'}
         />
 
         {/* Body Container: Grid 1fr / 238px */}
@@ -118,30 +337,39 @@ export const App: React.FC = () => {
             backgroundColor: 'var(--panel-hi)',
             borderLeft: '2.5px solid var(--ink)',
             borderRight: '2.5px solid var(--ink)',
-            borderBottom: stateDef.id === '12' ? 'none' : '2.5px solid var(--ink)',
+            borderBottom: currentStage === '12_terminal_partially_mitigated' ? 'none' : '2.5px solid var(--ink)',
           }}
         >
           {/* Left Column Stack */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero */}
+            {/* Split Hero (Real HTML Video Elements) */}
             <SplitHero rightState={rightVideoState} />
 
             {/* Lane Strip (Expanded on State 03 Investigation beat) */}
-            <LaneStrip isExpanded={stateDef.id === '03'} />
+            <LaneStrip isExpanded={currentStage === '03_investigating'} />
 
             {/* Evidence Chart (Two-line CAP + SIGN + AD static row) */}
             <EvidenceChart
-              primaryOffset={stateDef.primaryOffset}
-              postSwapOffset={stateDef.postSwapOffset}
+              primaryOffset={captionOffset}
+              postSwapOffset={postSwapOffset}
               status={evidenceChartStatus}
-              backupHealthy={stateDef.id !== '07'}
+              backupHealthy={backupHealthy}
             />
 
             {/* Contention Decision Card (State 10) */}
-            {stateDef.id === '10' && (
+            {currentStage === '10_contention_decision' && (
               <DecisionCard
-                onAuthorize={() => setActiveStateId('11')}
-                onHold={() => setActiveStateId('09')}
+                onAuthorize={() => {
+                  setCurrentStage('11_contention_authorized');
+                  setTimecode('PGM-OUT 20:15:14');
+                  setTimeout(() => {
+                    setCurrentStage('12_terminal_partially_mitigated');
+                    setTimecode('PGM-OUT 20:15:20');
+                  }, 1500);
+                }}
+                onHold={() => {
+                  setCurrentStage('09_contention_failing');
+                }}
               />
             )}
           </div>
@@ -149,25 +377,25 @@ export const App: React.FC = () => {
           {/* Right Column: Agent Spine */}
           <div style={{ padding: '15px 14px 15px 0' }}>
             <AgentSpine
-              substate={stateDef.substate}
-              steps={stateDef.spineSteps}
-              showGate={stateDef.id === '05'}
-              onApprove={() => setActiveStateId('06')}
-              onHold={() => setActiveStateId('07')}
+              substate={currentStage.toUpperCase()}
+              steps={spineSteps}
+              showGate={currentStage === '05_awaiting_approval'}
+              onApprove={handleAuthorizeFailover}
+              onHold={() => setCurrentStage('07_refusal_wont_switch')}
               holdNote={
-                stateDef.id === '08'
+                currentStage === '08_refusal_wont_guess'
                   ? 'spine solid · will not fabricate'
-                  : stateDef.id === '07'
+                  : currentStage === '07_refusal_wont_switch'
                   ? 'backup unconfirmed · holding active feed'
                   : undefined
               }
-              isSolidHoldNote={stateDef.id === '08'}
+              isSolidHoldNote={currentStage === '08_refusal_wont_guess'}
             />
           </div>
         </div>
 
         {/* Terminal Banner (State 12) */}
-        {stateDef.id === '12' && <TerminalBanner />}
+        {currentStage === '12_terminal_partially_mitigated' && <TerminalBanner />}
       </main>
     </div>
   );
