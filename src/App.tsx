@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { agentClient, Mode, InvestigateResponse, ContentionResponse } from './api/agentClient';
+import { AUTOPLAY_CONFIG } from './data/autoplayConfig';
 import { DemoControlHeader } from './components/DemoControlHeader';
 import { PgmHeader } from './components/PgmHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
 import { LaneStrip } from './components/LaneStrip';
+import { NarrationBar } from './components/NarrationBar';
 import { TerminalBanner } from './components/TerminalBanner';
 
 export type DemoStage =
@@ -22,12 +24,19 @@ export type DemoStage =
   | '11_contention_authorized'
   | '12_terminal_partially_mitigated';
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const App: React.FC = () => {
   const [mode, setMode] = useState<Mode>('deterministic');
   const [currentStage, setCurrentStage] = useState<DemoStage>('01_at_rest');
   const [isWorking, setIsWorking] = useState<boolean>(false);
   const [isDesaturated, setIsDesaturated] = useState<boolean>(false);
-  const [isControlsHidden, setIsControlsHidden] = useState<boolean>(false);
+  const [isManualOpen, setIsManualOpen] = useState<boolean>(false);
+
+  // Autoplay Orchestrator State
+  const [isPlayingAutoplay, setIsPlayingAutoplay] = useState<boolean>(false);
+  const [narrationText, setNarrationText] = useState<string>(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+  const autoplayCancelledRef = useRef<boolean>(false);
 
   // Live state driven by server API responses
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
@@ -43,11 +52,11 @@ export const App: React.FC = () => {
   // Timecode generator
   const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
 
-  // Keyboard shortcut listener ('h' or 'H' to toggle controls visibility)
+  // Keyboard shortcut listener ('h' or 'H' to toggle manual controls panel)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'h' || e.key === 'H') {
-        setIsControlsHidden((prev) => !prev);
+        setIsManualOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -80,6 +89,7 @@ export const App: React.FC = () => {
       setBackupHealthy(true);
       setContentionData(null);
       setTimecode('PGM-OUT 20:14:02');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
     } catch (e) {
       console.error('Reset error:', e);
     } finally {
@@ -96,6 +106,7 @@ export const App: React.FC = () => {
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
       setTimecode('PGM-OUT 20:14:16');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
     } catch (e) {
       console.error('Inject fault error:', e);
     } finally {
@@ -109,6 +120,7 @@ export const App: React.FC = () => {
     try {
       setCurrentStage('03_investigating');
       setTimecode('PGM-OUT 20:14:19');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
       const res: InvestigateResponse = await agentClient.investigate('tears_of_steel', mode);
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
@@ -130,6 +142,7 @@ export const App: React.FC = () => {
       setCurrentStage('04_backup_verified');
       setBackupHealthy(res.is_healthy);
       setTimecode('PGM-OUT 20:14:24');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
     } catch (e) {
       console.error('Verify backup error:', e);
     }
@@ -139,6 +152,7 @@ export const App: React.FC = () => {
   const handlePrepareApproval = () => {
     setCurrentStage('05_awaiting_approval');
     setTimecode('PGM-OUT 20:14:27');
+    setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
   };
 
   // 6. Execute Human Approval
@@ -149,6 +163,7 @@ export const App: React.FC = () => {
       setCurrentStage('06_changed_over');
       setPostSwapOffset(res.post_swap_measured_offset || 0.486);
       setTimecode('PGM-OUT 20:14:33');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
     } catch (e) {
       console.error('Execute approve error:', e);
     } finally {
@@ -156,12 +171,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // Contention Scenario Trigger (State 09 -> State 10 Tradeoff Gate)
+  // Contention Scenario Trigger
   const handleRunContention = async () => {
     setIsWorking(true);
     try {
       setCurrentStage('09_contention_failing');
       setTimecode('PGM-OUT 20:15:02');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_09_12_CONTENTION);
       const res = await agentClient.runContention('operator:mark', mode);
       setContentionData(res);
 
@@ -176,13 +192,14 @@ export const App: React.FC = () => {
     }
   };
 
-  // Authorize Contention Tradeoff (State 10 -> State 11 -> State 12)
+  // Authorize Contention Tradeoff
   const handleAuthorizeContentionTradeoff = () => {
     setCurrentStage('11_contention_authorized');
     setTimecode('PGM-OUT 20:15:14');
     setTimeout(() => {
       setCurrentStage('12_terminal_partially_mitigated');
       setTimecode('PGM-OUT 20:15:20');
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
     }, 1400);
   };
 
@@ -198,6 +215,81 @@ export const App: React.FC = () => {
     } finally {
       setIsWorking(false);
     }
+  };
+
+  // AUTOPLAY ORCHESTRATOR SEQUENCE
+  const handleRunAutoplay = async () => {
+    autoplayCancelledRef.current = false;
+    setIsPlayingAutoplay(true);
+
+    try {
+      // Step 1: At Rest (2.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleReset();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_01_AT_REST);
+
+      // Step 2: Inject Fault (3.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleInjectFault();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_02_INJECT_FAULT);
+
+      // Step 3: Investigate (4.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleInvestigate();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_03_INVESTIGATE);
+
+      // Step 4: Verify Backup (2.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleVerifyBackup();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_04_VERIFY_BACKUP);
+
+      // Step 5: Awaiting Approval Beat
+      if (autoplayCancelledRef.current) return;
+      handlePrepareApproval();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
+      await delay(1500);
+
+      // Step 6: Authorize & Restore (3.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleExecuteApprove();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_05_AUTHORIZE_RESTORE);
+
+      // Step 7: Beat of Breath (1.5s)
+      if (autoplayCancelledRef.current) return;
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_BREATH);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_BREATH);
+
+      // Step 8: Contention Failures (2.5s)
+      if (autoplayCancelledRef.current) return;
+      await handleRunContention();
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_09_12_CONTENTION);
+      await delay(2500);
+
+      // Step 9: Authorize Contention Tradeoff
+      if (autoplayCancelledRef.current) return;
+      handleAuthorizeContentionTradeoff();
+      await delay(2000);
+
+      // Step 10: Terminal Hold (4.0s)
+      if (autoplayCancelledRef.current) return;
+      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
+      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_12_TERMINAL);
+
+    } catch (e) {
+      console.error('Autoplay error:', e);
+    } finally {
+      setIsPlayingAutoplay(false);
+    }
+  };
+
+  const handleStopAutoplay = () => {
+    autoplayCancelledRef.current = true;
+    setIsPlayingAutoplay(false);
   };
 
   // Determine SplitHero Video State
@@ -309,10 +401,13 @@ export const App: React.FC = () => {
         onSetMode={handleSetMode}
         currentStage={currentStage}
         isWorking={isWorking}
+        isPlayingAutoplay={isPlayingAutoplay}
+        onRunAutoplay={handleRunAutoplay}
+        onStopAutoplay={handleStopAutoplay}
         isDesaturated={isDesaturated}
         onToggleDesaturate={() => setIsDesaturated(!isDesaturated)}
-        isHidden={isControlsHidden}
-        onToggleHide={() => setIsControlsHidden(!isControlsHidden)}
+        isManualOpen={isManualOpen}
+        onToggleManualOpen={() => setIsManualOpen(!isManualOpen)}
         onReset={() => handleReset()}
         onInjectFault={handleInjectFault}
         onInvestigate={handleInvestigate}
@@ -333,7 +428,6 @@ export const App: React.FC = () => {
           boxShadow: '0 18px 48px rgba(0, 0, 0, 0.5)',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-hi)',
-          marginTop: isControlsHidden ? '10px' : '0',
         }}
       >
         {/* PGM Header */}
@@ -353,7 +447,7 @@ export const App: React.FC = () => {
         >
           {/* Left Column Stack */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero (Transforms seamlessly into 2 different movies during Contention 09–12) */}
+            {/* Split Hero */}
             <SplitHero
               rightState={rightVideoState}
               isContention={isContentionStage}
@@ -403,6 +497,9 @@ export const App: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* On-Screen Subtitle Narration Bar */}
+        <NarrationBar text={narrationText} isPlaying={isPlayingAutoplay} />
 
         {/* Terminal Banner (State 12) */}
         {currentStage === '12_terminal_partially_mitigated' && <TerminalBanner />}

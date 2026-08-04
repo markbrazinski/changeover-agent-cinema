@@ -6,10 +6,13 @@ interface DemoControlHeaderProps {
   onSetMode: (m: Mode) => void;
   currentStage: string;
   isWorking: boolean;
+  isPlayingAutoplay: boolean;
+  onRunAutoplay: () => void;
+  onStopAutoplay: () => void;
   isDesaturated: boolean;
   onToggleDesaturate: () => void;
-  isHidden: boolean;
-  onToggleHide: () => void;
+  isManualOpen: boolean;
+  onToggleManualOpen: () => void;
   onReset: () => void;
   onInjectFault: () => void;
   onInvestigate: () => void;
@@ -24,10 +27,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
   onSetMode,
   currentStage,
   isWorking,
+  isPlayingAutoplay,
+  onRunAutoplay,
+  onStopAutoplay,
   isDesaturated,
   onToggleDesaturate,
-  isHidden,
-  onToggleHide,
+  isManualOpen,
+  onToggleManualOpen,
   onReset,
   onInjectFault,
   onInvestigate,
@@ -36,37 +42,6 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
   onContention,
   onBlind,
 }) => {
-  if (isHidden) {
-    return (
-      <div
-        style={{
-          position: 'fixed',
-          top: '10px',
-          right: '10px',
-          zIndex: 9999,
-        }}
-      >
-        <button
-          onClick={onToggleHide}
-          style={{
-            padding: '5px 10px',
-            backgroundColor: 'rgba(22, 20, 15, 0.85)',
-            color: '#f5f3ec',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          }}
-        >
-          Show Operator Controls (Press 'H')
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div
       style={{
@@ -80,27 +55,85 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         display: 'flex',
         flexDirection: 'column',
         gap: '10px',
-        position: 'relative',
       }}
     >
-      {/* Top Bar: Mode Switcher & Controls Hide Button */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '1.5px', color: 'var(--accent)' }}>
-            DEMO OPERATOR CONTROL
-          </span>
+      {/* Primary Always-Visible Row: Run Demo + Mode + Corner Manual Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+        {/* Left Side: Prominent Run Demo & Replay Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isPlayingAutoplay ? (
+            <button
+              onClick={onStopAutoplay}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: 'var(--alarm)',
+                color: '#f5f3ec',
+                border: 'none',
+                borderRadius: '6px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 8px rgba(180,35,28,0.4)',
+              }}
+            >
+              ■ PAUSE DEMO
+            </button>
+          ) : (
+            <button
+              onClick={onRunAutoplay}
+              style={{
+                padding: '8px 18px',
+                backgroundColor: 'var(--nominal)',
+                color: '#f5f3ec',
+                border: 'none',
+                borderRadius: '6px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 8px rgba(59,122,75,0.4)',
+              }}
+            >
+              ▶ RUN DEMO (NARRATED)
+            </button>
+          )}
+
+          <button
+            onClick={onRunAutoplay}
+            disabled={isPlayingAutoplay}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              color: '#f5f3ec',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '6px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '10px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ↺ REPLAY
+          </button>
 
           {/* Mode Switcher */}
-          <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden', marginLeft: '6px' }}>
             <button
               onClick={() => onSetMode('deterministic')}
               style={{
-                padding: '5px 12px',
+                padding: '5px 10px',
                 backgroundColor: mode === 'deterministic' ? '#f5f3ec' : 'transparent',
                 color: mode === 'deterministic' ? '#16140f' : '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
+                fontSize: '8.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -110,12 +143,12 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             <button
               onClick={() => onSetMode('real')}
               style={{
-                padding: '5px 12px',
+                padding: '5px 10px',
                 backgroundColor: mode === 'real' ? 'var(--alarm)' : 'transparent',
                 color: '#f5f3ec',
                 border: 'none',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '9px',
+                fontSize: '8.5px',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -125,18 +158,19 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Right Side: Muted Gate Check + Manual Step Buttons Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* 640px Muted Gate Toggle */}
           <button
             onClick={onToggleDesaturate}
             style={{
-              padding: '5px 12px',
+              padding: '5px 10px',
               backgroundColor: isDesaturated ? '#f5f3ec' : 'rgba(255, 255, 255, 0.1)',
               color: isDesaturated ? '#16140f' : '#f5f3ec',
               border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: '4px',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               cursor: 'pointer',
             }}
@@ -144,173 +178,167 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             640px Muted Gate: {isDesaturated ? 'ON' : 'OFF'}
           </button>
 
-          {/* Hide Bar Toggle */}
+          {/* Toggle Manual Step Panel */}
           <button
-            onClick={onToggleHide}
+            onClick={onToggleManualOpen}
             style={{
-              padding: '5px 12px',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              padding: '5px 10px',
+              backgroundColor: isManualOpen ? 'rgba(255,255,255,0.25)' : 'rgba(255, 255, 255, 0.08)',
               color: '#f5f3ec',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.22)',
               borderRadius: '4px',
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '8.5px',
               fontWeight: 700,
               cursor: 'pointer',
             }}
           >
-            Hide Controls (Press 'H')
+            ⚙ Manual Controls (Press 'H')
           </button>
         </div>
       </div>
 
-      {/* Action Buttons Pipeline */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-        <button
-          onClick={onReset}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            color: '#f5f3ec',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          01 Reset (At Rest)
-        </button>
-
-        <button
-          onClick={onInjectFault}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: 'var(--alarm)',
-            color: '#f5f3ec',
-            border: 'none',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          02 Inject Freeze Fault
-        </button>
-
-        <button
-          onClick={onInvestigate}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: 'var(--accent)',
-            color: '#f5f3ec',
-            border: 'none',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          03 Investigate (Query MCP)
-        </button>
-
-        <button
-          onClick={onVerifyBackup}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            color: '#f5f3ec',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          04 Verify Backup (ffprobe)
-        </button>
-
-        <button
-          onClick={onAuthorize}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: 'var(--nominal)',
-            color: '#f5f3ec',
-            border: 'none',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          05/06 Authorize Failover
-        </button>
-
-        <button
-          onClick={onContention}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: '#1d6e8c',
-            color: '#f5f3ec',
-            border: 'none',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          09–12 Contention Scenario
-        </button>
-
-        <button
-          onClick={onBlind}
-          disabled={isWorking}
-          style={{
-            padding: '7px 14px',
-            backgroundColor: '#3b3a34',
-            color: '#f5f3ec',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          08 Blind Refusal
-        </button>
-      </div>
-
-      {/* Working / Loading Banner */}
-      {isWorking && (
+      {/* Manual Controls Panel (Hidden by Default, Revealed by 'H' or Gear Toggle) */}
+      {isManualOpen && (
         <div
           style={{
-            backgroundColor: 'var(--accent)',
-            color: '#f5f3ec',
-            padding: '6px 12px',
-            borderRadius: '4px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
-            fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            flexWrap: 'wrap',
+            paddingTop: '8px',
+            borderTop: '1px dashed rgba(255, 255, 255, 0.18)',
           }}
         >
-          <div className="animate-spin" style={{ width: '12px', height: '12px', border: '1.5px solid #fff', borderTopColor: 'transparent', borderRadius: '50%' }} />
-          WORKING... ({mode === 'real' ? 'Executing real Grafana Cloud query + Gemini ADK reasoning' : 'Processing deterministic server state'})
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', color: 'var(--accent)', fontWeight: 700 }}>
+            MANUAL OVERRIDES:
+          </span>
+
+          <button
+            onClick={onReset}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              color: '#f5f3ec',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            01 Reset
+          </button>
+
+          <button
+            onClick={onInjectFault}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: 'var(--alarm)',
+              color: '#f5f3ec',
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            02 Inject Fault
+          </button>
+
+          <button
+            onClick={onInvestigate}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: 'var(--accent)',
+              color: '#f5f3ec',
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            03 Investigate
+          </button>
+
+          <button
+            onClick={onVerifyBackup}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              color: '#f5f3ec',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            04 Verify Backup
+          </button>
+
+          <button
+            onClick={onAuthorize}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: 'var(--nominal)',
+              color: '#f5f3ec',
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            05/06 Authorize
+          </button>
+
+          <button
+            onClick={onContention}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: '#1d6e8c',
+              color: '#f5f3ec',
+              border: 'none',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            09–12 Contention
+          </button>
+
+          <button
+            onClick={onBlind}
+            disabled={isWorking || isPlayingAutoplay}
+            style={{
+              padding: '5px 10px',
+              backgroundColor: '#3b3a34',
+              color: '#f5f3ec',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '8.5px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            08 Blind Refusal
+          </button>
         </div>
       )}
     </div>
