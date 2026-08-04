@@ -9,6 +9,10 @@ interface SplitHeroProps {
   backupVideoUrl?: string;
   captionsVttUrl?: string;
   isFaultInjected?: boolean;
+  // Contention mode props
+  isContention?: boolean;
+  ch14Restored?: boolean;
+  ch27Degraded?: boolean;
 }
 
 export const SplitHero: React.FC<SplitHeroProps> = ({
@@ -18,6 +22,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   backupVideoUrl = 'http://localhost:8008/films/tears_of_steel/backup.mp4',
   captionsVttUrl = 'http://localhost:8008/films/tears_of_steel/captions.vtt',
   isFaultInjected = false,
+  isContention = false,
+  ch14Restored = false,
+  ch27Degraded = false,
 }) => {
   const leftVideoRef = useRef<HTMLVideoElement>(null);
   const rightVideoRef = useRef<HTMLVideoElement>(null);
@@ -32,8 +39,304 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       left.play().catch(() => {});
       right.play().catch(() => {});
     }
-  }, [sourceVideoUrl, rightState]);
+  }, [sourceVideoUrl, rightState, isContention, ch14Restored]);
 
+  // CONTENTION MODE (09–12): In-Player Two Different Movies Transformation
+  if (isContention) {
+    return (
+      <div
+        style={{
+          width: '100%',
+          backgroundColor: 'var(--panel-hi)',
+          padding: '18px 20px 16px 20px',
+          position: 'relative',
+        }}
+      >
+        {/* Centered CONTENTION POOL Pill Header */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-11px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'var(--alarm)',
+            color: '#f5f3ec',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            padding: '3px 14px',
+            borderRadius: '12px',
+            zIndex: 10,
+          }}
+        >
+          CONTENTION SCENARIO · 2 FAILURES vs 1 BACKUP
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
+          {/* LEFT COLUMN: CH-14 TEARS OF STEEL (Emergency / Public-Information Tier) */}
+          <div style={{ paddingRight: '14px' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8.5px',
+                fontWeight: 700,
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase',
+                color: 'var(--ink)',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>CH-14 · TEARS OF STEEL</span>
+              <span
+                style={{
+                  fontSize: '7.5px',
+                  backgroundColor: 'rgba(184, 100, 27, 0.2)',
+                  border: '1px solid var(--accent)',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                }}
+              >
+                Emergency Tier
+              </span>
+            </div>
+
+            {/* Left Movie Player */}
+            <div
+              style={{
+                height: '240px',
+                borderRadius: '8px',
+                border: ch14Restored ? '3.5px solid var(--restored)' : '3.5px solid var(--alarm)',
+                backgroundColor: '#0b0f11',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <video
+                ref={leftVideoRef}
+                src={ch14Restored ? backupVideoUrl : sourceVideoUrl}
+                muted
+                loop
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+              />
+
+              {/* Source Chip Overlay */}
+              <div
+                style={{
+                  margin: '10px',
+                  alignSelf: 'flex-start',
+                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                  color: '#f5f3ec',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  zIndex: 2,
+                }}
+              >
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: ch14Restored ? 'var(--restored)' : 'var(--alarm)',
+                  }}
+                />
+                {ch14Restored ? 'BACKUP ACTIVE · CH-14' : 'PRIMARY FAILING · CH-14'}
+              </div>
+
+              {/* Bottom Caption Bar */}
+              <div
+                style={{
+                  backgroundColor: ch14Restored ? 'var(--surface)' : 'rgba(8, 6, 4, 0.94)',
+                  color: ch14Restored ? 'var(--ink)' : 'var(--alarm)',
+                  padding: '10px 14px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  borderTop: ch14Restored ? '2.5px solid var(--ink)' : '2.5px solid var(--alarm)',
+                  zIndex: 2,
+                }}
+              >
+                {ch14Restored ? '✓ CAPTIONS RESTORED (+0.486s)' : '⚠ CAPTIONS FROZEN (+2.996s)'}
+              </div>
+            </div>
+
+            {/* Left Status Pill */}
+            <div
+              style={{
+                marginTop: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                border: ch14Restored ? '2px solid var(--ink)' : '2px solid var(--alarm)',
+                backgroundColor: ch14Restored ? 'var(--panel-hi)' : 'var(--ink)',
+                color: ch14Restored ? 'var(--restored-ink)' : '#f5f3ec',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8.5px',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+              }}
+            >
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: ch14Restored ? 'var(--restored)' : 'var(--alarm)',
+                }}
+              />
+              {ch14Restored ? '✓ PRIORITY RESTORED' : 'CAPTIONS FROZEN · ALARM'}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: CH-27 SINTEL (General Entertainment Tier) */}
+          <div style={{ borderLeft: '2.5px dashed var(--ink)', paddingLeft: '14px' }}>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8.5px',
+                fontWeight: 700,
+                letterSpacing: '1.2px',
+                textTransform: 'uppercase',
+                color: 'var(--alarm-ink)',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>CH-27 · SINTEL</span>
+              <span
+                style={{
+                  fontSize: '7.5px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                  border: '1px solid rgba(0, 0, 0, 0.2)',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                }}
+              >
+                General Tier
+              </span>
+            </div>
+
+            {/* Right Movie Player */}
+            <div
+              className="hatch-alarm"
+              style={{
+                height: '240px',
+                borderRadius: '8px',
+                border: '3.5px solid var(--alarm)',
+                backgroundColor: '#0b0f11',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <video
+                ref={rightVideoRef}
+                src="http://localhost:8008/films/sintel/source.mp4"
+                muted
+                loop
+                playsInline
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  filter: 'brightness(0.82)',
+                }}
+              />
+
+              {/* Source Chip Overlay */}
+              <div
+                style={{
+                  margin: '10px',
+                  alignSelf: 'flex-start',
+                  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                  color: '#f5f3ec',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8px',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  zIndex: 2,
+                }}
+              >
+                <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
+                PRIMARY FAILING · CH-27
+              </div>
+
+              {/* Bottom Caption Bar */}
+              <div
+                style={{
+                  backgroundColor: 'rgba(8, 6, 4, 0.94)',
+                  color: 'var(--alarm)',
+                  padding: '10px 14px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  borderTop: '2.5px solid var(--alarm)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  zIndex: 2,
+                }}
+              >
+                <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
+                CAPTIONS FROZEN (+2.996s)
+              </div>
+            </div>
+
+            {/* Right Status Pill */}
+            <div
+              style={{
+                marginTop: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                border: '2px solid var(--alarm)',
+                backgroundColor: 'var(--ink)',
+                color: '#f5f3ec',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8.5px',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+              }}
+            >
+              <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
+              {ch27Degraded ? 'DEGRADED + FLAGGED · CAPACITY EXHAUSTED' : 'CAPTIONS FROZEN · ALARM'}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SINGLE CHANNEL MODE (01–08): Clean PGM vs Viewer Stream
   return (
     <div
       style={{

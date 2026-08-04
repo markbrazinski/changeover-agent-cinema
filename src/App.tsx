@@ -6,7 +6,6 @@ import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
 import { LaneStrip } from './components/LaneStrip';
-import { FacilityView } from './components/FacilityView';
 import { DecisionCard } from './components/DecisionCard';
 import { TerminalBanner } from './components/TerminalBanner';
 
@@ -105,7 +104,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // 3. Investigate via Grafana MCP + ADK (Sequential Beat Animation)
+  // 3. Investigate via Grafana MCP + ADK
   const handleInvestigate = async () => {
     setIsWorking(true);
     try {
@@ -125,9 +124,8 @@ export const App: React.FC = () => {
     }
   };
 
-  // 4. Verify Backup via ffprobe
+  // 4. Verify Backup via ffprobe (Instantaneous without orange banner)
   const handleVerifyBackup = async () => {
-    setIsWorking(true);
     try {
       const res = await agentClient.verifyBackup('tears_of_steel', mode);
       setCurrentStage('04_backup_verified');
@@ -135,32 +133,31 @@ export const App: React.FC = () => {
       setTimecode('PGM-OUT 20:14:24');
     } catch (e) {
       console.error('Verify backup error:', e);
+    }
+  };
+
+  // 5. Summon Operator Approval (Pauses at 05 awaiting physical click on APPROVE in side panel)
+  const handlePrepareApproval = () => {
+    setCurrentStage('05_awaiting_approval');
+    setTimecode('PGM-OUT 20:14:27');
+  };
+
+  // 6. Execute Human Approval (Triggered explicitly by clicking APPROVE in Agent Spine)
+  const handleExecuteApprove = async () => {
+    setIsWorking(true);
+    try {
+      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
+      setCurrentStage('06_changed_over');
+      setPostSwapOffset(res.post_swap_measured_offset || 0.486);
+      setTimecode('PGM-OUT 20:14:33');
+    } catch (e) {
+      console.error('Execute approve error:', e);
     } finally {
       setIsWorking(false);
     }
   };
 
-  // 5/6. Authorize Failover (Human-authorization moment -> post-swap verification)
-  const handleAuthorizeFailover = async () => {
-    setIsWorking(true);
-    try {
-      setCurrentStage('05_awaiting_approval');
-      setTimecode('PGM-OUT 20:14:27');
-
-      setTimeout(async () => {
-        const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
-        setCurrentStage('06_changed_over');
-        setPostSwapOffset(res.post_swap_measured_offset || 0.486);
-        setTimecode('PGM-OUT 20:14:33');
-        setIsWorking(false);
-      }, 1200);
-    } catch (e) {
-      console.error('Authorize failover error:', e);
-      setIsWorking(false);
-    }
-  };
-
-  // Contention Scenario (09 -> 10 -> 11 -> 12 Sequential Animation)
+  // Contention Scenario (09 -> 10 -> 11 -> 12)
   const handleRunContention = async () => {
     setIsWorking(true);
     try {
@@ -173,7 +170,7 @@ export const App: React.FC = () => {
         setCurrentStage('10_contention_decision');
         setTimecode('PGM-OUT 20:15:07');
         setIsWorking(false);
-      }, 1400);
+      }, 1200);
     } catch (e) {
       console.error('Contention error:', e);
       setIsWorking(false);
@@ -209,6 +206,11 @@ export const App: React.FC = () => {
   else if (currentStage === '07_refusal_wont_switch') evidenceChartStatus = 'unconfirmed_backup';
   else evidenceChartStatus = 'frozen';
 
+  // Contention state flags
+  const isContentionStage = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
+  const ch14RestoredInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
+  const ch27DegradedInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
+
   // Construct Dynamic Agent Spine Steps
   const spineSteps: SpineStep[] = [];
   if (currentStage === '01_at_rest') {
@@ -243,12 +245,12 @@ export const App: React.FC = () => {
   } else if (currentStage === '05_awaiting_approval') {
     spineSteps.push(
       { title: 'backup verified ✔', sub: 'ffprobe health check passed', tone: 'done' },
-      { title: 'SUMMON: operator required', sub: 'will not switch without human authorization', tone: 'active' }
+      { title: 'SUMMON: operator required', sub: 'click APPROVE in side panel to authorize', tone: 'active' }
     );
   } else if (currentStage === '06_changed_over') {
     spineSteps.push(
       { title: 'approved ✔', sub: 'authorizer: operator:mark', tone: 'done' },
-      { title: 'switched → re-measuring backup', sub: 'post-swap read pending…', tone: 'fill' },
+      { title: 'switched → re-measuring backup', sub: 'post-swap read verified', tone: 'fill' },
       { title: `✓ confirmed restored · ${postSwapOffset?.toFixed(3) || '0.486'}s`, sub: 'watching for regression', tone: 'done' },
       { title: 'audit entry logged ✎', sub: 'logs/state/feed_state_tears_of_steel.json', tone: 'done' }
     );
@@ -268,7 +270,7 @@ export const App: React.FC = () => {
   } else if (currentStage === '09_contention_failing' || currentStage === '10_contention_decision') {
     spineSteps.push(
       { title: '2 concurrent CAP freezes ✓', sub: 'CH-14 (+2.996s) & CH-27 (+2.996s)', tone: 'done' },
-      { title: '⚠ shared backup — capacity 1/2', sub: 'one pre-cut file, two failures', tone: 'fill' },
+      { title: '⚠ shared backup — capacity 0/1', sub: 'one pre-cut file, two failures', tone: 'fill' },
       { title: 'RESTORE ▸ CH-14 vs DEGRADE ▸ CH-27', sub: 'awaiting operator tradeoff decision', tone: 'active' }
     );
   } else if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
@@ -279,8 +281,6 @@ export const App: React.FC = () => {
       { title: '▲ 1 INCIDENT OPEN', sub: 'CH-27 still degraded (standard tier)', tone: 'refuse' }
     );
   }
-
-  const hasFacilityView = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
 
   return (
     <div
@@ -308,7 +308,7 @@ export const App: React.FC = () => {
         onInjectFault={handleInjectFault}
         onInvestigate={handleInvestigate}
         onVerifyBackup={handleVerifyBackup}
-        onAuthorize={handleAuthorizeFailover}
+        onAuthorize={handlePrepareApproval}
         onContention={handleRunContention}
         onBlind={handleBlindRefusal}
       />
@@ -327,15 +327,6 @@ export const App: React.FC = () => {
           marginTop: isControlsHidden ? '10px' : '0',
         }}
       >
-        {/* Contention Facility View (States 09–12) */}
-        {hasFacilityView && (
-          <FacilityView
-            capacityUsed={1}
-            ch14Restored={currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'}
-            ch27Degraded={currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'}
-          />
-        )}
-
         {/* PGM Header */}
         <PgmHeader
           timecode={timecode}
@@ -353,8 +344,13 @@ export const App: React.FC = () => {
         >
           {/* Left Column Stack */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero */}
-            <SplitHero rightState={rightVideoState} />
+            {/* Split Hero (Transforms seamlessly into 2 different movies during Contention 09–12) */}
+            <SplitHero
+              rightState={rightVideoState}
+              isContention={isContentionStage}
+              ch14Restored={ch14RestoredInContention}
+              ch27Degraded={ch27DegradedInContention}
+            />
 
             {/* Lane Strip (Expanded on State 03 Investigation beat) */}
             <LaneStrip isExpanded={currentStage === '03_investigating'} />
@@ -391,7 +387,7 @@ export const App: React.FC = () => {
               substate={currentStage.toUpperCase()}
               steps={spineSteps}
               showGate={currentStage === '05_awaiting_approval'}
-              onApprove={handleAuthorizeFailover}
+              onApprove={handleExecuteApprove}
               onHold={() => setCurrentStage('07_refusal_wont_switch')}
               holdNote={
                 currentStage === '08_refusal_wont_guess'
