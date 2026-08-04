@@ -10,6 +10,7 @@ interface AgentSpineProps {
   substate?: string;
   steps?: SpineStep[];
   showGate?: boolean;
+  showContentionGate?: boolean;
   onApprove?: () => void;
   onHold?: () => void;
   holdNote?: string;
@@ -20,6 +21,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
   substate = '01_AT_REST',
   steps = [],
   showGate = false,
+  showContentionGate = false,
   onApprove,
   onHold,
   holdNote,
@@ -107,7 +109,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
           })}
         </div>
 
-        {/* Docked Approve / Hold Action Gate (State 05) */}
+        {/* Docked Single-Channel Approve / Hold Action Gate (State 05) */}
         {showGate && (
           <div
             style={{
@@ -158,6 +160,72 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                 }}
               >
                 HOLD
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Docked Contention Decision Gate (State 10 Above-The-Fold) */}
+        {showContentionGate && (
+          <div
+            style={{
+              padding: '12px',
+              borderRadius: '6px',
+              backgroundColor: 'var(--panel-sunken)',
+              border: '2.5px solid var(--accent)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              marginTop: '4px',
+            }}
+          >
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', fontWeight: 700, color: 'var(--ink)' }}>
+              SUMMON: CONTENTION TRADEOFF
+            </div>
+
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--ink)', lineHeight: 1.4 }}>
+              <strong>Policy Precedence:</strong>
+              <div style={{ marginTop: '2px', color: 'var(--nominal-ink)' }}>• CH-14: Emergency Tier → Restores</div>
+              <div style={{ color: 'var(--alarm-ink)' }}>• CH-27: General Tier → Stays Degraded</div>
+            </div>
+
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', color: 'var(--text-60)' }}>
+              Scarcity: 1 shared backup for 2 failures.
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
+              <button
+                onClick={onApprove}
+                style={{
+                  padding: '8px 4px',
+                  backgroundColor: 'var(--nominal)',
+                  color: '#f5f3ec',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                AUTHORIZE RESTORE
+              </button>
+
+              <button
+                onClick={onHold}
+                style={{
+                  padding: '8px 4px',
+                  backgroundColor: 'var(--panel-hi)',
+                  color: 'var(--ink)',
+                  border: '1.5px solid var(--ink)',
+                  borderRadius: '4px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '8.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                HOLD BOTH
               </button>
             </div>
           </div>

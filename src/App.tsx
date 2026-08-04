@@ -6,7 +6,6 @@ import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
 import { LaneStrip } from './components/LaneStrip';
-import { DecisionCard } from './components/DecisionCard';
 import { TerminalBanner } from './components/TerminalBanner';
 
 export type DemoStage =
@@ -124,7 +123,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // 4. Verify Backup via ffprobe (Instantaneous without orange banner)
+  // 4. Verify Backup via ffprobe
   const handleVerifyBackup = async () => {
     try {
       const res = await agentClient.verifyBackup('tears_of_steel', mode);
@@ -136,13 +135,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // 5. Summon Operator Approval (Pauses at 05 awaiting physical click on APPROVE in side panel)
+  // 5. Summon Operator Approval
   const handlePrepareApproval = () => {
     setCurrentStage('05_awaiting_approval');
     setTimecode('PGM-OUT 20:14:27');
   };
 
-  // 6. Execute Human Approval (Triggered explicitly by clicking APPROVE in Agent Spine)
+  // 6. Execute Human Approval
   const handleExecuteApprove = async () => {
     setIsWorking(true);
     try {
@@ -157,7 +156,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Contention Scenario (09 -> 10 -> 11 -> 12)
+  // Contention Scenario Trigger (State 09 -> State 10 Tradeoff Gate)
   const handleRunContention = async () => {
     setIsWorking(true);
     try {
@@ -170,11 +169,21 @@ export const App: React.FC = () => {
         setCurrentStage('10_contention_decision');
         setTimecode('PGM-OUT 20:15:07');
         setIsWorking(false);
-      }, 1200);
+      }, 1000);
     } catch (e) {
       console.error('Contention error:', e);
       setIsWorking(false);
     }
+  };
+
+  // Authorize Contention Tradeoff (State 10 -> State 11 -> State 12)
+  const handleAuthorizeContentionTradeoff = () => {
+    setCurrentStage('11_contention_authorized');
+    setTimecode('PGM-OUT 20:15:14');
+    setTimeout(() => {
+      setCurrentStage('12_terminal_partially_mitigated');
+      setTimecode('PGM-OUT 20:15:20');
+    }, 1400);
   };
 
   // Blind Refusal Test
@@ -271,7 +280,7 @@ export const App: React.FC = () => {
     spineSteps.push(
       { title: '2 concurrent CAP freezes ✓', sub: 'CH-14 (+2.996s) & CH-27 (+2.996s)', tone: 'done' },
       { title: '⚠ shared backup — capacity 0/1', sub: 'one pre-cut file, two failures', tone: 'fill' },
-      { title: 'RESTORE ▸ CH-14 vs DEGRADE ▸ CH-27', sub: 'awaiting operator tradeoff decision', tone: 'active' }
+      { title: 'POLICY: Emergency > General', sub: 'CH-14 takes precedence over CH-27', tone: 'active' }
     );
   } else if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
     spineSteps.push(
@@ -362,23 +371,6 @@ export const App: React.FC = () => {
               status={evidenceChartStatus}
               backupHealthy={backupHealthy}
             />
-
-            {/* Contention Decision Card (State 10) */}
-            {currentStage === '10_contention_decision' && (
-              <DecisionCard
-                onAuthorize={() => {
-                  setCurrentStage('11_contention_authorized');
-                  setTimecode('PGM-OUT 20:15:14');
-                  setTimeout(() => {
-                    setCurrentStage('12_terminal_partially_mitigated');
-                    setTimecode('PGM-OUT 20:15:20');
-                  }, 1400);
-                }}
-                onHold={() => {
-                  setCurrentStage('09_contention_failing');
-                }}
-              />
-            )}
           </div>
 
           {/* Right Column: Agent Spine Side Rail */}
@@ -387,8 +379,19 @@ export const App: React.FC = () => {
               substate={currentStage.toUpperCase()}
               steps={spineSteps}
               showGate={currentStage === '05_awaiting_approval'}
-              onApprove={handleExecuteApprove}
-              onHold={() => setCurrentStage('07_refusal_wont_switch')}
+              showContentionGate={currentStage === '10_contention_decision'}
+              onApprove={
+                currentStage === '10_contention_decision'
+                  ? handleAuthorizeContentionTradeoff
+                  : handleExecuteApprove
+              }
+              onHold={() => {
+                if (currentStage === '10_contention_decision') {
+                  setCurrentStage('09_contention_failing');
+                } else {
+                  setCurrentStage('07_refusal_wont_switch');
+                }
+              }}
               holdNote={
                 currentStage === '08_refusal_wont_guess'
                   ? 'spine solid · will not fabricate'
