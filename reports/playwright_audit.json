@@ -1,0 +1,155 @@
+{
+  "config": {
+    "argv": [
+      "/opt/homebrew/Cellar/node/25.2.1/bin/node",
+      "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/node_modules/.bin/playwright",
+      "test"
+    ],
+    "configFile": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/playwright.config.ts",
+    "rootDir": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/tests",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "reports/playwright_audit.json"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "reports/playwright-report",
+          "open": "never"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "voiceover_narrated_demo.spec.ts",
+      "file": "voiceover_narrated_demo.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "End-to-End Voiceover (VO) Script & Audit Suite",
+          "file": "voiceover_narrated_demo.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Executes Narrated Autoplay Demo, verifies each stage beat & narration copy, captures screenshots",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 27993,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ All 8 VO Script Narration Beats Verified & Screenshots Captured!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-08-04T20:26:21.679Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/voiceover_narrated_demo-En-cdeae-n-copy-captures-screenshots-chromium/test-finished-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/voiceover_narrated_demo-En-cdeae-n-copy-captures-screenshots-chromium/video.webm"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/voiceover_narrated_demo-En-cdeae-n-copy-captures-screenshots-chromium/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b6dc29dcac6593e5d5c6-9798b18dd391e373ba6f",
+              "file": "voiceover_narrated_demo.spec.ts",
+              "line": 6,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-08-04T20:26:21.433Z",
+    "duration": 28793.364999999998,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
