@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { agentClient, Mode, InvestigateResponse, ContentionResponse } from './api/agentClient';
-import { AUTOPLAY_CONFIG } from './data/autoplayConfig';
+import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 import { DemoControlHeader } from './components/DemoControlHeader';
 import { PgmHeader } from './components/PgmHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
@@ -33,10 +33,12 @@ export const App: React.FC = () => {
   const [isDesaturated, setIsDesaturated] = useState<boolean>(false);
   const [isManualOpen, setIsManualOpen] = useState<boolean>(false);
 
-  // Autoplay Orchestrator State
-  const [isPlayingAutoplay, setIsPlayingAutoplay] = useState<boolean>(false);
-  const [narrationText, setNarrationText] = useState<string>(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
-  const autoplayCancelledRef = useRef<boolean>(false);
+  // Walkthrough Orchestrator State
+  const [isPlayingWalkthrough, setIsPlayingWalkthrough] = useState<boolean>(false);
+  const [isPausedForHuman, setIsPausedForHuman] = useState<boolean>(false);
+  const [narrationText, setNarrationText] = useState<string>(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+  const walkthroughCancelledRef = useRef<boolean>(false);
+  const humanApprovedResolverRef = useRef<(() => void) | null>(null);
 
   // Live state driven by server API responses
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
@@ -46,7 +48,7 @@ export const App: React.FC = () => {
   const [evidenceTier, setEvidenceTier] = useState<string>('fresh');
   const [queryTrace, setQueryTrace] = useState<any[]>([]);
   const [rationale, setRationale] = useState<string>('');
-  const [backupHealthy, setBackupHealthy] = useState<boolean>(true);
+  const [backupHealthy, setBackupHealthy] = useState<boolean>(false);
   const [contentionData, setContentionData] = useState<ContentionResponse | null>(null);
 
   // Timecode generator
@@ -74,6 +76,13 @@ export const App: React.FC = () => {
     handleReset(m);
   };
 
+  // Helper to wait for explicit human click
+  const waitForHumanClick = (): Promise<void> => {
+    return new Promise((resolve) => {
+      humanApprovedResolverRef.current = resolve;
+    });
+  };
+
   // 1. Reset Demo (At Rest)
   const handleReset = async (overrideMode?: Mode) => {
     const activeMode = overrideMode || mode;
@@ -86,10 +95,11 @@ export const App: React.FC = () => {
       setFailedLayer('none');
       setMcpStatus('fresh');
       setEvidenceTier('fresh');
-      setBackupHealthy(true);
+      setBackupHealthy(false);
       setContentionData(null);
       setTimecode('PGM-OUT 20:14:02');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+      setIsPausedForHuman(false);
     } catch (e) {
       console.error('Reset error:', e);
     } finally {
@@ -106,7 +116,7 @@ export const App: React.FC = () => {
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
       setTimecode('PGM-OUT 20:14:16');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
     } catch (e) {
       console.error('Inject fault error:', e);
     } finally {
@@ -120,7 +130,7 @@ export const App: React.FC = () => {
     try {
       setCurrentStage('03_investigating');
       setTimecode('PGM-OUT 20:14:19');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
       const res: InvestigateResponse = await agentClient.investigate('tears_of_steel', mode);
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
@@ -142,7 +152,7 @@ export const App: React.FC = () => {
       setCurrentStage('04_backup_verified');
       setBackupHealthy(res.is_healthy);
       setTimecode('PGM-OUT 20:14:24');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
     } catch (e) {
       console.error('Verify backup error:', e);
     }
@@ -152,7 +162,7 @@ export const App: React.FC = () => {
   const handlePrepareApproval = () => {
     setCurrentStage('05_awaiting_approval');
     setTimecode('PGM-OUT 20:14:27');
-    setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
+    setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
   };
 
   // 6. Execute Human Approval
@@ -163,7 +173,13 @@ export const App: React.FC = () => {
       setCurrentStage('06_changed_over');
       setPostSwapOffset(res.post_swap_measured_offset || 0.486);
       setTimecode('PGM-OUT 20:14:33');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
+      setIsPausedForHuman(false);
+
+      if (humanApprovedResolverRef.current) {
+        humanApprovedResolverRef.current();
+        humanApprovedResolverRef.current = null;
+      }
     } catch (e) {
       console.error('Execute approve error:', e);
     } finally {
@@ -177,13 +193,14 @@ export const App: React.FC = () => {
     try {
       setCurrentStage('09_contention_failing');
       setTimecode('PGM-OUT 20:15:02');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_09_12_CONTENTION);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_09_CONTENTION_FAIL);
       const res = await agentClient.runContention('operator:mark', mode);
       setContentionData(res);
 
       setTimeout(() => {
         setCurrentStage('10_contention_decision');
         setTimecode('PGM-OUT 20:15:07');
+        setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_10_CONTENTION_DECISION);
         setIsWorking(false);
       }, 1000);
     } catch (e) {
@@ -196,10 +213,18 @@ export const App: React.FC = () => {
   const handleAuthorizeContentionTradeoff = () => {
     setCurrentStage('11_contention_authorized');
     setTimecode('PGM-OUT 20:15:14');
+    setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_11_CONTENTION_AUTH);
+    setIsPausedForHuman(false);
+
+    if (humanApprovedResolverRef.current) {
+      humanApprovedResolverRef.current();
+      humanApprovedResolverRef.current = null;
+    }
+
     setTimeout(() => {
       setCurrentStage('12_terminal_partially_mitigated');
       setTimecode('PGM-OUT 20:15:20');
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
     }, 1400);
   };
 
@@ -209,6 +234,7 @@ export const App: React.FC = () => {
     try {
       await agentClient.getBlindRefusal('tears_of_steel', mode);
       setCurrentStage('08_refusal_wont_guess');
+      setFailedLayer('none');
       setTimecode('PGM-OUT 20:14:21');
     } catch (e) {
       console.error('Blind refusal error:', e);
@@ -217,79 +243,78 @@ export const App: React.FC = () => {
     }
   };
 
-  // AUTOPLAY ORCHESTRATOR SEQUENCE
-  const handleRunAutoplay = async () => {
-    autoplayCancelledRef.current = false;
-    setIsPlayingAutoplay(true);
+  // GUIDED WALKTHROUGH ORCHESTRATOR
+  const handleRunWalkthrough = async () => {
+    walkthroughCancelledRef.current = false;
+    setIsPlayingWalkthrough(true);
 
     try {
-      // Step 1: At Rest (2.5s)
-      if (autoplayCancelledRef.current) return;
+      // Beat 1: At Rest
+      if (walkthroughCancelledRef.current) return;
       await handleReset();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_01_AT_REST);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_01_AT_REST);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST);
 
-      // Step 2: Inject Fault (3.5s)
-      if (autoplayCancelledRef.current) return;
+      // Beat 2: Inject Fault
+      if (walkthroughCancelledRef.current) return;
       await handleInjectFault();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_02_INJECT_FAULT);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_02_INJECT_FAULT);
 
-      // Step 3: Investigate (4.5s)
-      if (autoplayCancelledRef.current) return;
+      // Beat 3: Investigate
+      if (walkthroughCancelledRef.current) return;
       await handleInvestigate();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_03_INVESTIGATE);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_03_INVESTIGATE);
 
-      // Step 4: Verify Backup (2.5s)
-      if (autoplayCancelledRef.current) return;
+      // Beat 4: Verify Backup
+      if (walkthroughCancelledRef.current) return;
       await handleVerifyBackup();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_04_VERIFY_BACKUP);
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_04_VERIFY_BACKUP);
 
-      // Step 5: Awaiting Approval Beat
-      if (autoplayCancelledRef.current) return;
+      // Beat 5: ⏸ STOP & WAIT FOR HUMAN CLICK (Single Channel Failover)
+      if (walkthroughCancelledRef.current) return;
       handlePrepareApproval();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
-      await delay(1500);
+      setIsPausedForHuman(true);
+      await waitForHumanClick(); // HALTS UNTIL OPERATOR CLICKS AUTHORIZE FAILOVER
 
-      // Step 6: Authorize & Restore (3.5s)
-      if (autoplayCancelledRef.current) return;
-      await handleExecuteApprove();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_05_AUTHORIZE_RESTORE);
+      // Beat 6: Changed Over (Restored)
+      if (walkthroughCancelledRef.current) return;
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER);
 
-      // Step 7: Beat of Breath (1.5s)
-      if (autoplayCancelledRef.current) return;
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_BREATH);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_BREATH);
+      // Beat 6.5: Breath
+      if (walkthroughCancelledRef.current) return;
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_BREATH);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_BREATH);
 
-      // Step 8: Contention Failures (2.5s)
-      if (autoplayCancelledRef.current) return;
+      // Beat 7 & 8: Contention Failures & ⏸ STOP & WAIT FOR HUMAN CLICK (Contention Tradeoff)
+      if (walkthroughCancelledRef.current) return;
       await handleRunContention();
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_09_12_CONTENTION);
-      await delay(2500);
+      await delay(1200);
+      setIsPausedForHuman(true);
+      await waitForHumanClick(); // HALTS UNTIL OPERATOR CLICKS AUTHORIZE PRIORITIZATION
 
-      // Step 9: Authorize Contention Tradeoff
-      if (autoplayCancelledRef.current) return;
-      handleAuthorizeContentionTradeoff();
-      await delay(2000);
-
-      // Step 10: Terminal Hold (4.0s)
-      if (autoplayCancelledRef.current) return;
-      setNarrationText(AUTOPLAY_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
-      await delay(AUTOPLAY_CONFIG.TIMINGS.STAGE_12_TERMINAL);
+      // Beat 9 & 10: Contention Authorized & Terminal Hold
+      if (walkthroughCancelledRef.current) return;
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_12_TERMINAL);
 
     } catch (e) {
-      console.error('Autoplay error:', e);
+      console.error('Walkthrough error:', e);
     } finally {
-      setIsPlayingAutoplay(false);
+      setIsPlayingWalkthrough(false);
+      setIsPausedForHuman(false);
     }
   };
 
-  const handleStopAutoplay = () => {
-    autoplayCancelledRef.current = true;
-    setIsPlayingAutoplay(false);
+  const handleStopWalkthrough = () => {
+    walkthroughCancelledRef.current = true;
+    setIsPlayingWalkthrough(false);
+    setIsPausedForHuman(false);
+    if (humanApprovedResolverRef.current) {
+      humanApprovedResolverRef.current();
+      humanApprovedResolverRef.current = null;
+    }
   };
 
   // Determine SplitHero Video State
@@ -346,7 +371,7 @@ export const App: React.FC = () => {
   } else if (currentStage === '05_awaiting_approval') {
     spineSteps.push(
       { title: 'backup verified ✔', sub: 'ffprobe health check passed', tone: 'done' },
-      { title: 'SUMMON: operator required', sub: 'click APPROVE in side panel to authorize', tone: 'active' }
+      { title: 'SUMMON: operator required', sub: 'click AUTHORIZE FAILOVER to switch', tone: 'active' }
     );
   } else if (currentStage === '06_changed_over') {
     spineSteps.push(
@@ -401,9 +426,9 @@ export const App: React.FC = () => {
         onSetMode={handleSetMode}
         currentStage={currentStage}
         isWorking={isWorking}
-        isPlayingAutoplay={isPlayingAutoplay}
-        onRunAutoplay={handleRunAutoplay}
-        onStopAutoplay={handleStopAutoplay}
+        isPlayingAutoplay={isPlayingWalkthrough}
+        onRunAutoplay={handleRunWalkthrough}
+        onStopAutoplay={handleStopWalkthrough}
         isDesaturated={isDesaturated}
         onToggleDesaturate={() => setIsDesaturated(!isDesaturated)}
         isManualOpen={isManualOpen}
@@ -428,6 +453,7 @@ export const App: React.FC = () => {
           boxShadow: '0 18px 48px rgba(0, 0, 0, 0.5)',
           overflow: 'hidden',
           backgroundColor: 'var(--panel-hi)',
+          marginTop: '0',
         }}
       >
         {/* PGM Header */}
@@ -447,7 +473,7 @@ export const App: React.FC = () => {
         >
           {/* Left Column Stack */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero */}
+            {/* Split Hero (Real moving VTT captions) */}
             <SplitHero
               rightState={rightVideoState}
               isContention={isContentionStage}
@@ -499,7 +525,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* On-Screen Subtitle Narration Bar */}
-        <NarrationBar text={narrationText} isPlaying={isPlayingAutoplay} />
+        <NarrationBar text={narrationText} isPlaying={isPlayingWalkthrough} isPausedForHuman={isPausedForHuman} />
 
         {/* Terminal Banner (State 12) */}
         {currentStage === '12_terminal_partially_mitigated' && <TerminalBanner />}

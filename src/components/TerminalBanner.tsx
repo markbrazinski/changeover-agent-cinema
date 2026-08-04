@@ -1,62 +1,57 @@
 import React from 'react';
 
-export const TerminalBanner: React.FC = () => {
+interface TerminalBannerProps {
+  statusText?: string;
+}
+
+export const TerminalBanner: React.FC<TerminalBannerProps> = ({
+  statusText = 'Partially mitigated — 1 restored, 1 incident open',
+}) => {
   return (
     <div
-      className="hatch-neutral"
+      data-testid="terminal-banner"
       style={{
-        width: '100%',
-        maxWidth: '760px',
-        borderLeft: '2.5px solid var(--ink)',
-        borderRight: '2.5px solid var(--ink)',
-        borderBottom: '2.5px solid var(--ink)',
-        backgroundColor: 'var(--panel-sunken)',
-        padding: '11px 14px',
+        backgroundColor: '#16140f',
+        color: '#f5f3ec',
+        padding: '12px 18px',
+        borderTop: '2.5px solid var(--ink)',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        borderRadius: '0 0 13px 13px',
+        justifyContent: 'space-between',
       }}
     >
-      <div style={{ fontSize: '18px', color: 'var(--ink)' }}>◧</div>
-
-      <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div
+          data-testid="terminal-alarm-chip"
+          style={{
+            padding: '3px 8px',
+            backgroundColor: 'var(--alarm)',
+            color: '#f5f3ec',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '9.5px',
+            fontWeight: 700,
+            borderRadius: '3px',
+            letterSpacing: '1px',
+          }}
+        >
+          ▲ 1 OPEN INCIDENT
+        </div>
+
+        <span
+          data-testid="terminal-text"
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '11px',
             fontWeight: 700,
-            color: 'var(--ink)',
             letterSpacing: '0.5px',
           }}
         >
-          Partially mitigated — 1 restored, 1 incident open
-        </div>
-        <div
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
-            color: 'var(--text-60)',
-            marginTop: '2px',
-          }}
-        >
-          CH-14 restored · CH-27 still degraded — not a resolved / green close
-        </div>
+          {statusText}
+        </span>
       </div>
 
-      <div
-        style={{
-          marginLeft: 'auto',
-          backgroundColor: 'var(--alarm)',
-          color: '#f5f3ec',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '8px',
-          fontWeight: 700,
-          padding: '3px 8px',
-          borderRadius: '3px',
-        }}
-      >
-        1 OPEN INCIDENT
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8.5px', color: 'rgba(255, 255, 255, 0.45)' }}>
+        State logged: logs/contention_authorized.json
       </div>
     </div>
   );

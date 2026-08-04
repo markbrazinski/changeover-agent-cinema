@@ -31,6 +31,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
 
   return (
     <div
+      data-testid="evidence-chart"
       style={{
         margin: '10px 14px 14px 14px',
         padding: '14px 18px',
@@ -59,6 +60,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
         </div>
 
         <div
+          data-testid="peer-ruled-out-text"
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '9.5px',
@@ -113,6 +115,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
           </div>
 
           <div
+            data-testid="offset-readout"
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '36px',
@@ -164,8 +167,8 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                 {/* Blind Ghost Mode vs Live Plot Lines */}
                 {isBlind ? (
                   <>
-                    <line x1="0" y1="52" x2="340" y2="52" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
-                    <line x1="0" y1="24" x2="340" y2="24" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
+                    <line data-testid="cap-line-blind" x1="0" y1="52" x2="340" y2="52" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
+                    <line data-testid="sign-line-blind" x1="0" y1="24" x2="340" y2="24" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
                   </>
                 ) : isAlarm ? (
                   <>
@@ -173,7 +176,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                     <circle cx="340" cy="52" r="2.5" fill="var(--nominal)" />
 
                     <line x1="0" y1="50" x2="100" y2="50" stroke="var(--nominal)" strokeWidth="2.5" />
-                    <line x1="100" y1="50" x2="340" y2="12" stroke="var(--alarm)" strokeWidth="2.5" />
+                    <line data-testid="cap-line-alarm" x1="100" y1="50" x2="340" y2="12" stroke="var(--alarm)" strokeWidth="2.5" />
                     <circle cx="340" cy="12" r="4" fill="var(--alarm)" />
                   </>
                 ) : (
@@ -234,8 +237,9 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                 {isBlind ? 'SIGN · BLIND' : 'SIGN ● OK'}
               </div>
 
-              {isRestored && (
+              {backupHealthy && (
                 <div
+                  data-testid="backup-healthy-badge"
                   style={{
                     padding: '4px 8px',
                     borderRadius: '4px',
@@ -248,7 +252,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                     textAlign: 'center',
                   }}
                 >
-                  BACKUP ✓ RESTORED
+                  BACKUP ✓ HEALTHY
                 </div>
               )}
             </div>

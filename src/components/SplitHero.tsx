@@ -1,4 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { TEARS_OF_STEEL_CUES, SINTEL_CUES, getCueForTime } from '../data/vttParser';
 
 export type VideoState = 'clean' | 'fine' | 'frozen' | 'restored' | 'blind';
 
@@ -29,22 +30,54 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const leftVideoRef = useRef<HTMLVideoElement>(null);
   const rightVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Sync playback between left and right video elements
+  // Moving caption states
+  const [leftTime, setLeftTime] = useState<number>(10.0);
+  const [rightTime, setRightTime] = useState<number>(10.0);
+  const [frozenRightCue, setFrozenRightCue] = useState<string | null>(null);
+
+  // Sync video playback and track currentTime for moving captions
   useEffect(() => {
     const left = leftVideoRef.current;
     const right = rightVideoRef.current;
+    let animationFrameId: number;
+
     if (left && right) {
-      left.currentTime = 10.0;
-      right.currentTime = 10.0;
+      if (left.currentTime === 0) left.currentTime = 10.0;
+      if (right.currentTime === 0) right.currentTime = 10.0;
       left.play().catch(() => {});
       right.play().catch(() => {});
+
+      const updateTimes = () => {
+        if (left) setLeftTime(left.currentTime);
+        if (right) {
+          if (rightState === 'frozen' || (isContention && !ch14Restored)) {
+            // Lock the frozen cue text on fault
+            if (!frozenRightCue) {
+              setFrozenRightCue(getCueForTime(TEARS_OF_STEEL_CUES, right.currentTime));
+            }
+          } else {
+            setFrozenRightCue(null);
+            setRightTime(right.currentTime);
+          }
+        }
+        animationFrameId = requestAnimationFrame(updateTimes);
+      };
+      animationFrameId = requestAnimationFrame(updateTimes);
     }
+
+    return () => cancelAnimationFrame(animationFrameId);
   }, [sourceVideoUrl, rightState, isContention, ch14Restored]);
+
+  // Compute active caption strings
+  const leftCaptionText = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
+  const rightCaptionText = frozenRightCue || getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
+  const sintelCaptionText = frozenRightCue || getCueForTime(SINTEL_CUES, rightTime);
 
   // CONTENTION MODE (09–12): In-Player Two Different Movies Transformation
   if (isContention) {
     return (
       <div
+        data-testid="facility-view"
         style={{
           width: '100%',
           backgroundColor: 'var(--panel-hi)',
@@ -106,6 +139,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
             {/* Left Movie Player */}
             <div
+              data-testid="ch14-card"
               style={{
                 height: '240px',
                 borderRadius: '8px',
@@ -120,6 +154,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             >
               <video
                 ref={leftVideoRef}
+                data-testid="ch14-video"
                 src={ch14Restored ? backupVideoUrl : sourceVideoUrl}
                 muted
                 loop
@@ -155,21 +190,22 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 {ch14Restored ? 'BACKUP ACTIVE · CH-14' : 'PRIMARY FAILING · CH-14'}
               </div>
 
-              {/* Bottom Caption Bar */}
+              {/* Bottom Moving Caption Bar */}
               <div
+                data-testid="ch14-caption"
                 style={{
                   backgroundColor: ch14Restored ? 'var(--surface)' : 'rgba(8, 6, 4, 0.94)',
                   color: ch14Restored ? 'var(--ink)' : 'var(--alarm)',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: ch14Restored ? '2.5px solid var(--ink)' : '2.5px solid var(--alarm)',
                   zIndex: 2,
                 }}
               >
-                {ch14Restored ? '✓ CAPTIONS RESTORED (+0.486s)' : '⚠ CAPTIONS FROZEN (+2.996s)'}
+                {ch14Restored ? `✓ ${leftCaptionText}` : `⚠ [FROZEN] ${rightCaptionText}`}
               </div>
             </div>
 
@@ -235,6 +271,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
             {/* Right Movie Player */}
             <div
+              data-testid="ch27-card"
               className="hatch-alarm"
               style={{
                 height: '240px',
@@ -250,6 +287,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             >
               <video
                 ref={rightVideoRef}
+                data-testid="ch27-video"
                 src="http://localhost:8008/films/sintel/source.mp4"
                 muted
                 loop
@@ -286,14 +324,15 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 PRIMARY FAILING · CH-27
               </div>
 
-              {/* Bottom Caption Bar */}
+              {/* Bottom Moving Caption Bar */}
               <div
+                data-testid="ch27-caption"
                 style={{
                   backgroundColor: 'rgba(8, 6, 4, 0.94)',
                   color: 'var(--alarm)',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '12px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--alarm)',
@@ -305,12 +344,13 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 }}
               >
                 <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
-                CAPTIONS FROZEN (+2.996s)
+                ⚠ [FROZEN] {sintelCaptionText}
               </div>
             </div>
 
             {/* Right Status Pill */}
             <div
+              data-testid="ch27-status-pill"
               style={{
                 marginTop: '10px',
                 display: 'inline-flex',
@@ -400,14 +440,13 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           >
             <video
               ref={leftVideoRef}
+              data-testid="left-video"
               src={sourceVideoUrl}
               muted
               loop
               playsInline
               style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
-            >
-              <track src={captionsVttUrl} kind="subtitles" srcLang="en" label="English" default />
-            </video>
+            />
 
             {/* Source Chip Overlay */}
             <div
@@ -430,25 +469,27 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               PGM 1 · MAIN
             </div>
 
-            {/* Bottom Caption Overlay Bar */}
+            {/* Bottom Real Moving Caption Overlay Bar */}
             <div
+              data-testid="left-caption-text"
               style={{
                 backgroundColor: 'rgba(22, 20, 15, 0.90)',
                 color: '#f5f3ec',
                 padding: '10px 14px',
                 fontFamily: 'var(--font-grotesk)',
-                fontSize: '13px',
+                fontSize: '12px',
                 textAlign: 'center',
                 borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                 zIndex: 2,
               }}
             >
-              — sample caption dialogue, in sync —
+              {leftCaptionText}
             </div>
           </div>
 
           {/* Left Status Pill */}
           <div
+            data-testid="left-status-pill"
             style={{
               marginTop: '10px',
               display: 'inline-flex',
@@ -511,6 +552,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {rightState !== 'blind' && (
               <video
                 ref={rightVideoRef}
+                data-testid="right-video"
                 src={rightState === 'restored' ? backupVideoUrl : sourceVideoUrl}
                 muted
                 loop
@@ -587,15 +629,16 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               </div>
             )}
 
-            {/* Frozen / Restored / Normal Bottom Caption Overlay Bar */}
+            {/* Frozen / Restored / Normal Bottom Moving Caption Overlay Bar */}
             {rightState === 'frozen' && (
               <div
+                data-testid="right-caption-text"
                 style={{
                   backgroundColor: 'rgba(8, 6, 4, 0.94)',
                   color: '#f5f3ec',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '13px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--alarm)',
@@ -607,48 +650,51 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 }}
               >
                 <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
-                CAPTIONS FROZEN
+                ⚠ [FROZEN] {rightCaptionText}
               </div>
             )}
 
             {rightState === 'restored' && (
               <div
+                data-testid="right-caption-text"
                 style={{
                   backgroundColor: 'var(--surface)',
                   color: 'var(--ink)',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '13px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--ink)',
                   zIndex: 2,
                 }}
               >
-                ✓ CAPTIONS RESTORED
+                ✓ {rightCaptionText}
               </div>
             )}
 
             {(rightState === 'clean' || rightState === 'fine') && (
               <div
+                data-testid="right-caption-text"
                 style={{
                   backgroundColor: 'rgba(22, 20, 15, 0.88)',
                   color: '#f5f3ec',
                   padding: '10px 14px',
                   fontFamily: 'var(--font-grotesk)',
-                  fontSize: '13px',
+                  fontSize: '12px',
                   textAlign: 'center',
                   borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                   zIndex: 2,
                 }}
               >
-                — sample caption dialogue, in sync —
+                {rightCaptionText}
               </div>
             )}
           </div>
 
           {/* Right Status Pill */}
           <div
+            data-testid="right-status-pill"
             style={{
               marginTop: '10px',
               display: 'inline-flex',
@@ -695,7 +741,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               }}
             />
             {rightState === 'frozen'
-              ? 'CAPTIONS FROZEN'
+              ? 'CAPTIONS FROZEN · ALARM'
               : rightState === 'restored'
               ? '✓ ACCESS RESTORED'
               : rightState === 'blind'

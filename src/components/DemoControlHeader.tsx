@@ -57,12 +57,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         gap: '10px',
       }}
     >
-      {/* Primary Always-Visible Row: Run Demo + Mode + Corner Manual Toggle */}
+      {/* Primary Always-Visible Row: Start Demo + Mode + Corner Controls Gear */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-        {/* Left Side: Prominent Run Demo & Replay Buttons */}
+        {/* Left Side: Prominent Start Demo & Replay Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {isPlayingAutoplay ? (
             <button
+              data-testid="start-demo-button"
               onClick={onStopAutoplay}
               style={{
                 padding: '8px 18px',
@@ -84,6 +85,7 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
             </button>
           ) : (
             <button
+              data-testid="start-demo-button"
               onClick={onRunAutoplay}
               style={{
                 padding: '8px 18px',
@@ -101,13 +103,13 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
                 boxShadow: '0 2px 8px rgba(59,122,75,0.4)',
               }}
             >
-              ▶ RUN DEMO (NARRATED)
+              ▶ START DEMO
             </button>
           )}
 
           <button
+            data-testid="replay-button"
             onClick={onRunAutoplay}
-            disabled={isPlayingAutoplay}
             style={{
               padding: '8px 12px',
               backgroundColor: 'rgba(255, 255, 255, 0.12)',
@@ -126,6 +128,7 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           {/* Mode Switcher */}
           <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden', marginLeft: '6px' }}>
             <button
+              data-testid="mode-deterministic-button"
               onClick={() => onSetMode('deterministic')}
               style={{
                 padding: '5px 10px',
@@ -141,6 +144,7 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
               DETERMINISTIC
             </button>
             <button
+              data-testid="mode-real-button"
               onClick={() => onSetMode('real')}
               style={{
                 padding: '5px 10px',
@@ -158,10 +162,11 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Muted Gate Check + Manual Step Buttons Toggle */}
+        {/* Right Side: Muted Gate Check + Manual Step Buttons Gear Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* 640px Muted Gate Toggle */}
           <button
+            data-testid="muted-gate-button"
             onClick={onToggleDesaturate}
             style={{
               padding: '5px 10px',
@@ -180,6 +185,7 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
 
           {/* Toggle Manual Step Panel */}
           <button
+            data-testid="toggle-manual-controls-button"
             onClick={onToggleManualOpen}
             style={{
               padding: '5px 10px',
@@ -198,9 +204,10 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
         </div>
       </div>
 
-      {/* Manual Controls Panel (Hidden by Default, Revealed by 'H' or Gear Toggle) */}
+      {/* Manual Step Controls Panel (HIDDEN BY DEFAULT, Revealed by 'H' or Gear Toggle) */}
       {isManualOpen && (
         <div
+          data-testid="manual-controls-panel"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -215,8 +222,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </span>
 
           <button
+            data-testid="manual-reset-button"
             onClick={onReset}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: 'rgba(255,255,255,0.12)',
@@ -233,8 +241,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-inject-button"
             onClick={onInjectFault}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: 'var(--alarm)',
@@ -251,8 +260,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-investigate-button"
             onClick={onInvestigate}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: 'var(--accent)',
@@ -269,8 +279,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-verify-button"
             onClick={onVerifyBackup}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: 'rgba(255,255,255,0.12)',
@@ -287,8 +298,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-authorize-button"
             onClick={onAuthorize}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: 'var(--nominal)',
@@ -305,8 +317,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-contention-button"
             onClick={onContention}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: '#1d6e8c',
@@ -323,8 +336,9 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           </button>
 
           <button
+            data-testid="manual-blind-button"
             onClick={onBlind}
-            disabled={isWorking || isPlayingAutoplay}
+            disabled={isWorking}
             style={{
               padding: '5px 10px',
               backgroundColor: '#3b3a34',

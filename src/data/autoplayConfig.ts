@@ -1,30 +1,30 @@
 /**
- * Autoplay Demo Configuration: Timings & Narration Copy.
- * Easily edit stage holds and narration text for screen recordings and judge evaluations.
+ * Walkthrough Configuration: Timings & Verbose On-Screen Narration Copy.
+ * Configured for guided interactive demo flow with 2 explicit human approval pauses.
  */
 
-export const AUTOPLAY_CONFIG = {
+export const WALKTHROUGH_CONFIG = {
   TIMINGS: {
-    STAGE_01_AT_REST: 2500,          // 1. At Rest
-    STAGE_02_INJECT_FAULT: 3500,     // 2. Fault Injected
-    STAGE_03_INVESTIGATE: 4500,      // 3. Investigate (Grafana query + retry)
-    STAGE_04_VERIFY_BACKUP: 2500,    // 4. Verify Backup (ffprobe)
-    STAGE_05_AUTHORIZE_RESTORE: 3500,// 5/6. Human Authorization + Post-Swap Read
-    STAGE_BREATH: 1500,              // 6. Beat of Breath transition
-    STAGE_09_CONTENTION_FAIL: 2500,  // 7a. Contention 2 failures
-    STAGE_10_CONTENTION_DECISION: 3500, // 7b. Policy decision gate
-    STAGE_11_CONTENTION_AUTH: 3000,  // 7c. Authorized priority restore
-    STAGE_12_TERMINAL: 4000,         // 8. Terminal partially mitigated
+    STAGE_01_AT_REST: 3000,          // Beat 1: At rest
+    STAGE_02_INJECT_FAULT: 4000,     // Beat 2: Fault injected
+    STAGE_03_INVESTIGATE: 4500,      // Beat 3: Investigate (Grafana query + retry)
+    STAGE_04_VERIFY_BACKUP: 3000,    // Beat 4: Verify backup (ffprobe)
+    STAGE_06_CHANGED_OVER: 3500,     // Beat 6: Post-swap restore
+    STAGE_BREATH: 2000,              // Beat 6.5: Breath before contention
+    STAGE_09_CONTENTION_FAIL: 3500,  // Beat 7: Contention 2 failures
+    STAGE_12_TERMINAL: 5000,         // Beat 10: Terminal partially mitigated hold
   },
   NARRATIONS: {
-    STAGE_01_AT_REST: "The board reads green — main program and viewer stream playing in sync at 0.510s baseline.",
-    STAGE_02_INJECT_FAULT: "The main program continues — but this viewer's captions visibly froze +2.996s ago.",
-    STAGE_03_INVESTIGATE: "The agent queries Grafana Cloud MCP, retries a query miss, and isolates the caption layer.",
-    STAGE_04_VERIFY_BACKUP: "The agent verifies candidate backup health via ffprobe before offering a switch.",
-    STAGE_05_AWAITING_APPROVAL: "Human-in-the-loop gate — agent halts and summons operator authorization.",
-    STAGE_06_CHANGED_OVER: "Human operator authorizes failover — captions resume in sync on backup feed (+0.486s).",
+    STAGE_01_AT_REST: "A broadcast control room. One operator, many channels. Watch the captions moving on the right.",
+    STAGE_02_INJECT_FAULT: "The captions just froze — but the board still reads green. No alarm fired. In an exception-managed room, nobody is watching this.",
+    STAGE_03_INVESTIGATE: "The agent queries Grafana, retries a failed query, and isolates the caption layer — ruling out the others.",
+    STAGE_04_VERIFY_BACKUP: "It verifies a healthy backup exists via ffprobe.",
+    STAGE_05_AWAITING_APPROVAL: "⏸ STOP — PAUSED FOR OPERATOR: The agent will not act on its own. YOU are the operator — click AUTHORIZE FAILOVER to switch this channel.",
+    STAGE_06_CHANGED_OVER: "Captions restored — confirmed by measurement (+0.486s), not assumption.",
     STAGE_BREATH: "Primary stream restored. Testing multi-channel resource scarcity scenario...",
-    STAGE_09_12_CONTENTION: "One backup, two failures — agent enforces operator policy, protecting emergency tier over general tier.",
-    STAGE_12_TERMINAL: "Partially mitigated — 1 restored, 1 incident open. Resource scarcity cost remains visible.",
+    STAGE_09_CONTENTION_FAIL: "Now two channels fail at once. There is only one backup. The agent cannot save both.",
+    STAGE_10_CONTENTION_DECISION: "⏸ STOP — PAUSED FOR OPERATOR TRADEOFF: The agent recommends protecting the emergency channel — a priority declared before the incident, which the agent cannot change. Click AUTHORIZE PRIORITIZATION to execute.",
+    STAGE_11_CONTENTION_AUTH: "Executing human-authorized tradeoff...",
+    STAGE_12_TERMINAL: "One channel restored. One honestly degraded and flagged for a human. The agent did not pretend it saved both. This is the honest terminal state.",
   },
 };

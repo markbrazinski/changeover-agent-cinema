@@ -29,6 +29,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
 }) => {
   return (
     <div
+      data-testid="agent-spine"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -75,6 +76,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
             return (
               <div
                 key={idx}
+                data-testid={`spine-step-${idx}`}
                 style={{
                   padding: '10px 12px',
                   borderRadius: '6px',
@@ -112,26 +114,29 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
         {/* Docked Single-Channel Approve / Hold Action Gate (State 05) */}
         {showGate && (
           <div
+            data-testid="single-channel-gate"
             style={{
               padding: '12px',
               borderRadius: '6px',
               backgroundColor: 'var(--panel-sunken)',
-              border: '2px solid var(--ink)',
+              border: '2.5px solid var(--accent)',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
               marginTop: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, textAlign: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, textAlign: 'center', color: 'var(--ink)' }}>
               SUMMON: AUTHORIZE CHANGE
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <button
+                data-testid="authorize-failover-button"
                 onClick={onApprove}
                 style={{
-                  padding: '8px',
+                  padding: '10px 4px',
                   backgroundColor: 'var(--nominal)',
                   color: '#f5f3ec',
                   border: 'none',
@@ -140,15 +145,16 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                   fontSize: '9px',
                   fontWeight: 700,
                   cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(59,122,75,0.4)',
                 }}
               >
-                APPROVE
+                AUTHORIZE FAILOVER
               </button>
 
               <button
                 onClick={onHold}
                 style={{
-                  padding: '8px',
+                  padding: '10px 4px',
                   backgroundColor: 'var(--panel-hi)',
                   color: 'var(--ink)',
                   border: '1.5px solid var(--ink)',
@@ -168,6 +174,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
         {/* Docked Contention Decision Gate (State 10 Above-The-Fold) */}
         {showContentionGate && (
           <div
+            data-testid="contention-decision-card"
             style={{
               padding: '12px',
               borderRadius: '6px',
@@ -177,6 +184,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
               flexDirection: 'column',
               gap: '8px',
               marginTop: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             }}
           >
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', fontWeight: 700, color: 'var(--ink)' }}>
@@ -185,19 +193,20 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
 
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '8px', color: 'var(--ink)', lineHeight: 1.4 }}>
               <strong>Policy Precedence:</strong>
-              <div style={{ marginTop: '2px', color: 'var(--nominal-ink)' }}>• CH-14: Emergency Tier → Restores</div>
-              <div style={{ color: 'var(--alarm-ink)' }}>• CH-27: General Tier → Stays Degraded</div>
+              <div style={{ marginTop: '2px', color: 'var(--nominal-ink)' }}>• CH-14: Emergency / public-information tier (operator-declared policy) → Restores</div>
+              <div style={{ color: 'var(--alarm-ink)' }}>• CH-27: General entertainment tier → Stays Degraded</div>
             </div>
 
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: '7.5px', color: 'var(--text-60)' }}>
-              Scarcity: 1 shared backup for 2 failures.
+              Scarcity: 1 shared backup for 2 failures. Priority declared before incident; agent cannot edit.
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
               <button
+                data-testid="authorize-prioritization-button"
                 onClick={onApprove}
                 style={{
-                  padding: '8px 4px',
+                  padding: '10px 4px',
                   backgroundColor: 'var(--nominal)',
                   color: '#f5f3ec',
                   border: 'none',
@@ -206,15 +215,16 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                   fontSize: '8.5px',
                   fontWeight: 700,
                   cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(59,122,75,0.4)',
                 }}
               >
-                AUTHORIZE RESTORE
+                AUTHORIZE PRIORITIZATION
               </button>
 
               <button
                 onClick={onHold}
                 style={{
-                  padding: '8px 4px',
+                  padding: '10px 4px',
                   backgroundColor: 'var(--panel-hi)',
                   color: 'var(--ink)',
                   border: '1.5px solid var(--ink)',
@@ -234,6 +244,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
         {/* Hold Note Banner (Refusal / Blind) */}
         {holdNote && (
           <div
+            data-testid="refusal-banner"
             style={{
               padding: '8px 10px',
               borderRadius: '4px',
