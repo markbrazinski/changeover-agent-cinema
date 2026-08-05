@@ -7,7 +7,7 @@
       "human_authorizer": "operator:mark"
     },
     "result_or_miss": {
-      "timestamp": 1785799431.1899872,
+      "timestamp": 1785961487.805304,
       "pool_id": "shared_pool_1",
       "demand": 2,
       "capacity": 1,
@@ -21,6 +21,6 @@
       "status": "authorized_and_executed"
     },
     "latency_ms": 12.5,
-    "ts": 1785799431.190003
+    "ts": 1785961487.805403
   }
 ]

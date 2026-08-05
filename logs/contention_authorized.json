@@ -1,5 +1,5 @@
 {
-  "timestamp": 1785799431.1899872,
+  "timestamp": 1785961487.805304,
   "pool_id": "shared_pool_1",
   "demand": 2,
   "capacity": 1,
@@ -21,7 +21,7 @@
       "active_source": "backup",
       "last_action": "failover_and_verify_restored",
       "human_authorizer": "operator:mark",
-      "timestamp": 1785799431.208341,
+      "timestamp": 1785961487.846556,
       "restored": true
     },
     "post_swap_measured_offset": 0.48600000000000065,

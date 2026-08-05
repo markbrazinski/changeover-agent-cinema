@@ -1,23 +1,11 @@
 [
   {
-    "tool": "telemetry.read",
-    "args": {
-      "channel": "tears_of_steel"
-    },
-    "result_or_miss": {
-      "caption_offset_seconds": 2.9960000000000004,
-      "liveness_gap_seconds": 2.4080276489257812e-05
-    },
-    "latency_ms": 1.5,
-    "ts": 1785799431.180844
-  },
-  {
     "tool": "grafana_mcp.investigate",
     "args": {
       "channel": "tears_of_steel"
     },
     "result_or_miss": "BLIND: endpoint unreachable",
     "latency_ms": 0.0,
-    "ts": 1785799431.183017
+    "ts": 1785961468.7218308
   }
 ]

@@ -31,8 +31,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const rightVideoRef = useRef<HTMLVideoElement>(null);
 
   // Moving caption states
-  const [leftTime, setLeftTime] = useState<number>(10.0);
-  const [rightTime, setRightTime] = useState<number>(10.0);
+  const [leftTime, setLeftTime] = useState<number>(28.0);
+  const [rightTime, setRightTime] = useState<number>(28.0);
 
   // Single-channel frozen cue (Tears of Steel)
   const [frozenRightCue, setFrozenRightCue] = useState<string | null>(null);
@@ -61,8 +61,10 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     let animationFrameId: number;
 
     if (left && right) {
-      if (left.currentTime === 0) left.currentTime = 10.0;
-      if (right.currentTime === 0) right.currentTime = 10.0;
+      // Seek Tears of Steel to 00:28 (warm cybernetic lab) and Sintel to 00:08 (cold snowy mountain)
+      if (left.currentTime === 0 || left.currentTime < 5) left.currentTime = 28.0;
+      if (right.currentTime === 0 || right.currentTime < 5) right.currentTime = 28.0;
+
       left.play().catch(() => {});
       right.play().catch(() => {});
 
@@ -166,7 +168,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               </span>
             </div>
 
-            {/* Left Movie Player */}
+            {/* Left Movie Player - Tears of Steel */}
             <div
               data-testid="ch14-card"
               style={{
@@ -298,7 +300,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               </span>
             </div>
 
-            {/* Right Movie Player */}
+            {/* Right Movie Player - Sintel */}
             <div
               data-testid="ch27-card"
               className="hatch-alarm"
