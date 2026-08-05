@@ -16,22 +16,16 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     await page.goto('/');
     await page.waitForTimeout(800);
 
-    // Assert manual controls panel is HIDDEN by default
-    const manualPanel = page.getByTestId('manual-controls-panel');
-    await expect(manualPanel).not.toBeVisible();
-
-    // Assert Start Demo button is VISIBLE
-    const startDemoBtn = page.getByTestId('start-demo-button');
-    await expect(startDemoBtn).toBeVisible();
-
     // Press 'h' to toggle controls panel visible, then toggle back hidden
     await page.keyboard.press('h');
+    const manualPanel = page.getByTestId('manual-controls-panel');
     await expect(manualPanel).toBeVisible();
     await page.keyboard.press('h');
     await expect(manualPanel).not.toBeVisible();
 
     // --- BEAT 1: AT REST (01_at_rest) ---
-    await startDemoBtn.click();
+    // Press key '1' to start Part 1 Walkthrough
+    await page.keyboard.press('1');
     await page.waitForTimeout(600); // Wait for handleReset() to complete
 
     // Verify left and right video elements are playing
@@ -125,6 +119,9 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     expect(pageContent6).not.toMatch(/all systems resolved/i);
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_06_changed_over.png') });
+
+    // Press key '2' to start Part 2 (Two-Channel Contention) Walkthrough
+    await page.keyboard.press('2');
 
     // --- BEAT 7: CONTENTION FAILING (09_contention_failing) ---
     await page.waitForTimeout(2500);

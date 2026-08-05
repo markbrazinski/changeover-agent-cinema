@@ -4,7 +4,6 @@ import { DemoControlHeader } from './components/DemoControlHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
-import { NarrationBar } from './components/NarrationBar';
 import { TerminalBanner } from './components/TerminalBanner';
 import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
@@ -19,7 +18,6 @@ export default function App() {
   // Guided interactive walkthrough states
   const [isPlayingWalkthrough, setIsPlayingWalkthrough] = useState<boolean>(false);
   const [isPausedForHuman, setIsPausedForHuman] = useState<boolean>(false);
-  const [narrationText, setNarrationText] = useState<string>(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
   const walkthroughCancelledRef = useRef<boolean>(false);
   const humanApprovedResolverRef = useRef<(() => void) | null>(null);
 
@@ -38,7 +36,7 @@ export default function App() {
   // Keyboard shortcut listener:
   // '1' = Start Part 1 (Single Channel A/B)
   // '2' = Start Part 2 (Two Channel Contention)
-  // 'h' or 'H' = Toggle manual controls panel
+  // 'h' or 'H' = Toggle manual controls header
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'h' || e.key === 'H') {
@@ -86,7 +84,6 @@ export default function App() {
       setBackupHealthy(false);
       setContentionData(null);
       setTimecode('PGM-OUT 20:14:02');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
       setIsPausedForHuman(false);
     } catch (e) {
       console.error('Reset error:', e);
@@ -104,7 +101,6 @@ export default function App() {
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
       setTimecode('PGM-OUT 20:14:16');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
     } catch (e) {
       console.error('Inject fault error:', e);
     } finally {
@@ -118,7 +114,6 @@ export default function App() {
     try {
       setCurrentStage('03_investigating');
       setTimecode('PGM-OUT 20:14:19');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
       const res: InvestigateResponse = await agentClient.investigate('tears_of_steel', mode);
       setCaptionOffset(res.caption_offset || 2.996);
       setFailedLayer('captions');
@@ -140,7 +135,6 @@ export default function App() {
       setCurrentStage('04_backup_verified');
       setBackupHealthy(res.is_healthy);
       setTimecode('PGM-OUT 20:14:24');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
     } catch (e) {
       console.error('Verify backup error:', e);
     }
@@ -150,7 +144,6 @@ export default function App() {
   const handlePrepareApproval = () => {
     setCurrentStage('05_awaiting_approval');
     setTimecode('PGM-OUT 20:14:27');
-    setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_05_AWAITING_APPROVAL);
   };
 
   // 6. Execute Human Approval
@@ -161,7 +154,6 @@ export default function App() {
       setCurrentStage('06_changed_over');
       setPostSwapOffset(res.post_swap_measured_offset || 0.486);
       setTimecode('PGM-OUT 20:14:33');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_06_CHANGED_OVER);
       setIsPausedForHuman(false);
 
       if (humanApprovedResolverRef.current) {
@@ -210,12 +202,10 @@ export default function App() {
       setContentionData(res);
       setCurrentStage('09_contention_failing');
       setTimecode('PGM-OUT 20:15:10');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_09_CONTENTION_FAIL);
 
       await new Promise((r) => setTimeout(r, 1500));
       setCurrentStage('10_contention_decision');
       setTimecode('PGM-OUT 20:15:14');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_10_CONTENTION_DECISION);
     } catch (e) {
       console.error('Contention scenario error:', e);
     } finally {
@@ -228,7 +218,6 @@ export default function App() {
     try {
       setCurrentStage('11_contention_authorized');
       setTimecode('PGM-OUT 20:15:20');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_11_CONTENTION_AUTH);
       setIsPausedForHuman(false);
 
       if (humanApprovedResolverRef.current) {
@@ -239,7 +228,6 @@ export default function App() {
       await new Promise((r) => setTimeout(r, 2000));
       setCurrentStage('12_terminal_partially_mitigated');
       setTimecode('PGM-OUT 20:15:25');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
     } catch (e) {
       console.error('Authorize contention error:', e);
     } finally {
@@ -258,25 +246,21 @@ export default function App() {
       // Beat 1: At Rest
       if (walkthroughCancelledRef.current) return;
       await handleReset();
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST);
 
       // Beat 2: Inject Fault
       if (walkthroughCancelledRef.current) return;
       await handleInjectFault();
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_02_INJECT_FAULT);
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_02_INJECT_FAULT);
 
       // Beat 3: Investigate
       if (walkthroughCancelledRef.current) return;
       await handleInvestigate();
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_03_INVESTIGATE);
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_03_INVESTIGATE);
 
       // Beat 4: Verify Backup
       if (walkthroughCancelledRef.current) return;
       await handleVerifyBackup();
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_04_VERIFY_BACKUP);
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_04_VERIFY_BACKUP);
 
       // Beat 5: ⏸ STOP & WAIT FOR HUMAN CLICK (Single Channel Failover)
@@ -324,7 +308,7 @@ export default function App() {
     }
   };
 
-  // FULL WALKTHROUGH (Start Demo Button)
+  // FULL WALKTHROUGH
   const handleRunWalkthrough = async () => {
     await handleRunPart1();
     if (!walkthroughCancelledRef.current) {
@@ -544,30 +528,72 @@ export default function App() {
       }}
     >
       <div style={{ width: '100%', maxWidth: '1440px', border: '3.5px solid var(--ink)', backgroundColor: 'var(--surface)' }}>
-        {/* Top Control Bar */}
-        <DemoControlHeader
-          mode={mode}
-          onSetMode={handleSetMode}
-          currentStage={currentStage}
-          isWorking={isWorking}
-          isPlayingAutoplay={isPlayingWalkthrough}
-          onRunAutoplay={handleRunWalkthrough}
-          onStopAutoplay={handleStopWalkthrough}
-          isDesaturated={false}
-          onToggleDesaturate={() => {}}
-          isManualOpen={isManualOpen}
-          onToggleManualOpen={() => setIsManualOpen(!isManualOpen)}
-          onReset={() => handleReset()}
-          onInjectFault={handleInjectFault}
-          onInvestigate={handleInvestigate}
-          onVerifyBackup={handleVerifyBackup}
-          onAuthorize={handleExecuteApprove}
-          onContention={handleRunContention}
-          onBlind={handleRefuseBlind}
-        />
+        {/* Top Control Bar (Only rendered when isManualOpen = true via 'H' key) */}
+        {isManualOpen && (
+          <DemoControlHeader
+            mode={mode}
+            onSetMode={handleSetMode}
+            currentStage={currentStage}
+            isWorking={isWorking}
+            isPlayingAutoplay={isPlayingWalkthrough}
+            onRunAutoplay={handleRunWalkthrough}
+            onStopAutoplay={handleStopWalkthrough}
+            isDesaturated={false}
+            onToggleDesaturate={() => {}}
+            isManualOpen={isManualOpen}
+            onToggleManualOpen={() => setIsManualOpen(!isManualOpen)}
+            onReset={() => handleReset()}
+            onInjectFault={handleInjectFault}
+            onInvestigate={handleInvestigate}
+            onVerifyBackup={handleVerifyBackup}
+            onAuthorize={handleExecuteApprove}
+            onContention={handleRunContention}
+            onBlind={handleRefuseBlind}
+          />
+        )}
+
+        {/* Master Control Header */}
+        <div
+          style={{
+            backgroundColor: '#16140f',
+            color: '#f5f3ec',
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontFamily: 'var(--font-mono)',
+            borderBottom: '3.5px solid var(--ink)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '3px',
+                backgroundColor: 'var(--accent)',
+                boxShadow: '0 0 8px rgba(184, 100, 27, 0.8)',
+              }}
+            />
+            <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '2px' }}>
+              CHANGEOVER
+            </span>
+            <span style={{ fontSize: '10px', opacity: 0.6, letterSpacing: '1px' }}>
+              captions layer
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="animate-pulse" style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#d9381e' }} />
+              <span style={{ fontWeight: 700, color: '#d9381e', letterSpacing: '1px' }}>ON AIR</span>
+            </div>
+            <span style={{ opacity: 0.8, fontWeight: 700 }}>{timecode}</span>
+          </div>
+        </div>
 
         {/* Main Grid Body */}
-        <main style={{ display: 'grid', gridTemplateColumns: '1fr 340px', borderTop: '3.5px solid var(--ink)' }}>
+        <main style={{ display: 'grid', gridTemplateColumns: '1fr 340px' }}>
           {/* Left Main Viewing & Telemetry Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRight: '3.5px solid var(--ink)' }}>
             {/* SplitHero Video Viewer */}
@@ -612,13 +638,6 @@ export default function App() {
             />
           </div>
         </main>
-
-        {/* Bottom Narration Bar */}
-        <NarrationBar
-          text={narrationText}
-          isPlaying={isPlayingWalkthrough}
-          isPausedForHuman={isPausedForHuman}
-        />
 
         {/* Terminal Banner */}
         <TerminalBanner
