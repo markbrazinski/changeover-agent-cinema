@@ -38,12 +38,15 @@ export const SINTEL_CUES: VttCue[] = [
 ];
 
 export function getCueForTime(cues: VttCue[], currentTime: number): string {
-  const activeCue = cues.find((c) => currentTime >= c.startTime && currentTime <= c.endTime);
+  if (!cues || cues.length === 0) return "— [dialogue] —";
+  const totalDuration = cues[cues.length - 1].endTime;
+  const wrappedTime = totalDuration > 0 ? (currentTime % totalDuration) : currentTime;
+
+  const activeCue = cues.find((c) => wrappedTime >= c.startTime && wrappedTime <= c.endTime);
   if (activeCue) {
     return activeCue.text;
   }
-  // Interpolation fallback to last past cue
-  const lastPastCue = cues.filter((c) => currentTime >= c.endTime).pop();
+  const lastPastCue = cues.filter((c) => wrappedTime >= c.endTime).pop();
   if (lastPastCue) {
     return lastPastCue.text;
   }

@@ -30,6 +30,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const leftVideoRef = useRef<HTMLVideoElement>(null);
   const rightVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Frame-synced timecode playhead ref
+  const savedPlayheadRef = useRef<number>(28.0);
+
   // Moving caption states
   const [leftTime, setLeftTime] = useState<number>(28.0);
   const [rightTime, setRightTime] = useState<number>(28.0);
@@ -54,22 +57,32 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     }
   }, [rightState, isContention, ch14Restored]);
 
-  // Sync video playback and track currentTime for moving captions
+  // Sync video playback and track currentTime for frame-accurate failover cutover
   useEffect(() => {
     const left = leftVideoRef.current;
     const right = rightVideoRef.current;
     let animationFrameId: number;
 
     if (left && right) {
-      // Seek Tears of Steel to 00:28 (warm cybernetic lab) and Sintel to 00:08 (cold snowy mountain)
-      if (left.currentTime === 0 || left.currentTime < 5) left.currentTime = 28.0;
-      if (right.currentTime === 0 || right.currentTime < 5) right.currentTime = 28.0;
+      // Lockstep timecode alignment: Preserve exact playhead position on backup failover switch
+      const activeTime = savedPlayheadRef.current > 2.0 ? savedPlayheadRef.current : 28.0;
+      if (left.currentTime === 0 || left.currentTime < 2.0) {
+        left.currentTime = activeTime;
+      }
+      if (right.currentTime === 0 || right.currentTime < 2.0) {
+        right.currentTime = activeTime;
+      }
 
       left.play().catch(() => {});
       right.play().catch(() => {});
 
       const updateTimes = () => {
-        if (left) setLeftTime(left.currentTime);
+        if (left) {
+          setLeftTime(left.currentTime);
+          if (left.currentTime > 2.0) {
+            savedPlayheadRef.current = left.currentTime;
+          }
+        }
         if (right) {
           if (rightState === 'frozen' || (isContention && !ch14Restored)) {
             // Lock the frozen cue text for Tears of Steel
@@ -97,7 +110,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [sourceVideoUrl, rightState, isContention, ch14Restored]);
+  }, [sourceVideoUrl, backupVideoUrl, rightState, isContention, ch14Restored]);
 
   // Compute active caption strings
   const leftCaptionText = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
