@@ -1,5 +1,7 @@
 /**
- * VTT Caption Parser & Cue Types for Changeover.
+ * Dialogue-Style Subtitle Cues & Parser for Changeover Broadcast Cinema.
+ * Real dialogue timing with distinct spoken dialogue lines per film.
+ * Note: Authored placeholder dialogue (films ship no subtitles). Real cue timing (~2s cadence).
  */
 
 export interface VttCue {
@@ -9,32 +11,30 @@ export interface VttCue {
   text: string;
 }
 
-// Built-in VTT cues parsed directly from films/tears_of_steel/captions.vtt
+// TEARS OF STEEL (CH-14) — Sci-Fi Emergency Action Dialogue
 export const TEARS_OF_STEEL_CUES: VttCue[] = [
-  { id: 1, startTime: 2.002, endTime: 4.004, text: "Program feed active. Accessibility layers nominal." },
-  { id: 2, startTime: 4.504, endTime: 6.506, text: "Caption layer reporting in sync with the program clock." },
-  { id: 3, startTime: 7.006, endTime: 9.008, text: "Feed-liveness monitor reporting frame delivery." },
-  { id: 4, startTime: 9.508, endTime: 11.510, text: "All monitored layers holding steady." },
-  { id: 5, startTime: 12.010, endTime: 14.012, text: "Program clock advancing normally." },
-  { id: 6, startTime: 14.512, endTime: 16.514, text: "Caption cue cadence nominal." },
-  { id: 7, startTime: 17.014, endTime: 19.016, text: "Continuity check passed." },
-  { id: 8, startTime: 19.516, endTime: 21.518, text: "Primary feed stream health verified." },
-  { id: 9, startTime: 22.018, endTime: 24.020, text: "Timecode sync aligned with master reference." },
-  { id: 10, startTime: 24.520, endTime: 26.522, text: "Accessibility pipeline in sync." },
-  { id: 11, startTime: 27.022, endTime: 29.024, text: "No anomaly detected across monitored layers." },
-  { id: 12, startTime: 29.524, endTime: 31.526, text: "Program clock +0.510s baseline steady." },
-  { id: 13, startTime: 32.026, endTime: 34.028, text: "Continuous playback nominal." },
-  { id: 14, startTime: 34.528, endTime: 36.530, text: "Broadcast audio & video in sync." },
-  { id: 15, startTime: 37.030, endTime: 39.032, text: "Master control monitoring active." },
+  { id: 1, startTime: 0.0, endTime: 3.5, text: "— We don't have much time, get to the platform —" },
+  { id: 2, startTime: 3.5, endTime: 6.8, text: "— Did you hear that sound coming from the lower deck? —" },
+  { id: 3, startTime: 6.8, endTime: 10.2, text: "— The primary power grid is losing stability! —" },
+  { id: 4, startTime: 10.2, endTime: 13.8, text: "— Hold your position, wait for my signal before you —" },
+  { id: 5, startTime: 13.8, endTime: 17.5, text: "— Get everyone out of here now! The core is —" }, // Cuts off mid-sentence on fault
+  { id: 6, startTime: 17.5, endTime: 21.0, text: "— Emergency systems are failing to engage! —" },
+  { id: 7, startTime: 21.0, endTime: 24.8, text: "— Reroute the backup relay through the secondary line! —" },
+  { id: 8, startTime: 24.8, endTime: 28.5, text: "— Signal acquired, we're back online —" },
+  { id: 9, startTime: 28.5, endTime: 32.0, text: "— All auxiliary telemetry restored to baseline —" },
+  { id: 10, startTime: 32.0, endTime: 36.0, text: "— Stay on high alert, monitoring all active feeds —" },
 ];
 
+// SINTEL (CH-27) — Fantasy Mountain Journey Dialogue
 export const SINTEL_CUES: VttCue[] = [
-  { id: 1, startTime: 2.002, endTime: 4.004, text: "Sintel stream feed active. Secondary channel nominal." },
-  { id: 2, startTime: 4.504, endTime: 6.506, text: "General entertainment tier stream in sync." },
-  { id: 3, startTime: 7.006, endTime: 9.008, text: "Caption cue stream advancing normally." },
-  { id: 4, startTime: 9.508, endTime: 11.510, text: "Sintel audio and video sync baseline nominal." },
-  { id: 5, startTime: 12.010, endTime: 14.012, text: "Monitoring channel 27 general tier." },
-  { id: 6, startTime: 14.512, endTime: 16.514, text: "Continuity check passed for Sintel feed." },
+  { id: 1, startTime: 0.0, endTime: 3.5, text: "— High in the mountains, the wind never stops —" },
+  { id: 2, startTime: 3.5, endTime: 6.8, text: "— I've been searching for days through the snow —" },
+  { id: 3, startTime: 6.8, endTime: 10.2, text: "— Look up at the ridge, something is moving in the mist —" },
+  { id: 4, startTime: 10.2, endTime: 13.8, text: "— Stay quiet, don't make a sound until it passes —" },
+  { id: 5, startTime: 13.8, endTime: 17.5, text: "— We've lost sight of the trail in this storm —" },
+  { id: 6, startTime: 17.5, endTime: 21.0, text: "— The path ahead is completely ice-bound —" },
+  { id: 7, startTime: 21.0, endTime: 24.8, text: "— We have to find shelter before nightfall —" },
+  { id: 8, startTime: 24.8, endTime: 28.5, text: "— Keep moving forward, we cannot stop here —" },
 ];
 
 export function getCueForTime(cues: VttCue[], currentTime: number): string {
@@ -42,10 +42,10 @@ export function getCueForTime(cues: VttCue[], currentTime: number): string {
   if (activeCue) {
     return activeCue.text;
   }
-  // Fallback interpolation if between cues
+  // Interpolation fallback to last past cue
   const lastPastCue = cues.filter((c) => currentTime >= c.endTime).pop();
   if (lastPastCue) {
     return lastPastCue.text;
   }
-  return cues[0]?.text || "— sample caption dialogue, in sync —";
+  return cues[0]?.text || "— [dialogue] —";
 }

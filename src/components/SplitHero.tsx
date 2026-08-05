@@ -33,7 +33,26 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   // Moving caption states
   const [leftTime, setLeftTime] = useState<number>(10.0);
   const [rightTime, setRightTime] = useState<number>(10.0);
+
+  // Single-channel frozen cue (Tears of Steel)
   const [frozenRightCue, setFrozenRightCue] = useState<string | null>(null);
+  const frozenRightCueRef = useRef<string | null>(null);
+
+  // Contention frozen cue (Sintel)
+  const [frozenSintelCue, setFrozenSintelCue] = useState<string | null>(null);
+  const frozenSintelCueRef = useRef<string | null>(null);
+
+  // Reset ref locks when state changes
+  useEffect(() => {
+    if (rightState !== 'frozen' && !(isContention && !ch14Restored)) {
+      frozenRightCueRef.current = null;
+      setFrozenRightCue(null);
+    }
+    if (!isContention) {
+      frozenSintelCueRef.current = null;
+      setFrozenSintelCue(null);
+    }
+  }, [rightState, isContention, ch14Restored]);
 
   // Sync video playback and track currentTime for moving captions
   useEffect(() => {
@@ -51,13 +70,23 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         if (left) setLeftTime(left.currentTime);
         if (right) {
           if (rightState === 'frozen' || (isContention && !ch14Restored)) {
-            // Lock the frozen cue text on fault
-            if (!frozenRightCue) {
-              setFrozenRightCue(getCueForTime(TEARS_OF_STEEL_CUES, right.currentTime));
+            // Lock the frozen cue text for Tears of Steel
+            if (!frozenRightCueRef.current) {
+              const cueText = getCueForTime(TEARS_OF_STEEL_CUES, right.currentTime);
+              frozenRightCueRef.current = cueText;
+              setFrozenRightCue(cueText);
             }
           } else {
-            setFrozenRightCue(null);
             setRightTime(right.currentTime);
+          }
+
+          if (isContention) {
+            // Lock distinct frozen cue text for Sintel
+            if (!frozenSintelCueRef.current) {
+              const sintelCueText = getCueForTime(SINTEL_CUES, right.currentTime);
+              frozenSintelCueRef.current = sintelCueText;
+              setFrozenSintelCue(sintelCueText);
+            }
           }
         }
         animationFrameId = requestAnimationFrame(updateTimes);
@@ -71,7 +100,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   // Compute active caption strings
   const leftCaptionText = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
   const rightCaptionText = frozenRightCue || getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
-  const sintelCaptionText = frozenRightCue || getCueForTime(SINTEL_CUES, rightTime);
+  const sintelCaptionText = frozenSintelCue || getCueForTime(SINTEL_CUES, rightTime);
 
   // CONTENTION MODE (09–12): In-Player Two Different Movies Transformation
   if (isContention) {

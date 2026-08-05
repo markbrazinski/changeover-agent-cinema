@@ -14,14 +14,14 @@ export const NarrationBar: React.FC<NarrationBarProps> = ({ text, isPlaying = fa
       data-testid="narration-bar"
       style={{
         width: '100%',
-        backgroundColor: isPausedForHuman ? '#1a1408' : '#110f0c',
-        color: '#f5f3ec',
-        padding: '12px 18px',
-        borderTop: isPausedForHuman ? '2.5px solid var(--accent)' : '2.5px solid var(--ink)',
+        backgroundColor: isPausedForHuman ? '#221908' : '#0c0b08',
+        color: '#ffffff',
+        padding: '14px 20px',
+        borderTop: isPausedForHuman ? '3px solid var(--accent)' : '3px solid var(--ink)',
         display: 'flex',
         alignItems: 'center',
-        gap: '14px',
-        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        gap: '16px',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15)',
         transition: 'all 0.3s ease',
       }}
     >
@@ -30,35 +30,38 @@ export const NarrationBar: React.FC<NarrationBarProps> = ({ text, isPlaying = fa
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          padding: '4px 10px',
-          borderRadius: '4px',
-          backgroundColor: isPausedForHuman ? 'var(--accent)' : isPlaying ? 'var(--nominal)' : 'rgba(255, 255, 255, 0.12)',
-          color: '#f5f3ec',
+          gap: '8px',
+          padding: '5px 12px',
+          borderRadius: '5px',
+          backgroundColor: isPausedForHuman ? 'var(--accent)' : isPlaying ? 'var(--nominal)' : 'rgba(255, 255, 255, 0.15)',
+          color: '#ffffff',
           fontFamily: 'var(--font-mono)',
-          fontSize: '9.5px',
+          fontSize: '10.5px',
           fontWeight: 700,
-          letterSpacing: '1px',
+          letterSpacing: '1.2px',
           whiteSpace: 'nowrap',
           flexShrink: 0,
+          boxShadow: isPausedForHuman ? '0 0 12px rgba(184, 100, 27, 0.5)' : 'none',
         }}
       >
         <div
           className={isPlaying || isPausedForHuman ? 'animate-pulse' : ''}
-          style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#fff' }}
+          style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#fff' }}
         />
-        {isPausedForHuman ? '⏸ WAITING FOR HUMAN OPERATOR' : isPlaying ? 'DEMO NARRATION' : 'NARRATION'}
+        {isPausedForHuman ? '⏸ OPERATOR ACTION REQUIRED' : isPlaying ? 'DEMO NARRATION' : 'NARRATION'}
       </div>
 
-      {/* Narration Text Content */}
+      {/* Narration Text Content - Bumped Size & Contrast */}
       <div
+        data-testid="narration-text"
         style={{
           fontFamily: 'var(--font-grotesk)',
-          fontSize: '13px',
+          fontSize: '14.5px',
           fontWeight: 600,
-          color: '#f5f3ec',
+          color: '#ffffff',
           letterSpacing: '0.2px',
-          lineHeight: 1.35,
+          lineHeight: 1.4,
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)',
         }}
       >
         "{text}"

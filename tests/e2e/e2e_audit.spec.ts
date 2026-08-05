@@ -2,8 +2,8 @@ import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
-  test('Executes Guided Walkthrough, asserts DOM at each beat, verifies live moving captions, and captures screenshots', async ({ page }) => {
+test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
+  test('Executes Guided Walkthrough, asserts dialogue-style captions freeze and resume, verifies distinct film scripts, and captures screenshots', async ({ page }) => {
     // Extend test timeout to 60s for full 11-beat walkthrough
     test.setTimeout(60000);
 
@@ -45,18 +45,19 @@ test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
     await expect(page.getByTestId('right-status-pill')).toContainText(/LOOKS FINE/i);
     await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.510s/i);
 
-    // Verify right viewer caption text is ADVANCING
-    const rightCapText1 = await page.getByTestId('right-caption-text').innerText();
-    await page.waitForTimeout(2200);
-    const rightCapText2 = await page.getByTestId('right-caption-text').innerText();
-    expect(rightCapText2).not.toEqual(rightCapText1);
+    // Verify dialogue-style captions are ADVANCING on right viewer panel
+    const rightDialogue1 = await page.getByTestId('right-caption-text').innerText();
+    expect(rightDialogue1).toMatch(/—/); // Verify spoken dialogue punctuation format
+    await page.waitForTimeout(3600);
+    const rightDialogue2 = await page.getByTestId('right-caption-text').innerText();
+    expect(rightDialogue2).not.toEqual(rightDialogue1);
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_01_at_rest.png') });
 
-    // --- BEAT 2: FAULT INJECTED (02_fault_injected: Captions freeze while video plays) ---
-    await page.waitForTimeout(1000); // Wait for fault state to lock in
+    // --- BEAT 2: FAULT INJECTED (02_fault_injected: Dialogue caption freezes mid-line while video plays) ---
+    await page.waitForTimeout(2200); // Wait for fault state & frozenRightCue to lock in
 
-    // Read video time and caption text after fault freeze locks in
+    // Read video time and dialogue text after fault freeze locks in
     const freezeCap1 = await page.getByTestId('right-caption-text').innerText();
     const freezeVid1 = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
 
@@ -65,7 +66,7 @@ test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
     const freezeCap2 = await page.getByTestId('right-caption-text').innerText();
     const freezeVid2 = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
 
-    // ASSERT: Video currentTime ADVANCED while Caption Text remained UNCHANGED (FROZEN!)
+    // ASSERT: Video currentTime ADVANCED while Dialogue Caption Text remained FROZEN mid-line!
     expect(freezeVid2).toBeGreaterThan(freezeVid1);
     expect(freezeCap2).toEqual(freezeCap1);
 
@@ -112,10 +113,10 @@ test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
     await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.486s/i);
     await expect(page.getByTestId('right-status-pill')).toContainText(/RESTORED/i);
 
-    // Verify captions and video time RESUME moving on right viewer panel
+    // Verify dialogue captions and video time RESUME moving on right viewer panel
     const resVidTime1 = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
     const resumeCap1 = await page.getByTestId('right-caption-text').innerText();
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(3600);
     const resVidTime2 = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
     const resumeCap2 = await page.getByTestId('right-caption-text').innerText();
 
@@ -134,11 +135,10 @@ test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
     await expect(page.getByTestId('ch14-card')).toBeVisible();
     await expect(page.getByTestId('ch27-card')).toBeVisible();
 
-    // Assert both videos playing in contention mode
-    const ch14Vid = page.getByTestId('ch14-video');
-    const ch27Vid = page.getByTestId('ch27-video');
-    await expect(ch14Vid).toBeVisible();
-    await expect(ch27Vid).toBeVisible();
+    // ASSERT: CH-14 (Tears of Steel) and CH-27 (Sintel) show DIFFERENT dialogue lines!
+    const ch14Dialogue = await page.getByTestId('ch14-caption').innerText();
+    const ch27Dialogue = await page.getByTestId('ch27-caption').innerText();
+    expect(ch14Dialogue).not.toEqual(ch27Dialogue);
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_07_contention_failing.png') });
 
@@ -209,6 +209,6 @@ test.describe('E2E Audit Suite — Changeover Broadcast Demo', () => {
     expect(finalDomText).not.toMatch(/signer feed/i);
     expect(finalDomText).not.toMatch(/\bpremium\b/i);
 
-    console.log('✅ ALL E2E AUDIT BEAT ASSERTIONS PASSED CLEANLY!');
+    console.log('✅ ALL E2E AUDIT BEAT ASSERTIONS PASSED CLEANLY WITH DIALOGUE CAPTIONS!');
   });
 });

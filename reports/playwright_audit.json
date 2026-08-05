@@ -80,13 +80,13 @@
       "specs": [],
       "suites": [
         {
-          "title": "E2E Audit Suite — Changeover Broadcast Demo",
+          "title": "E2E Audit Suite — Changeover Broadcast Cinema",
           "file": "e2e/e2e_audit.spec.ts",
           "line": 5,
           "column": 6,
           "specs": [
             {
-              "title": "Executes Guided Walkthrough, asserts DOM at each beat, verifies live moving captions, and captures screenshots",
+              "title": "Executes Guided Walkthrough, asserts dialogue-style captions freeze and resume, verifies distinct film scripts, and captures screenshots",
               "ok": true,
               "tags": [],
               "tests": [
@@ -101,32 +101,32 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 34312,
+                      "duration": 37352,
                       "errors": [],
                       "stdout": [
                         {
-                          "text": "✅ ALL E2E AUDIT BEAT ASSERTIONS PASSED CLEANLY!\n"
+                          "text": "✅ ALL E2E AUDIT BEAT ASSERTIONS PASSED CLEANLY WITH DIALOGUE CAPTIONS!\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-04T21:03:52.987Z",
+                      "startTime": "2026-08-05T03:23:05.211Z",
                       "annotations": [],
                       "attachments": [
                         {
                           "name": "screenshot",
                           "contentType": "image/png",
-                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-588ce-ns-and-captures-screenshots-chromium/test-finished-1.png"
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-dfea7-ts-and-captures-screenshots-chromium/test-finished-1.png"
                         },
                         {
                           "name": "video",
                           "contentType": "video/webm",
-                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-588ce-ns-and-captures-screenshots-chromium/video.webm"
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-dfea7-ts-and-captures-screenshots-chromium/video.webm"
                         },
                         {
                           "name": "trace",
                           "contentType": "application/zip",
-                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-588ce-ns-and-captures-screenshots-chromium/trace.zip"
+                          "path": "/Users/markbrazinski/Desktop/coding fun/changeover-agent-cinema/test-results/e2e-e2e_audit-E2E-Audit-Su-dfea7-ts-and-captures-screenshots-chromium/trace.zip"
                         }
                       ]
                     }
@@ -134,7 +134,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "7f33b83de742a240632c-cf3effe23073791e9b85",
+              "id": "7f33b83de742a240632c-df30a92998c2a93ed4ad",
               "file": "e2e/e2e_audit.spec.ts",
               "line": 6,
               "column": 3
@@ -146,8 +146,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-04T21:03:52.717Z",
-    "duration": 35375.289,
+    "startTime": "2026-08-05T03:23:04.981Z",
+    "duration": 38557.856999999996,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,
