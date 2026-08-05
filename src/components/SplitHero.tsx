@@ -457,12 +457,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '11px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
               color: 'var(--text-60)',
-              marginBottom: '8px',
+              marginBottom: '10px',
             }}
           >
             WHAT MOST PEOPLE SEE
@@ -500,8 +500,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                padding: '4px 10px',
+                fontSize: '10.5px',
+                padding: '6px 12px',
                 borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
@@ -517,11 +517,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             <div
               data-testid="left-caption-text"
               style={{
-                backgroundColor: 'rgba(22, 20, 15, 0.90)',
+                backgroundColor: 'rgba(22, 20, 15, 0.92)',
                 color: '#f5f3ec',
-                padding: '10px 14px',
+                padding: '12px 16px',
                 fontFamily: 'var(--font-grotesk)',
-                fontSize: '12px',
+                fontSize: '15px',
+                fontWeight: 600,
                 textAlign: 'center',
                 borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                 zIndex: 2,
@@ -539,12 +540,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '5px 12px',
+              padding: '7px 14px',
               borderRadius: '20px',
               border: '1.5px solid var(--nominal)',
               backgroundColor: 'var(--panel-hi)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '11px',
               fontWeight: 700,
               letterSpacing: '0.5px',
               color: 'var(--nominal-ink)',
@@ -560,12 +561,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '11px',
               fontWeight: 700,
               letterSpacing: '1.5px',
               textTransform: 'uppercase',
               color: rightState === 'frozen' ? 'var(--alarm-ink)' : 'var(--text-60)',
-              marginBottom: '8px',
+              marginBottom: '10px',
             }}
           >
             WHAT THIS VIEWER GETS
@@ -621,8 +622,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 backgroundColor: 'rgba(0, 0, 0, 0.85)',
                 color: '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8px',
-                padding: '4px 10px',
+                fontSize: '10.5px',
+                padding: '6px 12px',
                 borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
@@ -704,9 +705,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'var(--surface)',
                   color: 'var(--ink)',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--ink)',
@@ -723,9 +724,10 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'rgba(22, 20, 15, 0.88)',
                   color: '#f5f3ec',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   fontFamily: 'var(--font-grotesk)',
-                  fontSize: '12px',
+                  fontSize: '15px',
+                  fontWeight: 600,
                   textAlign: 'center',
                   borderTop: '1px solid rgba(255, 255, 255, 0.15)',
                   zIndex: 2,
@@ -744,7 +746,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '5px 12px',
+              padding: '7px 14px',
               borderRadius: '20px',
               border:
                 rightState === 'frozen'
@@ -764,7 +766,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   ? 'var(--ghost-2)'
                   : 'var(--nominal-ink)',
               fontFamily: 'var(--font-mono)',
-              fontSize: '8.5px',
+              fontSize: '11px',
               fontWeight: 700,
               letterSpacing: '0.5px',
             }}

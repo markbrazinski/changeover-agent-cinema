@@ -29,19 +29,40 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
     ? `+${primaryOffset.toFixed(3)}s`
     : `+${primaryOffset.toFixed(3)}s`;
 
+  // Dynamic SVG path for smooth animation transitions
+  // L1: SIGN line stays flat at y=52 (nominal 0.51s)
+  // L2: CAP line curves y=52 -> y=18 (alarm 2.996s) smoothly
+  const capPathD = isBlind
+    ? 'M 0 52 L 340 52'
+    : isAlarm
+    ? 'M 0 52 C 120 52, 160 18, 340 18'
+    : isRestored
+    ? 'M 0 52 C 120 52, 160 48, 340 48'
+    : 'M 0 52 L 340 52';
+
+  const capStrokeColor = isBlind
+    ? 'var(--ghost-border)'
+    : isAlarm
+    ? 'var(--alarm)'
+    : isRestored
+    ? 'var(--restored)'
+    : 'var(--nominal)';
+
+  const capEndCy = isBlind ? 52 : isAlarm ? 18 : isRestored ? 48 : 52;
+
   return (
     <div
       data-testid="evidence-chart"
       style={{
-        margin: '10px 14px 14px 14px',
-        padding: '14px 18px',
+        margin: '12px 18px 18px 18px',
+        padding: '16px 20px',
         backgroundColor: '#fcfbf7',
         border: '2.5px solid var(--ink)',
         borderRadius: '10px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+        gap: '14px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
       }}
     >
       {/* Telemetry Card Subheader Bar */}
@@ -49,7 +70,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
         <div
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '10px',
+            fontSize: '12px',
             fontWeight: 700,
             letterSpacing: '1.5px',
             textTransform: 'uppercase',
@@ -63,7 +84,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
           data-testid="peer-ruled-out-text"
           style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: '9.5px',
+            fontSize: '11.5px',
             fontWeight: 700,
             letterSpacing: '1px',
             textTransform: 'uppercase',
@@ -81,13 +102,13 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
       </div>
 
       {/* Main Telemetry Body: Big Readout Left vs SVG Graph Right */}
-      <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '20px', alignItems: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '24px', alignItems: 'center' }}>
         {/* Left Side: Big Live Measured Offset Readout */}
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '11px',
               fontWeight: 700,
               letterSpacing: '1px',
               color: 'var(--text-60)',
@@ -99,8 +120,8 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
           >
             <div
               style={{
-                width: '6px',
-                height: '6px',
+                width: '8px',
+                height: '8px',
                 borderRadius: '50%',
                 backgroundColor: isBlind
                   ? 'var(--ghost-3)'
@@ -118,10 +139,10 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
             data-testid="offset-readout"
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '36px',
+              fontSize: '44px',
               fontWeight: 700,
               lineHeight: 1,
-              letterSpacing: '-0.5px',
+              letterSpacing: '-1px',
               color: isBlind
                 ? 'var(--ghost-border)'
                 : isAlarm
@@ -129,6 +150,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                 : isRestored
                 ? 'var(--restored)'
                 : 'var(--nominal)',
+              transition: 'color 0.4s ease',
             }}
           >
             {displayOffset}
@@ -137,9 +159,10 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
           <div
             style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: '9px',
+              fontSize: '10.5px',
+              fontWeight: 600,
               color: 'var(--text-60)',
-              marginTop: '6px',
+              marginTop: '8px',
             }}
           >
             {isBlind
@@ -153,54 +176,62 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
         </div>
 
         {/* Right Side: Live Measured SVG Plot & Layer Badges */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {/* SVG Plot */}
-            <div style={{ flex: 1, height: '68px', position: 'relative' }}>
-              <svg width="100%" height="100%" viewBox="0 0 340 68" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+            <div style={{ flex: 1, height: '80px', position: 'relative' }}>
+              <svg width="100%" height="100%" viewBox="0 0 340 70" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
                 {/* Ceiling threshold line (derived 0.759s) */}
-                <line x1="0" y1="24" x2="340" y2="24" stroke="var(--alarm)" strokeWidth="1" strokeDasharray="3 3" opacity={isBlind ? '0.2' : '0.45'} />
+                <line x1="0" y1="20" x2="340" y2="20" stroke="var(--alarm)" strokeWidth="1.5" strokeDasharray="4 4" opacity={isBlind ? '0.2' : '0.45'} />
 
                 {/* Nominal Baseline (0.510s) */}
-                <line x1="0" y1="52" x2="340" y2="52" stroke="var(--nominal)" strokeWidth="1" strokeDasharray="3 3" opacity={isBlind ? '0.15' : '0.3'} />
+                <line x1="0" y1="52" x2="340" y2="52" stroke="var(--nominal)" strokeWidth="1.5" strokeDasharray="4 4" opacity={isBlind ? '0.15' : '0.3'} />
 
-                {/* Blind Ghost Mode vs Live Plot Lines */}
-                {isBlind ? (
-                  <>
-                    <line data-testid="cap-line-blind" x1="0" y1="52" x2="340" y2="52" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
-                    <line data-testid="sign-line-blind" x1="0" y1="24" x2="340" y2="24" stroke="var(--ghost-border)" strokeWidth="2" strokeDasharray="4 4" />
-                  </>
-                ) : isAlarm ? (
-                  <>
-                    <line x1="0" y1="52" x2="340" y2="52" stroke="var(--nominal)" strokeWidth="2" />
-                    <circle cx="340" cy="52" r="2.5" fill="var(--nominal)" />
+                {/* SIGN Layer Line (Flat Line) */}
+                <line
+                  data-testid={isBlind ? 'sign-line-blind' : 'sign-line-nominal'}
+                  x1="0"
+                  y1="52"
+                  x2="340"
+                  y2="52"
+                  stroke={isBlind ? 'var(--ghost-border)' : 'var(--nominal)'}
+                  strokeWidth="2.5"
+                  strokeDasharray={isBlind ? '4 4' : 'none'}
+                />
+                <circle cx="340" cy="52" r="3.5" fill={isBlind ? 'var(--ghost-border)' : 'var(--nominal)'} />
 
-                    <line x1="0" y1="50" x2="100" y2="50" stroke="var(--nominal)" strokeWidth="2.5" />
-                    <line data-testid="cap-line-alarm" x1="100" y1="50" x2="340" y2="12" stroke="var(--alarm)" strokeWidth="2.5" />
-                    <circle cx="340" cy="12" r="4" fill="var(--alarm)" />
-                  </>
-                ) : (
-                  <>
-                    <line x1="0" y1="52" x2="340" y2="52" stroke="var(--nominal)" strokeWidth="2" />
-                    <circle cx="340" cy="52" r="2.5" fill="var(--nominal)" />
+                {/* Smooth Animated CAP Layer Cubic Bezier Curve */}
+                <path
+                  data-testid={isBlind ? 'cap-line-blind' : isAlarm ? 'cap-line-alarm' : 'cap-line-nominal'}
+                  d={capPathD}
+                  fill="none"
+                  stroke={capStrokeColor}
+                  strokeWidth="3"
+                  strokeDasharray={isBlind ? '4 4' : 'none'}
+                  style={{ transition: 'd 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease' }}
+                />
 
-                    <line x1="0" y1="48" x2="340" y2="48" stroke={isRestored ? 'var(--restored)' : 'var(--nominal)'} strokeWidth="2.5" />
-                    <circle cx="340" cy="48" r="3.5" fill={isRestored ? 'var(--restored)' : 'var(--nominal)'} />
-                  </>
-                )}
+                {/* Animated End Indicator Dot */}
+                <circle
+                  cx="340"
+                  cy={capEndCy}
+                  r={isAlarm ? 5 : 4}
+                  fill={capStrokeColor}
+                  style={{ transition: 'cy 0.8s cubic-bezier(0.4, 0, 0.2, 1), fill 0.4s ease' }}
+                />
               </svg>
             </div>
 
             {/* Right Status Badges */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', width: '115px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '135px' }}>
               <div
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  borderRadius: '5px',
                   border: isBlind
                     ? '1.5px dashed var(--ghost-3)'
                     : isAlarm
-                    ? '1.5px solid var(--alarm)'
+                    ? '2px solid var(--alarm)'
                     : '1.5px solid var(--nominal)',
                   backgroundColor: isBlind
                     ? 'var(--panel-lo)'
@@ -213,7 +244,7 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                     ? 'var(--alarm)'
                     : 'var(--nominal)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '8.5px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                 }}
@@ -223,13 +254,13 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
 
               <div
                 style={{
-                  padding: '4px 8px',
-                  borderRadius: '4px',
+                  padding: '6px 10px',
+                  borderRadius: '5px',
                   border: isBlind ? '1.5px dashed var(--ghost-3)' : '1.5px solid var(--nominal)',
                   backgroundColor: isBlind ? 'var(--panel-lo)' : 'var(--panel-hi)',
                   color: isBlind ? 'var(--ghost-2)' : 'var(--nominal)',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '8.5px',
+                  fontSize: '11px',
                   fontWeight: 700,
                   textAlign: 'center',
                 }}
@@ -241,13 +272,13 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
                 <div
                   data-testid="backup-healthy-badge"
                   style={{
-                    padding: '4px 8px',
-                    borderRadius: '4px',
+                    padding: '6px 10px',
+                    borderRadius: '5px',
                     border: '1.5px solid var(--restored)',
                     backgroundColor: 'var(--panel-hi)',
                     color: 'var(--restored)',
                     fontFamily: 'var(--font-mono)',
-                    fontSize: '8.5px',
+                    fontSize: '11px',
                     fontWeight: 700,
                     textAlign: 'center',
                   }}
@@ -258,32 +289,33 @@ export const EvidenceChart: React.FC<EvidenceChartProps> = ({
             </div>
           </div>
 
-          {/* Enforced Readable Legend Foot */}
+          {/* Chart Legend Footer */}
           <div
             style={{
-              paddingTop: '8px',
-              borderTop: '1px dashed rgba(0, 0, 0, 0.18)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              paddingTop: '6px',
+              borderTop: '1px dashed #d8d4cb',
               fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              color: 'var(--ink)',
+              fontSize: '10.5px',
+              fontWeight: 600,
+              color: 'var(--text-60)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ display: 'inline-block', width: '14px', height: '3px', backgroundColor: 'var(--alarm)' }} />
-              <strong>CAP</strong> · captions
+            <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '12px', height: '3px', backgroundColor: 'var(--alarm)' }} />
+                <span>CAP · captions</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div style={{ width: '12px', height: '3px', backgroundColor: 'var(--nominal)' }} />
+                <span>SIGN · feed-liveness</span>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ display: 'inline-block', width: '14px', height: '3px', backgroundColor: 'var(--nominal)' }} />
-              <strong>SIGN</strong> · feed-liveness (stand-in)
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="hatch-ad-swatch" />
-              <strong>AD</strong> — not monitored in this build · static
+            <div style={{ opacity: 0.65 }}>
+              CEILING THRESHOLD: +0.759s
             </div>
           </div>
         </div>
