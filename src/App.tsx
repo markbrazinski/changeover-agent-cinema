@@ -1,49 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { agentClient, Mode, InvestigateResponse, ContentionResponse } from './api/agentClient';
-import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
+import { Mode, agentClient, InvestigateResponse, ContentionResponse } from './api/agentClient';
 import { DemoControlHeader } from './components/DemoControlHeader';
-import { PgmHeader } from './components/PgmHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
-import { LaneStrip } from './components/LaneStrip';
 import { NarrationBar } from './components/NarrationBar';
 import { TerminalBanner } from './components/TerminalBanner';
+import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
-export type DemoStage =
-  | '01_at_rest'
-  | '02_fault_injected'
-  | '03_investigating'
-  | '04_backup_verified'
-  | '05_awaiting_approval'
-  | '06_changed_over'
-  | '07_refusal_wont_switch'
-  | '08_refusal_wont_guess'
-  | '09_contention_failing'
-  | '10_contention_decision'
-  | '11_contention_authorized'
-  | '12_terminal_partially_mitigated';
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export const App: React.FC = () => {
+export default function App() {
   const [mode, setMode] = useState<Mode>('deterministic');
-  const [currentStage, setCurrentStage] = useState<DemoStage>('01_at_rest');
+  const [currentStage, setCurrentStage] = useState<string>('01_at_rest');
+  const [captionOffset, setCaptionOffset] = useState<number>(0.510);
+  const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
   const [isWorking, setIsWorking] = useState<boolean>(false);
-  const [isDesaturated, setIsDesaturated] = useState<boolean>(false);
   const [isManualOpen, setIsManualOpen] = useState<boolean>(false);
 
-  // Walkthrough Orchestrator State
+  // Guided interactive walkthrough states
   const [isPlayingWalkthrough, setIsPlayingWalkthrough] = useState<boolean>(false);
   const [isPausedForHuman, setIsPausedForHuman] = useState<boolean>(false);
   const [narrationText, setNarrationText] = useState<string>(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_01_AT_REST);
   const walkthroughCancelledRef = useRef<boolean>(false);
   const humanApprovedResolverRef = useRef<(() => void) | null>(null);
 
-  // Live state driven by server API responses
-  const [captionOffset, setCaptionOffset] = useState<number>(0.510);
-  const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
-  const [failedLayer, setFailedLayer] = useState<'captions' | 'sign_language' | 'none'>('none');
+  // Investigation & Evidence states
+  const [failedLayer, setFailedLayer] = useState<'captions' | 'sign' | 'none'>('none');
   const [mcpStatus, setMcpStatus] = useState<string>('fresh');
   const [evidenceTier, setEvidenceTier] = useState<string>('fresh');
   const [queryTrace, setQueryTrace] = useState<any[]>([]);
@@ -54,16 +35,23 @@ export const App: React.FC = () => {
   // Timecode generator
   const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
 
-  // Keyboard shortcut listener ('h' or 'H' to toggle manual controls panel)
+  // Keyboard shortcut listener:
+  // '1' = Start Part 1 (Single Channel A/B)
+  // '2' = Start Part 2 (Two Channel Contention)
+  // 'h' or 'H' = Toggle manual controls panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'h' || e.key === 'H') {
         setIsManualOpen((prev) => !prev);
+      } else if (e.key === '1') {
+        handleRunPart1();
+      } else if (e.key === '2') {
+        handleRunPart2();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [mode]);
 
   // Load Video Manifest on startup
   useEffect(() => {
@@ -181,72 +169,90 @@ export const App: React.FC = () => {
         humanApprovedResolverRef.current = null;
       }
     } catch (e) {
-      console.error('Execute approve error:', e);
+      console.error('Approve failover error:', e);
     } finally {
       setIsWorking(false);
     }
   };
 
-  // Contention Scenario Trigger
-  const handleRunContention = async () => {
+  // 7. Refusal 07 (Unconfirmed Backup)
+  const handleRefuseUnconfirmedBackup = async () => {
     setIsWorking(true);
     try {
-      setCurrentStage('09_contention_failing');
-      setTimecode('PGM-OUT 20:15:02');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_09_CONTENTION_FAIL);
-      const res = await agentClient.runContention('operator:mark', mode);
-      setContentionData(res);
-
-      setTimeout(() => {
-        setCurrentStage('10_contention_decision');
-        setTimecode('PGM-OUT 20:15:07');
-        setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_10_CONTENTION_DECISION);
-        setIsWorking(false);
-      }, 1000);
+      setCurrentStage('07_refusal_wont_switch');
+      setTimecode('PGM-OUT 20:14:38');
     } catch (e) {
-      console.error('Contention error:', e);
+      console.error('Refusal unconfirmed error:', e);
+    } finally {
       setIsWorking(false);
     }
   };
 
-  // Authorize Contention Tradeoff
-  const handleAuthorizeContentionTradeoff = () => {
-    setCurrentStage('11_contention_authorized');
-    setTimecode('PGM-OUT 20:15:14');
-    setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_11_CONTENTION_AUTH);
-    setIsPausedForHuman(false);
-
-    if (humanApprovedResolverRef.current) {
-      humanApprovedResolverRef.current();
-      humanApprovedResolverRef.current = null;
-    }
-
-    setTimeout(() => {
-      setCurrentStage('12_terminal_partially_mitigated');
-      setTimecode('PGM-OUT 20:15:20');
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
-    }, 1400);
-  };
-
-  // Blind Refusal Test
-  const handleBlindRefusal = async () => {
+  // 8. Refusal 08 (Blind Telemetry)
+  const handleRefuseBlind = async () => {
     setIsWorking(true);
     try {
       await agentClient.getBlindRefusal('tears_of_steel', mode);
       setCurrentStage('08_refusal_wont_guess');
-      setFailedLayer('none');
-      setTimecode('PGM-OUT 20:14:21');
+      setTimecode('PGM-OUT 20:14:42');
     } catch (e) {
-      console.error('Blind refusal error:', e);
+      console.error('Refusal blind error:', e);
     } finally {
       setIsWorking(false);
     }
   };
 
-  // GUIDED WALKTHROUGH ORCHESTRATOR
-  const handleRunWalkthrough = async () => {
-    walkthroughCancelledRef.current = false;
+  // 9–11. Contention Scenario (2 Channels vs 1 Backup)
+  const handleRunContention = async () => {
+    setIsWorking(true);
+    try {
+      const res = await agentClient.runContention('operator:mark', mode);
+      setContentionData(res);
+      setCurrentStage('09_contention_failing');
+      setTimecode('PGM-OUT 20:15:10');
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_09_CONTENTION_FAIL);
+
+      await new Promise((r) => setTimeout(r, 1500));
+      setCurrentStage('10_contention_decision');
+      setTimecode('PGM-OUT 20:15:14');
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_10_CONTENTION_DECISION);
+    } catch (e) {
+      console.error('Contention scenario error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleAuthorizeContention = async () => {
+    setIsWorking(true);
+    try {
+      setCurrentStage('11_contention_authorized');
+      setTimecode('PGM-OUT 20:15:20');
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_11_CONTENTION_AUTH);
+      setIsPausedForHuman(false);
+
+      if (humanApprovedResolverRef.current) {
+        humanApprovedResolverRef.current();
+        humanApprovedResolverRef.current = null;
+      }
+
+      await new Promise((r) => setTimeout(r, 2000));
+      setCurrentStage('12_terminal_partially_mitigated');
+      setTimecode('PGM-OUT 20:15:25');
+      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_12_TERMINAL);
+    } catch (e) {
+      console.error('Authorize contention error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // --- PART 1 RECORDING WALKTHROUGH (Key 1 or Start Demo) ---
+  const handleRunPart1 = async () => {
+    if (isPlayingWalkthrough) return;
     setIsPlayingWalkthrough(true);
+    walkthroughCancelledRef.current = false;
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     try {
       // Beat 1: At Rest
@@ -283,12 +289,23 @@ export const App: React.FC = () => {
       if (walkthroughCancelledRef.current) return;
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER);
 
-      // Beat 6.5: Breath
-      if (walkthroughCancelledRef.current) return;
-      setNarrationText(WALKTHROUGH_CONFIG.NARRATIONS.STAGE_BREATH);
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_BREATH);
+    } catch (e) {
+      console.error('Part 1 Walkthrough error:', e);
+    } finally {
+      setIsPlayingWalkthrough(false);
+      setIsPausedForHuman(false);
+    }
+  };
 
-      // Beat 7 & 8: Contention Failures & ⏸ STOP & WAIT FOR HUMAN CLICK (Contention Tradeoff)
+  // --- PART 2 RECORDING WALKTHROUGH (Key 2) ---
+  const handleRunPart2 = async () => {
+    if (isPlayingWalkthrough) return;
+    setIsPlayingWalkthrough(true);
+    walkthroughCancelledRef.current = false;
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    try {
+      // Beat 7 & 8: Contention Failures & ⏸ STOP & WAIT FOR HUMAN CLICK
       if (walkthroughCancelledRef.current) return;
       await handleRunContention();
       await delay(1200);
@@ -300,10 +317,18 @@ export const App: React.FC = () => {
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_12_TERMINAL);
 
     } catch (e) {
-      console.error('Walkthrough error:', e);
+      console.error('Part 2 Walkthrough error:', e);
     } finally {
       setIsPlayingWalkthrough(false);
       setIsPausedForHuman(false);
+    }
+  };
+
+  // FULL WALKTHROUGH (Start Demo Button)
+  const handleRunWalkthrough = async () => {
+    await handleRunPart1();
+    if (!walkthroughCancelledRef.current) {
+      await handleRunPart2();
     }
   };
 
@@ -337,143 +362,215 @@ export const App: React.FC = () => {
   const ch14RestoredInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
   const ch27DegradedInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
 
-  // Construct Dynamic Agent Spine Steps
+  // --- CONSTRUCT ACCRUING TOOL CALL LOG FOR AGENT SPINE ---
   const spineSteps: SpineStep[] = [];
-  if (currentStage === '01_at_rest') {
-    spineSteps.push(
-      { title: '◇ watching CAP · SIGN', sub: 'both layers nominal ✓', tone: 'done' },
-      { title: 'idle — no anomaly', sub: 'watching program clock sync', tone: 'pending' }
-    );
-  } else if (currentStage === '02_fault_injected') {
-    spineSteps.push(
-      { title: '14:07 nominal ✓', sub: 'baseline 0.510s verified', tone: 'done' },
-      { title: '⚠ CAP FREEZE detected', sub: 'CAP line breaks baseline ▲', tone: 'fill' },
-      { title: 'opening investigation…', sub: 'preparing Grafana MCP query', tone: 'pending' }
-    );
-  } else if (currentStage === '03_investigating') {
-    spineSteps.push(
-      { title: 'CAP freeze detected ✓', sub: `offset +${captionOffset.toFixed(3)}s > ceiling 0.759s`, tone: 'done' },
-      {
-        title: '▶ querying Grafana…',
-        sub: queryTrace.length > 0
-          ? `${queryTrace[0]?.result_or_miss || 'MISS: empty result'} (${Math.round(queryTrace[0]?.latency_ms || 192)}ms) → RETRY success (${Math.round(queryTrace[1]?.latency_ms || 180)}ms)`
-          : 'caption_sync climbing ▲',
-        tone: 'active',
-      },
-      { title: 'SIGN flat → not program-wide', sub: 'isolated to captions', tone: 'pending' }
-    );
-  } else if (currentStage === '04_backup_verified') {
-    spineSteps.push(
-      { title: '∴ CAPTIONS failed @ switch', sub: `cue divergence +${captionOffset.toFixed(3)}s confirmed`, tone: 'done' },
-      { title: 'backup ffprobe verified ✔', sub: 'candidate line healthy · 180s mp4 (15ms)', tone: 'fill' },
-      { title: 'safe to offer switch', sub: 'awaiting operator authorization', tone: 'pending' }
-    );
-  } else if (currentStage === '05_awaiting_approval') {
-    spineSteps.push(
-      { title: 'backup verified ✔', sub: 'ffprobe health check passed', tone: 'done' },
-      { title: 'SUMMON: operator required', sub: 'click AUTHORIZE FAILOVER to switch', tone: 'active' }
-    );
-  } else if (currentStage === '06_changed_over') {
-    spineSteps.push(
-      { title: 'approved ✔', sub: 'authorizer: operator:mark', tone: 'done' },
-      { title: 'switched → re-measuring backup', sub: 'post-swap read verified', tone: 'fill' },
-      { title: `✓ confirmed restored · ${postSwapOffset?.toFixed(3) || '0.486'}s`, sub: 'watching for regression', tone: 'done' },
-      { title: 'audit entry logged ✎', sub: 'logs/state/feed_state_tears_of_steel.json', tone: 'done' }
-    );
-  } else if (currentStage === '07_refusal_wont_switch') {
-    spineSteps.push(
-      { title: 'CAP frozen ✓ · backup located', sub: 'broken candidate file detected', tone: 'done' },
-      { title: 'backup probe → sync UNKNOWN', sub: 'candidate line fails ffprobe check', tone: 'fill' },
-      { title: '✕ WILL NOT SWITCH', sub: 'unconfirmed backup — holding active feed', tone: 'refuse' }
-    );
-  } else if (currentStage === '08_refusal_wont_guess') {
-    spineSteps.push(
-      { title: 'freeze observed on-air ✓', sub: 'telemetry loss detected', tone: 'done' },
-      { title: 'Grafana unreachable ✕', sub: 'CAP · SIGN — no series returned', tone: 'fill' },
-      { title: '✕ WON\'T GUESS', sub: 'can\'t name a layer w/o evidence', tone: 'refuse' },
-      { title: '…still reasoning', sub: 'holding for evidence plane recovery', tone: 'fill' }
-    );
-  } else if (currentStage === '09_contention_failing' || currentStage === '10_contention_decision') {
-    spineSteps.push(
-      { title: '2 concurrent CAP freezes ✓', sub: 'CH-14 (+2.996s) & CH-27 (+2.996s)', tone: 'done' },
-      { title: '⚠ shared backup — capacity 0/1', sub: 'one pre-cut file, two failures', tone: 'fill' },
-      { title: 'POLICY: Emergency > General', sub: 'CH-14 takes precedence over CH-27', tone: 'active' }
-    );
-  } else if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
-    spineSteps.push(
-      { title: 'authorized ✔ · CH-14 priority', sub: 'operator:mark approved tradeoff', tone: 'done' },
-      { title: 'switched → post-swap read ✓', sub: 'CH-14 CAP rejoined baseline (0.486s)', tone: 'fill' },
-      { title: 'CH-27 held DEGRADED + FLAGGED', sub: 'cost kept visible · state file untouched', tone: 'done' },
-      { title: '▲ 1 INCIDENT OPEN', sub: 'CH-27 still degraded (standard tier)', tone: 'refuse' }
-    );
+
+  if (isContentionStage) {
+    // PART 2: TWO-CHANNEL CONTENTION ACCRUING TOOL CALL LOG
+    spineSteps.push({
+      title: 'mcp:query_prometheus',
+      sub: '2 concurrent CAP freezes · CH-14 (+2.996s) & CH-27 (+2.996s)',
+      tone: 'done',
+      timestamp: 'T+00:00',
+      toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
+    });
+
+    spineSteps.push({
+      title: 'policy_engine:evaluate_capacity',
+      sub: '⚠ shared backup line · capacity 0/1 available',
+      tone: 'fill',
+      timestamp: 'T+00:02',
+      toolCall: 'evaluate_capacity(backup_count=1, failing_count=2)',
+    });
+
+    spineSteps.push({
+      title: 'policy_engine:evaluate_tiers',
+      sub: 'CH-14: Emergency Tier > CH-27: General Tier',
+      tone: 'active',
+      timestamp: 'T+00:04',
+      toolCall: 'evaluate_tiers(ch14="emergency", ch27="general")',
+    });
+
+    if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+      spineSteps.push({
+        title: 'human_gate:request_prioritization',
+        sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:mark)',
+        tone: currentStage === '10_contention_decision' ? 'active' : 'done',
+        timestamp: 'T+00:06',
+        toolCall: 'request_prioritization(policy_recommendation="CH-14")',
+      });
+    }
+
+    if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+      spineSteps.push({
+        title: 'feed_switch:execute_priority_restoration',
+        sub: 'CH-14 RESTORED ✓ · CH-27 DEGRADED + FLAGGED',
+        tone: 'done',
+        timestamp: 'T+00:08',
+        toolCall: 'execute_priority_restoration(target="ch14")',
+      });
+
+      spineSteps.push({
+        title: 'audit_log:record_terminal_state',
+        sub: 'Partially mitigated — 1 restored, 1 incident open',
+        tone: 'done',
+        timestamp: 'T+00:10',
+        toolCall: 'record_state(status="partially_mitigated", incident_open=1)',
+      });
+    }
+
+  } else {
+    // PART 1: SINGLE-CHANNEL A/B ACCRUING TOOL CALL LOG
+    spineSteps.push({
+      title: 'mcp:query_prometheus',
+      sub: 'watching program clock sync · CAP & SIGN nominal',
+      tone: currentStage === '01_at_rest' ? 'active' : 'done',
+      timestamp: 'T+00:00',
+      toolCall: 'query_prometheus(metric="caption_sync", channel="ch14")',
+    });
+
+    if (currentStage !== '01_at_rest') {
+      spineSteps.push({
+        title: 'mcp:query_prometheus',
+        sub: `⚠ CAP FREEZE detected · offset +${captionOffset.toFixed(3)}s > 0.759s`,
+        tone: currentStage === '02_fault_injected' ? 'active' : 'done',
+        timestamp: 'T+00:02',
+        toolCall: 'query_prometheus(channel="ch14", metric="caption_sync")',
+      });
+    }
+
+    if (currentStage === '03_investigating' || currentStage === '04_backup_verified' || currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
+      spineSteps.push({
+        title: 'mcp:query_prometheus (retry)',
+        sub: 'MISS (192ms timeout) → RETRY success (180ms) · SIGN flat',
+        tone: currentStage === '03_investigating' ? 'active' : 'done',
+        timestamp: 'T+00:04',
+        toolCall: 'query_prometheus(retry=1, timeout=1200ms)',
+      });
+
+      spineSteps.push({
+        title: 'adk_agent:isolate_layer',
+        sub: 'CAP_FAILED · SIGN_ISOLATED (not program-wide)',
+        tone: 'done',
+        timestamp: 'T+00:05',
+        toolCall: 'isolate_layer(evidence=["cap_freeze", "sign_ok"])',
+      });
+    }
+
+    if (currentStage === '04_backup_verified' || currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
+      spineSteps.push({
+        title: 'subprocess:ffprobe',
+        sub: 'backup line healthy ✔ · container timecode aligned (15ms)',
+        tone: currentStage === '04_backup_verified' ? 'fill' : 'done',
+        timestamp: 'T+00:06',
+        toolCall: 'ffprobe(file="tears_of_steel/backup.mp4")',
+      });
+    }
+
+    if (currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
+      spineSteps.push({
+        title: 'human_gate:request_authorization',
+        sub: currentStage === '05_awaiting_approval' ? 'AWAITING OPERATOR AUTHORIZATION' : 'APPROVED (operator:mark)',
+        tone: currentStage === '05_awaiting_approval' ? 'active' : 'done',
+        timestamp: 'T+00:08',
+        toolCall: 'request_authorization(action="failover_ch14")',
+      });
+    }
+
+    if (currentStage === '06_changed_over') {
+      spineSteps.push({
+        title: 'feed_switch:execute_failover',
+        sub: `CH-14 RESTORED ✓ · post-swap read +${postSwapOffset?.toFixed(3) || '0.486'}s`,
+        tone: 'done',
+        timestamp: 'T+00:10',
+        toolCall: 'execute_failover(from="primary", to="backup")',
+      });
+
+      spineSteps.push({
+        title: 'audit_log:write_state',
+        sub: 'logs/state/feed_state_tears_of_steel.json',
+        tone: 'done',
+        timestamp: 'T+00:12',
+        toolCall: 'write_state(feed="tears_of_steel", status="restored")',
+      });
+    }
+
+    // Refusal special cases
+    if (currentStage === '07_refusal_wont_switch') {
+      spineSteps.push({
+        title: 'subprocess:ffprobe',
+        sub: '✕ candidate backup fails sync check',
+        tone: 'refuse',
+        timestamp: 'T+00:06',
+        toolCall: 'ffprobe(file="tears_of_steel/backup.mp4")',
+      });
+      spineSteps.push({
+        title: 'adk_agent:refuse_action',
+        sub: '✕ WILL NOT SWITCH (unconfirmed backup)',
+        tone: 'refuse',
+        timestamp: 'T+00:08',
+        toolCall: 'refuse(reason="unconfirmed_backup")',
+      });
+    }
+
+    if (currentStage === '08_refusal_wont_guess') {
+      spineSteps.push({
+        title: 'mcp:query_prometheus',
+        sub: '✕ Grafana unreachable (CAP & SIGN empty)',
+        tone: 'refuse',
+        timestamp: 'T+00:04',
+        toolCall: 'query_prometheus(retry=3, timeout=exceeded)',
+      });
+      spineSteps.push({
+        title: 'adk_agent:refuse_action',
+        sub: '✕ WON\'T GUESS (evidence plane unreadable)',
+        tone: 'refuse',
+        timestamp: 'T+00:06',
+        toolCall: 'refuse(reason="unreadable_evidence")',
+      });
+    }
   }
 
   return (
     <div
-      className={isDesaturated ? 'desaturated' : ''}
       style={{
+        width: '100%',
+        minHeight: '100vh',
+        backgroundColor: 'var(--bg-main)',
+        color: 'var(--ink)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        width: '100%',
-        maxWidth: '1060px',
-        margin: '0 auto',
       }}
     >
-      {/* Minimal Operator Demo Control Header */}
-      <DemoControlHeader
-        mode={mode}
-        onSetMode={handleSetMode}
-        currentStage={currentStage}
-        isWorking={isWorking}
-        isPlayingAutoplay={isPlayingWalkthrough}
-        onRunAutoplay={handleRunWalkthrough}
-        onStopAutoplay={handleStopWalkthrough}
-        isDesaturated={isDesaturated}
-        onToggleDesaturate={() => setIsDesaturated(!isDesaturated)}
-        isManualOpen={isManualOpen}
-        onToggleManualOpen={() => setIsManualOpen(!isManualOpen)}
-        onReset={() => handleReset()}
-        onInjectFault={handleInjectFault}
-        onInvestigate={handleInvestigate}
-        onVerifyBackup={handleVerifyBackup}
-        onAuthorize={handlePrepareApproval}
-        onContention={handleRunContention}
-        onBlind={handleBlindRefusal}
-      />
-
-      {/* Main Broadcast Stage Canvas */}
-      <main
-        style={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          border: '3.5px solid var(--ink)',
-          borderRadius: '14px',
-          boxShadow: '0 18px 48px rgba(0, 0, 0, 0.5)',
-          overflow: 'hidden',
-          backgroundColor: 'var(--panel-hi)',
-          marginTop: '0',
-        }}
-      >
-        {/* PGM Header */}
-        <PgmHeader
-          timecode={timecode}
-          hasRefusalBadge={currentStage === '07_refusal_wont_switch' || currentStage === '08_refusal_wont_guess'}
+      <div style={{ width: '100%', maxWidth: '1440px', border: '3.5px solid var(--ink)', backgroundColor: 'var(--surface)' }}>
+        {/* Top Control Bar */}
+        <DemoControlHeader
+          mode={mode}
+          onSetMode={handleSetMode}
+          currentStage={currentStage}
+          isWorking={isWorking}
+          isPlayingAutoplay={isPlayingWalkthrough}
+          onRunAutoplay={handleRunWalkthrough}
+          onStopAutoplay={handleStopWalkthrough}
+          isDesaturated={false}
+          onToggleDesaturate={() => {}}
+          isManualOpen={isManualOpen}
+          onToggleManualOpen={() => setIsManualOpen(!isManualOpen)}
+          onReset={() => handleReset()}
+          onInjectFault={handleInjectFault}
+          onInvestigate={handleInvestigate}
+          onVerifyBackup={handleVerifyBackup}
+          onAuthorize={handleExecuteApprove}
+          onContention={handleRunContention}
+          onBlind={handleRefuseBlind}
         />
 
-        {/* Body Container: Grid 1fr / 290px with Continuous Solid Separator Line */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 290px',
-            backgroundColor: 'var(--panel-hi)',
-            borderTop: '2.5px solid var(--ink)',
-          }}
-        >
-          {/* Left Column Stack */}
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Split Hero (Real moving VTT captions) */}
+        {/* Main Grid Body */}
+        <main style={{ display: 'grid', gridTemplateColumns: '1fr 340px', borderTop: '3.5px solid var(--ink)' }}>
+          {/* Left Main Viewing & Telemetry Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRight: '3.5px solid var(--ink)' }}>
+            {/* SplitHero Video Viewer */}
             <SplitHero
               rightState={rightVideoState}
               isContention={isContentionStage}
@@ -481,10 +578,7 @@ export const App: React.FC = () => {
               ch27Degraded={ch27DegradedInContention}
             />
 
-            {/* Lane Strip (Expanded on State 03 Investigation beat) */}
-            <LaneStrip isExpanded={currentStage === '03_investigating'} />
-
-            {/* Evidence Chart (Enclosed Rounded Card Box) */}
+            {/* Layer Telemetry Chart Card */}
             <EvidenceChart
               primaryOffset={captionOffset}
               postSwapOffset={postSwapOffset}
@@ -493,45 +587,48 @@ export const App: React.FC = () => {
             />
           </div>
 
-          {/* Right Column: Agent Spine Side Rail */}
-          <div style={{ padding: '16px 16px 16px 0' }}>
+          {/* Right Column: Pinned Agent Spine Panel */}
+          <div style={{ padding: '16px 16px 16px 0px', backgroundColor: 'var(--surface)' }}>
             <AgentSpine
-              substate={currentStage.toUpperCase()}
+              substate={currentStage}
               steps={spineSteps}
               showGate={currentStage === '05_awaiting_approval'}
               showContentionGate={currentStage === '10_contention_decision'}
               onApprove={
-                currentStage === '10_contention_decision'
-                  ? handleAuthorizeContentionTradeoff
-                  : handleExecuteApprove
+                currentStage === '05_awaiting_approval'
+                  ? handleExecuteApprove
+                  : handleAuthorizeContention
               }
-              onHold={() => {
-                if (currentStage === '10_contention_decision') {
-                  setCurrentStage('09_contention_failing');
-                } else {
-                  setCurrentStage('07_refusal_wont_switch');
-                }
-              }}
+              onAlternativeApprove={handleAuthorizeContention}
+              onHold={handleStopWalkthrough}
               holdNote={
-                currentStage === '08_refusal_wont_guess'
-                  ? 'spine solid · will not fabricate'
-                  : currentStage === '07_refusal_wont_switch'
-                  ? 'backup unconfirmed · holding active feed'
+                currentStage === '07_refusal_wont_switch'
+                  ? '✕ REFUSED: Candidate backup line unconfirmed by ffprobe. Holding active feed.'
+                  : currentStage === '08_refusal_wont_guess'
+                  ? '✕ REFUSED: Evidence plane unreadable (Grafana query empty). Agent won\'t guess.'
                   : undefined
               }
               isSolidHoldNote={currentStage === '08_refusal_wont_guess'}
             />
           </div>
-        </div>
+        </main>
 
-        {/* On-Screen Subtitle Narration Bar */}
-        <NarrationBar text={narrationText} isPlaying={isPlayingWalkthrough} isPausedForHuman={isPausedForHuman} />
+        {/* Bottom Narration Bar */}
+        <NarrationBar
+          text={narrationText}
+          isPlaying={isPlayingWalkthrough}
+          isPausedForHuman={isPausedForHuman}
+        />
 
-        {/* Terminal Banner (State 12) */}
-        {currentStage === '12_terminal_partially_mitigated' && <TerminalBanner />}
-      </main>
+        {/* Terminal Banner */}
+        <TerminalBanner
+          statusText={
+            currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'
+              ? 'Partially mitigated — 1 restored, 1 incident open'
+              : 'Operational Baseline · All Systems Nominal'
+          }
+        />
+      </div>
     </div>
   );
-};
-
-export default App;
+}
