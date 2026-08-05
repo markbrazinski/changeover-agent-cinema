@@ -169,18 +169,14 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     const ch27Box = await page.getByTestId('ch27-card').boundingBox();
     const ch14Box = await page.getByTestId('ch14-card').boundingBox();
     expect(ch27Box?.width).toBeGreaterThan(250);
-    expect(ch27Box?.height).toBeCloseTo(ch14Box?.height || 240, -1);
+    expect(ch27Box?.height).toBeCloseTo(ch14Box?.height || 320, -1);
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_09_contention_authorized.png') });
 
     // --- BEAT 10: TERMINAL PARTIALLY MITIGATED (12_terminal_partially_mitigated) ---
     await page.waitForTimeout(1500);
-    const terminalBanner = page.getByTestId('terminal-banner');
-    await expect(terminalBanner).toBeVisible();
-    await expect(terminalBanner).toContainText(/Partially mitigated — 1 restored, 1 incident open/i);
-
-    const alarmChip = page.getByTestId('terminal-alarm-chip');
-    await expect(alarmChip).toContainText(/1 OPEN INCIDENT/i);
+    const spineTextTerminal = await page.getByTestId('agent-spine').innerText();
+    expect(spineTextTerminal).toMatch(/Partially mitigated — 1 restored, 1 incident open/i);
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_10_terminal.png') });
 

@@ -185,7 +185,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             <div
               data-testid="ch14-card"
               style={{
-                height: '240px',
+                height: '320px',
                 borderRadius: '8px',
                 border: ch14Restored ? '3.5px solid var(--restored)' : '3.5px solid var(--alarm)',
                 backgroundColor: '#0b0f11',
@@ -318,7 +318,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               data-testid="ch27-card"
               className="hatch-alarm"
               style={{
-                height: '240px',
+                height: '320px',
                 borderRadius: '8px',
                 border: '3.5px solid var(--alarm)',
                 backgroundColor: '#0b0f11',
@@ -471,7 +471,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           {/* Left Real Video Element */}
           <div
             style={{
-              height: '240px',
+              height: '320px',
               borderRadius: '8px',
               border: '2.5px solid var(--ink)',
               backgroundColor: '#0b0f11',
@@ -575,7 +575,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           <div
             className={rightState === 'frozen' ? 'hatch-alarm' : rightState === 'blind' ? 'hatch-no-data animate-flicker' : ''}
             style={{
-              height: '240px',
+              height: '320px',
               borderRadius: '8px',
               border:
                 rightState === 'frozen'

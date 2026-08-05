@@ -4,7 +4,6 @@ import { DemoControlHeader } from './components/DemoControlHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
-import { TerminalBanner } from './components/TerminalBanner';
 import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
 export default function App() {
@@ -235,7 +234,7 @@ export default function App() {
     }
   };
 
-  // --- PART 1 RECORDING WALKTHROUGH (Key 1 or Start Demo) ---
+  // --- PART 1 RECORDING WALKTHROUGH (Key 1) ---
   const handleRunPart1 = async () => {
     if (isPlayingWalkthrough) return;
     setIsPlayingWalkthrough(true);
@@ -518,16 +517,16 @@ export default function App() {
   return (
     <div
       style={{
-        width: '100%',
+        width: '100vw',
         minHeight: '100vh',
-        backgroundColor: 'var(--bg-main)',
+        backgroundColor: 'var(--surface)',
         color: 'var(--ink)',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        boxSizing: 'border-box',
       }}
     >
-      <div style={{ width: '100%', maxWidth: '1440px', border: '3.5px solid var(--ink)', backgroundColor: 'var(--surface)' }}>
+      <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--surface)' }}>
         {/* Top Control Bar (Only rendered when isManualOpen = true via 'H' key) */}
         {isManualOpen && (
           <DemoControlHeader
@@ -557,7 +556,7 @@ export default function App() {
           style={{
             backgroundColor: '#16140f',
             color: '#f5f3ec',
-            padding: '12px 20px',
+            padding: '14px 24px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -565,35 +564,35 @@ export default function App() {
             borderBottom: '3.5px solid var(--ink)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div
               style={{
-                width: '12px',
-                height: '12px',
+                width: '14px',
+                height: '14px',
                 borderRadius: '3px',
                 backgroundColor: 'var(--accent)',
                 boxShadow: '0 0 8px rgba(184, 100, 27, 0.8)',
               }}
             />
-            <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '2px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '2px' }}>
               CHANGEOVER
             </span>
-            <span style={{ fontSize: '10px', opacity: 0.6, letterSpacing: '1px' }}>
+            <span style={{ fontSize: '11px', opacity: 0.6, letterSpacing: '1px' }}>
               captions layer
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div className="animate-pulse" style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#d9381e' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '11px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="animate-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d9381e' }} />
               <span style={{ fontWeight: 700, color: '#d9381e', letterSpacing: '1px' }}>ON AIR</span>
             </div>
             <span style={{ opacity: 0.8, fontWeight: 700 }}>{timecode}</span>
           </div>
         </div>
 
-        {/* Main Grid Body */}
-        <main style={{ display: 'grid', gridTemplateColumns: '1fr 340px' }}>
+        {/* Main Grid Body — Full Screen Edge-to-Edge Expansion */}
+        <main style={{ display: 'grid', gridTemplateColumns: '1fr 380px', flex: 1 }}>
           {/* Left Main Viewing & Telemetry Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRight: '3.5px solid var(--ink)' }}>
             {/* SplitHero Video Viewer */}
@@ -638,15 +637,6 @@ export default function App() {
             />
           </div>
         </main>
-
-        {/* Terminal Banner */}
-        <TerminalBanner
-          statusText={
-            currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated'
-              ? 'Partially mitigated — 1 restored, 1 incident open'
-              : 'Operational Baseline · All Systems Nominal'
-          }
-        />
       </div>
     </div>
   );
