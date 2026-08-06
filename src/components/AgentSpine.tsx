@@ -31,6 +31,9 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
   holdNote,
   isSolidHoldNote = false,
 }) => {
+  // Reverse steps array so newest tool calls always appear on top of stack above the fold
+  const reversedSteps = [...steps].reverse();
+
   return (
     <div
       data-testid="agent-spine"
@@ -261,7 +264,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
           </div>
         )}
 
-        {/* --- SCROLLABLE ACCRUING TOOL CALL TIMELINE --- */}
+        {/* --- SCROLLABLE ACCRUING TOOL CALL TIMELINE (NEWEST ON TOP) --- */}
         <div
           style={{
             display: 'flex',
@@ -273,10 +276,10 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
           }}
         >
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, color: 'var(--text-50)', letterSpacing: '0.8px' }}>
-            ACCRUING TOOL CALL HISTORY
+            ACCRUING TOOL CALL HISTORY (NEWEST ON TOP)
           </div>
 
-          {steps.map((step, idx) => {
+          {reversedSteps.map((step, idx) => {
             const isDone = step.tone === 'done';
             const isActive = step.tone === 'active';
             const isFill = step.tone === 'fill';
