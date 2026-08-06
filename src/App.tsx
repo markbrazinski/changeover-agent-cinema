@@ -663,6 +663,42 @@ export default function App() {
             />
           </div>
         </main>
+
+        {/* Persistent On-Screen Disclosures & Sponsor Footer Bar */}
+        <div
+          style={{
+            backgroundColor: '#16140f',
+            color: '#a09c94',
+            padding: '8px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '10.5px',
+            borderTop: '2.5px solid var(--ink)',
+            flexShrink: 0,
+          }}
+        >
+          {/* Left: Dynamic Disclosure Notes */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span>Authored captions over open-license film · cue timing is real</span>
+            {(currentStage === '04_backup_verified' || currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') && (
+              <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                · Backup: pre-cut stand-in for a scarce live caption source
+              </span>
+            )}
+            {isContentionStage && (
+              <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                · Priority tier: operator-declared before incident
+              </span>
+            )}
+          </div>
+
+          {/* Right: Persistent Sponsor Footer */}
+          <div style={{ fontWeight: 700, color: '#f5f3ec', letterSpacing: '0.5px' }}>
+            Changeover · Google Gemini + ADK · Grafana
+          </div>
+        </div>
       </div>
     </div>
   );

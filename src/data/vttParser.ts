@@ -17,12 +17,12 @@ export const TEARS_OF_STEEL_CUES: VttCue[] = [
   { id: 2, startTime: 3.5, endTime: 6.8, text: "— Did you hear that sound coming from the lower deck? —" },
   { id: 3, startTime: 6.8, endTime: 10.2, text: "— The primary power grid is losing stability! —" },
   { id: 4, startTime: 10.2, endTime: 13.8, text: "— Hold your position, wait for my signal before you —" },
-  { id: 5, startTime: 13.8, endTime: 17.5, text: "— Get everyone out of here now! The core is —" }, // Cuts off mid-sentence on fault
+  { id: 5, startTime: 13.8, endTime: 17.5, text: "— Get everyone out of here now! The core is —" },
   { id: 6, startTime: 17.5, endTime: 21.0, text: "— Emergency systems are failing to engage! —" },
   { id: 7, startTime: 21.0, endTime: 24.8, text: "— Reroute the backup relay through the secondary line! —" },
-  { id: 8, startTime: 24.8, endTime: 28.5, text: "— Signal acquired, we're back online —" },
-  { id: 9, startTime: 28.5, endTime: 32.0, text: "— All auxiliary telemetry restored to baseline —" },
-  { id: 10, startTime: 32.0, endTime: 36.0, text: "— Stay on high alert, monitoring all active feeds —" },
+  { id: 8, startTime: 24.8, endTime: 30.0, text: "— but I never told you what happened to the —" }, // Locked script cue: frozen mid-line on fault
+  { id: 9, startTime: 30.0, endTime: 34.0, text: "— Signal acquired, we're back online —" },
+  { id: 10, startTime: 34.0, endTime: 38.0, text: "— All auxiliary telemetry restored to baseline —" },
 ];
 
 // SINTEL (CH-27) — Fantasy Mountain Journey Dialogue
@@ -34,7 +34,7 @@ export const SINTEL_CUES: VttCue[] = [
   { id: 5, startTime: 13.8, endTime: 17.5, text: "— We've lost sight of the trail in this storm —" },
   { id: 6, startTime: 17.5, endTime: 21.0, text: "— The path ahead is completely ice-bound —" },
   { id: 7, startTime: 21.0, endTime: 24.8, text: "— We have to find shelter before nightfall —" },
-  { id: 8, startTime: 24.8, endTime: 28.5, text: "— Keep moving forward, we cannot stop here —" },
+  { id: 8, startTime: 24.8, endTime: 30.0, text: "— I found another path, it leads beyond the —" }, // Locked script cue: frozen mid-line on contention
 ];
 
 export function getCueForTime(cues: VttCue[], currentTime: number): string {

@@ -109,7 +109,7 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
 
     // Verify dialogue captions RESUME moving on right viewer panel
     const resumeCap1 = await page.getByTestId('right-caption-text').innerText();
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(3200);
     const resumeCap2 = await page.getByTestId('right-caption-text').innerText();
 
     expect(resumeCap2).not.toEqual(resumeCap1);
