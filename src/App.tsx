@@ -33,8 +33,9 @@ export default function App() {
   const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
 
   // Keyboard shortcut listener:
-  // '1' = Start Part 1 (Single Channel A/B)
-  // '2' = Start Part 2 (Two Channel Contention)
+  // '1' = Start Part 1 (Single Channel A/B Walkthrough)
+  // '2' Press 1 = Switch to 2-channel baseline view (CH-14 Tears of Steel vs CH-27 Sintel live & distinct)
+  // '2' Press 2 = Trigger contention fault & policy trade-off authorization gate
   // 'h' or 'H' = Toggle manual controls header
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,12 +44,24 @@ export default function App() {
       } else if (e.key === '1') {
         handleRunPart1();
       } else if (e.key === '2') {
-        handleRunPart2();
+        handleRunKey2();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode]);
+  }, [mode, currentStage]);
+
+  // Key '2' Handler: Step 1 = Move to 2-channel baseline, Step 2 = Begin contention animations
+  const handleRunKey2 = () => {
+    if (currentStage === '09a_contention_baseline') {
+      // Second press of '2': Begin contention failure animations & policy gate
+      handleRunContention();
+    } else {
+      // First press of '2': Move screens to 2 distinct channels (CH-14 Tears of Steel vs CH-27 Sintel) playing nominal
+      setCurrentStage('09a_contention_baseline');
+      setTimecode('PGM-OUT 20:15:00');
+    }
+  };
 
   // Load Video Manifest on startup
   useEffect(() => {
@@ -327,14 +340,14 @@ export default function App() {
 
   // Determine SplitHero Video State
   let rightVideoState: VideoState = 'fine';
-  if (currentStage === '01_at_rest') rightVideoState = 'fine';
+  if (currentStage === '01_at_rest' || currentStage === '09a_contention_baseline') rightVideoState = 'fine';
   else if (currentStage === '06_changed_over' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') rightVideoState = 'restored';
   else if (currentStage === '08_refusal_wont_guess') rightVideoState = 'blind';
   else rightVideoState = 'frozen';
 
   // Determine Evidence Chart Status
   let evidenceChartStatus: 'nominal' | 'frozen' | 'restored' | 'blind' | 'unconfirmed_backup' = 'frozen';
-  if (currentStage === '01_at_rest') evidenceChartStatus = 'nominal';
+  if (currentStage === '01_at_rest' || currentStage === '09a_contention_baseline') evidenceChartStatus = 'nominal';
   else if (currentStage === '06_changed_over' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') evidenceChartStatus = 'restored';
   else if (currentStage === '08_refusal_wont_guess') evidenceChartStatus = 'blind';
   else if (currentStage === '07_refusal_wont_switch') evidenceChartStatus = 'unconfirmed_backup';
@@ -342,6 +355,7 @@ export default function App() {
 
   // Contention state flags
   const isContentionStage = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
+  const isContentionBaseline = currentStage === '09a_contention_baseline';
   const ch14RestoredInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
   const ch27DegradedInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
 
@@ -349,57 +363,68 @@ export default function App() {
   const spineSteps: SpineStep[] = [];
 
   if (isContentionStage) {
-    // PART 2: TWO-CHANNEL CONTENTION ACCRUING TOOL CALL LOG
-    spineSteps.push({
-      title: 'mcp:query_prometheus',
-      sub: '2 concurrent CAP freezes · CH-14 (+2.996s) & CH-27 (+2.996s)',
-      tone: 'done',
-      timestamp: 'T+00:00',
-      toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
-    });
-
-    spineSteps.push({
-      title: 'policy_engine:evaluate_capacity',
-      sub: '⚠ shared backup line · capacity 0/1 available',
-      tone: 'fill',
-      timestamp: 'T+00:02',
-      toolCall: 'evaluate_capacity(backup_count=1, failing_count=2)',
-    });
-
-    spineSteps.push({
-      title: 'policy_engine:evaluate_tiers',
-      sub: 'CH-14: Emergency Tier > CH-27: General Tier',
-      tone: 'active',
-      timestamp: 'T+00:04',
-      toolCall: 'evaluate_tiers(ch14="emergency", ch27="general")',
-    });
-
-    if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+    if (isContentionBaseline) {
+      // PART 2 STEP 1: INITIAL 2-CHANNEL FACILITY MONITORING BASELINE
       spineSteps.push({
-        title: 'human_gate:request_prioritization',
-        sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:mark)',
-        tone: currentStage === '10_contention_decision' ? 'active' : 'done',
-        timestamp: 'T+00:06',
-        toolCall: 'request_prioritization(policy_recommendation="CH-14")',
+        title: 'mcp:query_prometheus',
+        sub: 'watching 2 active channels · CH-14 & CH-27 nominal',
+        tone: 'active',
+        timestamp: 'T+00:00',
+        toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
       });
-    }
-
-    if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+    } else {
+      // PART 2 STEP 2: TWO-CHANNEL CONTENTION ACCRUING TOOL CALL LOG
       spineSteps.push({
-        title: 'feed_switch:execute_priority_restoration',
-        sub: 'CH-14 RESTORED ✓ · CH-27 DEGRADED + FLAGGED',
+        title: 'mcp:query_prometheus',
+        sub: '2 concurrent CAP freezes · CH-14 (+2.996s) & CH-27 (+2.996s)',
         tone: 'done',
-        timestamp: 'T+00:08',
-        toolCall: 'execute_priority_restoration(target="ch14")',
+        timestamp: 'T+00:00',
+        toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
       });
 
       spineSteps.push({
-        title: 'audit_log:record_terminal_state',
-        sub: 'Partially mitigated — 1 restored, 1 incident open',
-        tone: 'done',
-        timestamp: 'T+00:10',
-        toolCall: 'record_state(status="partially_mitigated", incident_open=1)',
+        title: 'policy_engine:evaluate_capacity',
+        sub: '⚠ shared backup line · capacity 0/1 available',
+        tone: 'fill',
+        timestamp: 'T+00:02',
+        toolCall: 'evaluate_capacity(backup_count=1, failing_count=2)',
       });
+
+      spineSteps.push({
+        title: 'policy_engine:evaluate_tiers',
+        sub: 'CH-14: Emergency Tier > CH-27: General Tier',
+        tone: 'active',
+        timestamp: 'T+00:04',
+        toolCall: 'evaluate_tiers(ch14="emergency", ch27="general")',
+      });
+
+      if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+        spineSteps.push({
+          title: 'human_gate:request_prioritization',
+          sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:mark)',
+          tone: currentStage === '10_contention_decision' ? 'active' : 'done',
+          timestamp: 'T+00:06',
+          toolCall: 'request_prioritization(policy_recommendation="CH-14")',
+        });
+      }
+
+      if (currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+        spineSteps.push({
+          title: 'feed_switch:execute_priority_restoration',
+          sub: 'CH-14 RESTORED ✓ · CH-27 DEGRADED + FLAGGED',
+          tone: 'done',
+          timestamp: 'T+00:08',
+          toolCall: 'execute_priority_restoration(target="ch14")',
+        });
+
+        spineSteps.push({
+          title: 'audit_log:record_terminal_state',
+          sub: 'Partially mitigated — 1 restored, 1 incident open',
+          tone: 'done',
+          timestamp: 'T+00:10',
+          toolCall: 'record_state(status="partially_mitigated", incident_open=1)',
+        });
+      }
     }
 
   } else {
@@ -599,6 +624,7 @@ export default function App() {
             <SplitHero
               rightState={rightVideoState}
               isContention={isContentionStage}
+              isContentionBaseline={isContentionBaseline}
               ch14Restored={ch14RestoredInContention}
               ch27Degraded={ch27DegradedInContention}
             />

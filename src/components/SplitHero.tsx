@@ -12,6 +12,7 @@ interface SplitHeroProps {
   isFaultInjected?: boolean;
   // Contention mode props
   isContention?: boolean;
+  isContentionBaseline?: boolean;
   ch14Restored?: boolean;
   ch27Degraded?: boolean;
 }
@@ -24,6 +25,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   captionsVttUrl = 'http://localhost:8008/films/tears_of_steel/captions.vtt',
   isFaultInjected = false,
   isContention = false,
+  isContentionBaseline = false,
   ch14Restored = false,
   ch27Degraded = false,
 }) => {
@@ -47,7 +49,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
   // Reset ref locks when state changes
   useEffect(() => {
-    if (rightState !== 'frozen' && !(isContention && !ch14Restored)) {
+    if (rightState !== 'frozen' && !(isContention && !ch14Restored && !isContentionBaseline)) {
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
     }
@@ -55,7 +57,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       frozenSintelCueRef.current = null;
       setFrozenSintelCue(null);
     }
-  }, [rightState, isContention, ch14Restored]);
+  }, [rightState, isContention, ch14Restored, isContentionBaseline]);
 
   // Sync video playback and track currentTime for frame-accurate failover cutover
   useEffect(() => {
@@ -64,7 +66,6 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     let animationFrameId: number;
 
     if (left && right) {
-      // Lockstep timecode alignment: Preserve exact playhead position on backup failover switch
       const activeTime = savedPlayheadRef.current > 2.0 ? savedPlayheadRef.current : 28.0;
       if (left.currentTime === 0 || left.currentTime < 2.0) {
         left.currentTime = activeTime;
@@ -79,67 +80,76 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       const updateTimes = () => {
         if (left) {
           setLeftTime(left.currentTime);
-          if (left.currentTime > 2.0) {
-            savedPlayheadRef.current = left.currentTime;
-          }
+          savedPlayheadRef.current = left.currentTime;
         }
+
         if (right) {
-          if (rightState === 'frozen' || (isContention && !ch14Restored)) {
-            // Lock the frozen cue text for Tears of Steel
-            if (!frozenRightCueRef.current) {
-              const cueText = getCueForTime(TEARS_OF_STEEL_CUES, right.currentTime);
-              frozenRightCueRef.current = cueText;
-              setFrozenRightCue(cueText);
+          if (rightState === 'frozen' || (isContention && !ch14Restored && !isContentionBaseline)) {
+            // Lock frozen cue mid-line on fault injection
+            if (!frozenRightCueRef.current && left) {
+              const liveCue = getCueForTime(TEARS_OF_STEEL_CUES, left.currentTime);
+              frozenRightCueRef.current = liveCue;
+              setFrozenRightCue(liveCue);
             }
-          } else {
-            setRightTime(right.currentTime);
           }
 
-          if (isContention) {
-            // Lock distinct frozen cue text for Sintel
-            if (!frozenSintelCueRef.current) {
-              const sintelCueText = getCueForTime(SINTEL_CUES, right.currentTime);
-              frozenSintelCueRef.current = sintelCueText;
-              setFrozenSintelCue(sintelCueText);
+          if (isContention && !ch14Restored && !isContentionBaseline) {
+            if (!frozenSintelCueRef.current && right) {
+              const liveSintelCue = getCueForTime(SINTEL_CUES, right.currentTime);
+              frozenSintelCueRef.current = liveSintelCue;
+              setFrozenSintelCue(liveSintelCue);
             }
           }
+
+          setRightTime(right.currentTime);
         }
+
         animationFrameId = requestAnimationFrame(updateTimes);
       };
+
       animationFrameId = requestAnimationFrame(updateTimes);
     }
 
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [sourceVideoUrl, backupVideoUrl, rightState, isContention, ch14Restored]);
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [rightState, isContention, ch14Restored, isContentionBaseline]);
 
-  // Compute active caption strings
-  const leftCaptionText = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
-  const rightCaptionText = frozenRightCue || getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
-  const sintelCaptionText = frozenSintelCue || getCueForTime(SINTEL_CUES, rightTime);
+  // Get active spoken dialogue caption cues per film
+  const rawLeftCue = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
+  const leftCaptionText = rawLeftCue;
 
-  // CONTENTION MODE (09–12): In-Player Two Different Movies Transformation
+  const rawRightCue = getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
+  const rightCaptionText = frozenRightCue || rawRightCue;
+
+  const rawSintelCue = getCueForTime(SINTEL_CUES, rightTime);
+  const sintelCaptionText = frozenSintelCue || rawSintelCue;
+
+  // Render Contention 2-Channel Facility View
   if (isContention) {
     return (
       <div
         data-testid="facility-view"
         style={{
-          width: '100%',
-          backgroundColor: 'var(--panel-hi)',
-          padding: '18px 20px 16px 20px',
+          margin: '14px 18px 10px 18px',
+          padding: '16px',
+          backgroundColor: '#fcfbf7',
+          border: '2.5px solid var(--ink)',
+          borderRadius: '10px',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
           position: 'relative',
         }}
       >
-        {/* Centered CONTENTION POOL Pill Header */}
+        {/* Contention Header Badge */}
         <div
           style={{
             position: 'absolute',
-            top: '-11px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'var(--alarm)',
+            top: '-12px',
+            left: '20px',
+            backgroundColor: isContentionBaseline ? 'var(--ink)' : 'var(--alarm)',
             color: '#f5f3ec',
             fontFamily: 'var(--font-mono)',
-            fontSize: '9px',
+            fontSize: '9.5px',
             fontWeight: 700,
             letterSpacing: '2px',
             padding: '3px 14px',
@@ -147,7 +157,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             zIndex: 10,
           }}
         >
-          CONTENTION SCENARIO · 2 FAILURES vs 1 BACKUP
+          {isContentionBaseline
+            ? '2-CHANNEL FACILITY MONITORING · TEARS OF STEEL vs SINTEL'
+            : 'CONTENTION SCENARIO · 2 FAILURES vs 1 BACKUP'}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
@@ -156,12 +168,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '11px',
                 fontWeight: 700,
                 letterSpacing: '1.2px',
                 textTransform: 'uppercase',
                 color: 'var(--ink)',
-                marginBottom: '8px',
+                marginBottom: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -170,11 +182,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               <span>CH-14 · TEARS OF STEEL</span>
               <span
                 style={{
-                  fontSize: '7.5px',
+                  fontSize: '8.5px',
                   backgroundColor: 'rgba(184, 100, 27, 0.2)',
                   border: '1px solid var(--accent)',
                   padding: '1px 5px',
                   borderRadius: '3px',
+                  fontWeight: 700,
                 }}
               >
                 Emergency Tier
@@ -187,7 +200,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               style={{
                 height: '320px',
                 borderRadius: '8px',
-                border: ch14Restored ? '3.5px solid var(--restored)' : '3.5px solid var(--alarm)',
+                border: isContentionBaseline
+                  ? '2.5px solid var(--ink)'
+                  : ch14Restored
+                  ? '3.5px solid var(--restored)'
+                  : '3.5px solid var(--alarm)',
                 backgroundColor: '#0b0f11',
                 position: 'relative',
                 overflow: 'hidden',
@@ -214,8 +231,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   backgroundColor: 'rgba(0, 0, 0, 0.85)',
                   color: '#f5f3ec',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  padding: '4px 10px',
+                  fontSize: '10.5px',
+                  padding: '6px 12px',
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
@@ -228,28 +245,52 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                     width: '6px',
                     height: '6px',
                     borderRadius: '50%',
-                    backgroundColor: ch14Restored ? 'var(--restored)' : 'var(--alarm)',
+                    backgroundColor: isContentionBaseline
+                      ? 'var(--nominal)'
+                      : ch14Restored
+                      ? 'var(--restored)'
+                      : 'var(--alarm)',
                   }}
                 />
-                {ch14Restored ? 'BACKUP ACTIVE · CH-14' : 'PRIMARY FAILING · CH-14'}
+                {isContentionBaseline
+                  ? 'PRIMARY STREAM · LIVE · CH-14'
+                  : ch14Restored
+                  ? 'BACKUP ACTIVE · CH-14'
+                  : 'PRIMARY FAILING · CH-14'}
               </div>
 
               {/* Bottom Moving Caption Bar */}
               <div
                 data-testid="ch14-caption"
                 style={{
-                  backgroundColor: ch14Restored ? 'var(--surface)' : 'rgba(8, 6, 4, 0.94)',
-                  color: ch14Restored ? 'var(--ink)' : 'var(--alarm)',
-                  padding: '10px 14px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  fontWeight: 700,
+                  backgroundColor: isContentionBaseline
+                    ? 'rgba(22, 20, 15, 0.92)'
+                    : ch14Restored
+                    ? 'var(--surface)'
+                    : 'rgba(8, 6, 4, 0.94)',
+                  color: isContentionBaseline
+                    ? '#f5f3ec'
+                    : ch14Restored
+                    ? 'var(--ink)'
+                    : 'var(--alarm)',
+                  padding: '12px 16px',
+                  fontFamily: isContentionBaseline ? 'var(--font-grotesk)' : 'var(--font-mono)',
+                  fontSize: isContentionBaseline ? '15px' : '14px',
+                  fontWeight: isContentionBaseline ? 600 : 700,
                   textAlign: 'center',
-                  borderTop: ch14Restored ? '2.5px solid var(--ink)' : '2.5px solid var(--alarm)',
+                  borderTop: isContentionBaseline
+                    ? '1px solid rgba(255, 255, 255, 0.15)'
+                    : ch14Restored
+                    ? '2.5px solid var(--ink)'
+                    : '2.5px solid var(--alarm)',
                   zIndex: 2,
                 }}
               >
-                {ch14Restored ? `✓ ${leftCaptionText}` : `⚠ [FROZEN] ${rightCaptionText}`}
+                {isContentionBaseline
+                  ? leftCaptionText
+                  : ch14Restored
+                  ? `✓ ${leftCaptionText}`
+                  : `⚠ [FROZEN] ${rightCaptionText}`}
               </div>
             </div>
 
@@ -260,13 +301,25 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '5px 12px',
+                padding: '7px 14px',
                 borderRadius: '20px',
-                border: ch14Restored ? '2px solid var(--ink)' : '2px solid var(--alarm)',
-                backgroundColor: ch14Restored ? 'var(--panel-hi)' : 'var(--ink)',
-                color: ch14Restored ? 'var(--restored-ink)' : '#f5f3ec',
+                border: isContentionBaseline
+                  ? '1.5px solid var(--nominal)'
+                  : ch14Restored
+                  ? '2px solid var(--ink)'
+                  : '2px solid var(--alarm)',
+                backgroundColor: isContentionBaseline
+                  ? 'var(--panel-hi)'
+                  : ch14Restored
+                  ? 'var(--panel-hi)'
+                  : 'var(--ink)',
+                color: isContentionBaseline
+                  ? 'var(--nominal-ink)'
+                  : ch14Restored
+                  ? 'var(--restored-ink)'
+                  : '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '11px',
                 fontWeight: 700,
                 letterSpacing: '0.5px',
               }}
@@ -276,10 +329,18 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: ch14Restored ? 'var(--restored)' : 'var(--alarm)',
+                  backgroundColor: isContentionBaseline
+                    ? 'var(--nominal)'
+                    : ch14Restored
+                    ? 'var(--restored)'
+                    : 'var(--alarm)',
                 }}
               />
-              {ch14Restored ? '✓ PRIORITY RESTORED' : 'CAPTIONS FROZEN · ALARM'}
+              {isContentionBaseline
+                ? 'CAPTIONS LIVE · IN SYNC'
+                : ch14Restored
+                ? '✓ PRIORITY RESTORED'
+                : 'CAPTIONS FROZEN · ALARM'}
             </div>
           </div>
 
@@ -288,12 +349,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '11px',
                 fontWeight: 700,
                 letterSpacing: '1.2px',
                 textTransform: 'uppercase',
-                color: 'var(--alarm-ink)',
-                marginBottom: '8px',
+                color: isContentionBaseline ? 'var(--text-60)' : 'var(--alarm-ink)',
+                marginBottom: '10px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -302,11 +363,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               <span>CH-27 · SINTEL</span>
               <span
                 style={{
-                  fontSize: '7.5px',
+                  fontSize: '8.5px',
                   backgroundColor: 'rgba(0, 0, 0, 0.08)',
                   border: '1px solid rgba(0, 0, 0, 0.2)',
                   padding: '1px 5px',
                   borderRadius: '3px',
+                  fontWeight: 700,
                 }}
               >
                 General Tier
@@ -316,11 +378,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {/* Right Movie Player - Sintel */}
             <div
               data-testid="ch27-card"
-              className="hatch-alarm"
+              className={isContentionBaseline ? '' : 'hatch-alarm'}
               style={{
                 height: '320px',
                 borderRadius: '8px',
-                border: '3.5px solid var(--alarm)',
+                border: isContentionBaseline ? '2.5px solid var(--ink)' : '3.5px solid var(--alarm)',
                 backgroundColor: '#0b0f11',
                 position: 'relative',
                 overflow: 'hidden',
@@ -343,7 +405,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  filter: 'brightness(0.82)',
+                  filter: isContentionBaseline ? 'none' : 'brightness(0.82)',
                 }}
               />
 
@@ -355,8 +417,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   backgroundColor: 'rgba(0, 0, 0, 0.85)',
                   color: '#f5f3ec',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '8px',
-                  padding: '4px 10px',
+                  fontSize: '10.5px',
+                  padding: '6px 12px',
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
@@ -364,22 +426,29 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   zIndex: 2,
                 }}
               >
-                <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
-                PRIMARY FAILING · CH-27
+                <div
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    backgroundColor: isContentionBaseline ? 'var(--nominal)' : 'var(--alarm)',
+                  }}
+                />
+                {isContentionBaseline ? 'PRIMARY STREAM · LIVE · CH-27' : 'PRIMARY FAILING · CH-27'}
               </div>
 
               {/* Bottom Moving Caption Bar */}
               <div
                 data-testid="ch27-caption"
                 style={{
-                  backgroundColor: 'rgba(8, 6, 4, 0.94)',
-                  color: 'var(--alarm)',
-                  padding: '10px 14px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
-                  fontWeight: 700,
+                  backgroundColor: isContentionBaseline ? 'rgba(22, 20, 15, 0.92)' : 'rgba(8, 6, 4, 0.94)',
+                  color: isContentionBaseline ? '#f5f3ec' : 'var(--alarm)',
+                  padding: '12px 16px',
+                  fontFamily: isContentionBaseline ? 'var(--font-grotesk)' : 'var(--font-mono)',
+                  fontSize: isContentionBaseline ? '15px' : '14px',
+                  fontWeight: isContentionBaseline ? 600 : 700,
                   textAlign: 'center',
-                  borderTop: '2.5px solid var(--alarm)',
+                  borderTop: isContentionBaseline ? '1px solid rgba(255, 255, 255, 0.15)' : '2.5px solid var(--alarm)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -387,8 +456,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                   zIndex: 2,
                 }}
               >
-                <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
-                ⚠ [FROZEN] {sintelCaptionText}
+                {isContentionBaseline ? (
+                  sintelCaptionText
+                ) : (
+                  <>
+                    <div className="animate-pulse" style={{ width: '7px', height: '7px', backgroundColor: 'var(--alarm)' }} />
+                    ⚠ [FROZEN] {sintelCaptionText}
+                  </>
+                )}
               </div>
             </div>
 
@@ -400,19 +475,32 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '5px 12px',
+                padding: '7px 14px',
                 borderRadius: '20px',
-                border: '2px solid var(--alarm)',
-                backgroundColor: 'var(--ink)',
-                color: '#f5f3ec',
+                border: isContentionBaseline
+                  ? '1.5px solid var(--nominal)'
+                  : '2px solid var(--alarm)',
+                backgroundColor: isContentionBaseline ? 'var(--panel-hi)' : 'var(--ink)',
+                color: isContentionBaseline ? 'var(--nominal-ink)' : '#f5f3ec',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '8.5px',
+                fontSize: '11px',
                 fontWeight: 700,
                 letterSpacing: '0.5px',
               }}
             >
-              <div style={{ width: '6px', height: '6px', backgroundColor: 'var(--alarm)' }} />
-              {ch27Degraded ? 'DEGRADED + FLAGGED · CAPACITY EXHAUSTED' : 'CAPTIONS FROZEN · ALARM'}
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: isContentionBaseline ? 'var(--nominal)' : 'var(--alarm)',
+                }}
+              />
+              {isContentionBaseline
+                ? 'CAPTIONS LIVE · IN SYNC'
+                : ch27Degraded
+                ? 'DEGRADED + FLAGGED · CAPACITY EXHAUSTED'
+                : 'CAPTIONS FROZEN · ALARM'}
             </div>
           </div>
         </div>
@@ -420,27 +508,29 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     );
   }
 
-  // SINGLE CHANNEL MODE (01–08): Clean PGM vs Viewer Stream
+  // Render Single-Channel Split View
   return (
     <div
       style={{
-        width: '100%',
-        backgroundColor: 'var(--panel-hi)',
-        padding: '18px 20px 16px 20px',
+        margin: '14px 18px 10px 18px',
+        padding: '16px',
+        backgroundColor: '#fcfbf7',
+        border: '2.5px solid var(--ink)',
+        borderRadius: '10px',
+        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
         position: 'relative',
       }}
     >
-      {/* Centered THE SPLIT Pill Header */}
+      {/* Header Pill */}
       <div
         style={{
           position: 'absolute',
-          top: '-11px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          top: '-12px',
+          left: '20px',
           backgroundColor: 'var(--ink)',
           color: '#f5f3ec',
           fontFamily: 'var(--font-mono)',
-          fontSize: '9px',
+          fontSize: '9.5px',
           fontWeight: 700,
           letterSpacing: '2px',
           padding: '3px 14px',
@@ -448,7 +538,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           zIndex: 10,
         }}
       >
-        THE SPLIT
+        THE SPLIT · SINGLE CHANNEL {channelName}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
@@ -489,7 +579,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               muted
               loop
               playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}
             />
 
             {/* Source Chip Overlay */}
@@ -681,9 +778,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
                 style={{
                   backgroundColor: 'rgba(8, 6, 4, 0.94)',
                   color: '#f5f3ec',
-                  padding: '10px 14px',
+                  padding: '12px 16px',
                   fontFamily: 'var(--font-mono)',
-                  fontSize: '11px',
+                  fontSize: '14px',
                   fontWeight: 700,
                   textAlign: 'center',
                   borderTop: '2.5px solid var(--alarm)',
@@ -789,9 +886,9 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             {rightState === 'frozen'
               ? 'CAPTIONS FROZEN · ALARM'
               : rightState === 'restored'
-              ? '✓ ACCESS RESTORED'
+              ? '✓ RESTORED · BACKUP ACTIVE'
               : rightState === 'blind'
-              ? 'EVIDENCE BLIND · UNREADABLE'
+              ? 'EVIDENCE ABSENT · HOLDING'
               : 'LOOKS FINE · IN SYNC'}
           </div>
         </div>

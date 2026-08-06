@@ -120,21 +120,23 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_06_changed_over.png') });
 
-    // Press key '2' to start Part 2 (Two-Channel Contention) Walkthrough
+    // --- BEAT 7a: PRESS '2' FIRST TIME -> 2-CHANNEL BASELINE VIEW (09a_contention_baseline) ---
     await page.keyboard.press('2');
-
-    // --- BEAT 7: CONTENTION FAILING (09_contention_failing) ---
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(1000);
     await expect(page.getByTestId('facility-view')).toBeVisible();
     await expect(page.getByTestId('ch14-card')).toBeVisible();
     await expect(page.getByTestId('ch27-card')).toBeVisible();
 
-    // ASSERT: CH-14 (Tears of Steel) and CH-27 (Sintel) show DIFFERENT dialogue lines!
-    const ch14Dialogue = await page.getByTestId('ch14-caption').innerText();
-    const ch27Dialogue = await page.getByTestId('ch27-caption').innerText();
-    expect(ch14Dialogue).not.toEqual(ch27Dialogue);
+    // ASSERT: Both channels show distinct dialogue lines and CAPTIONS LIVE status!
+    const ch14BaselineDialogue = await page.getByTestId('ch14-caption').innerText();
+    const ch27BaselineDialogue = await page.getByTestId('ch27-caption').innerText();
+    expect(ch14BaselineDialogue).not.toEqual(ch27BaselineDialogue);
 
-    await page.screenshot({ path: path.join(screenshotsDir, 'beat_07_contention_failing.png') });
+    await page.screenshot({ path: path.join(screenshotsDir, 'beat_07a_contention_baseline.png') });
+
+    // --- BEAT 7b: PRESS '2' SECOND TIME -> TRIGGER CONTENTION FAULT & GATE (09_contention_failing) ---
+    await page.keyboard.press('2');
+    await page.waitForTimeout(2500);
 
     // --- BEAT 8: HUMAN CONTENTION GATE PAUSE (10_contention_decision) ---
     await page.waitForTimeout(1500);
