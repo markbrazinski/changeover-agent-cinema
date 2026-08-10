@@ -28,7 +28,31 @@ class Diagnoser:
         if self.api_key:
             try:
                 import google.adk as adk
+                from google.adk.tools import McpToolset
                 from google.adk.sessions import InMemorySessionService
+                from mcp import StdioServerParameters
+                import shutil
+
+                mcp_bin = (
+                    os.getenv("GRAFANA_MCP_BIN")
+                    or shutil.which("mcp-grafana")
+                    or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
+                    or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
+                )
+
+                tools = []
+                if mcp_bin and os.path.exists(mcp_bin):
+                    try:
+                        mcp_toolset = McpToolset(
+                            connection_params=StdioServerParameters(
+                                command=mcp_bin,
+                                args=["-disable-write"],
+                                env=dict(os.environ),
+                            )
+                        )
+                        tools.append(mcp_toolset)
+                    except Exception as te:
+                        logger.warning(f"Could not initialize McpToolset: {te}")
 
                 self.adk_agent = adk.Agent(
                     name="changeover_diagnoser",
@@ -36,8 +60,10 @@ class Diagnoser:
                     instruction=(
                         "You are Changeover Diagnoser, an AI broadcast accessibility agent running on Google ADK. "
                         "Analyze broadcast telemetry evidence to isolate whether captions or sign_language failed. "
+                        "Call query_prometheus tool if needed to fetch live PromQL telemetry. "
                         "Return strict JSON: {\"failed_layer\": \"captions\" | \"sign_language\" | \"none\", \"rationale\": \"...\", \"confidence\": 1.0}"
                     ),
+                    tools=tools,
                 )
                 self.session_service = InMemorySessionService()
                 self.adk_runner = adk.Runner(

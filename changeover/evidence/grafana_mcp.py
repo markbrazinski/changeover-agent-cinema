@@ -126,34 +126,32 @@ class GrafanaMCPClient:
             from mcp import ClientSession, StdioServerParameters
             from mcp.client.stdio import stdio_client
 
-            mcp_bin = shutil.which("mcp-grafana") or "/opt/homebrew/bin/mcp-grafana"
+            mcp_bin = (
+                os.getenv("GRAFANA_MCP_BIN")
+                or shutil.which("mcp-grafana")
+                or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
+                or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
+            )
+
+            if not mcp_bin or not os.path.exists(mcp_bin):
+                raise RuntimeError(
+                    "Grafana MCP server binary 'mcp-grafana' not found in PATH or GRAFANA_MCP_BIN. "
+                    "Please install via 'brew install mcp-grafana' or set GRAFANA_MCP_BIN."
+                )
 
             async def _run_mcp():
-                if os.path.exists(mcp_bin):
-                    server_params = StdioServerParameters(
-                        command=mcp_bin,
-                        args=["-disable-write"],
-                        env=dict(os.environ),
-                    )
-                    arguments = {
-                        "datasourceUid": self.datasource_uid,
-                        "expr": query_str,
-                        "queryType": "instant",
-                        "startTime": "now-1m",
-                        "endTime": "now",
-                    }
-                else:
-                    server_params = StdioServerParameters(
-                        command="npx",
-                        args=["-y", "@filip.happy/mcp-grafana", "--read-only"],
-                        env=dict(os.environ),
-                    )
-                    arguments = {
-                        "datasourceUid": self.datasource_uid,
-                        "expr": query_str,
-                        "queryType": "instant",
-                        "startTime": "now",
-                    }
+                server_params = StdioServerParameters(
+                    command=mcp_bin,
+                    args=["-disable-write"],
+                    env=dict(os.environ),
+                )
+                arguments = {
+                    "datasourceUid": self.datasource_uid,
+                    "expr": query_str,
+                    "queryType": "instant",
+                    "startTime": "now-1m",
+                    "endTime": "now",
+                }
 
                 async with stdio_client(server_params) as (read, write):
                     async with ClientSession(read, write) as session:

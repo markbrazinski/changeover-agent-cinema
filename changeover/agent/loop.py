@@ -100,14 +100,18 @@ def run_single_channel_loop(
     # 4. Diagnoser: Name the failed layer reading VALUE RETURNED BY GRAFANA QUERY
     diag_result = diagnoser.diagnose(channel_id, raw_evidence, caption_threshold=ceilings["derived_caption_ceiling"])
     failed_layer = diag_result.get("failed_layer", "none")
-    logger.info(f"Diagnoser result for '{channel_id}': Failed Layer = '{failed_layer}'")
+    adk_execution = diag_result.get("adk_execution", False)
+    logger.info(f"Diagnoser result for '{channel_id}': Failed Layer = '{failed_layer}' (adk_execution={adk_execution})")
 
     if failed_layer == "none":
         return {
             "channel": channel_id,
             "status": "nominal",
             "reason": "No failed layer detected",
+            "failed_layer": "none",
+            "adk_execution": adk_execution,
             "restored": True,
+            "spine_records": recorder.get_records(),
         }
 
     # 5. Verify Backup Source via ffprobe
@@ -128,7 +132,9 @@ def run_single_channel_loop(
             "status": "refused_unhealthy_backup",
             "reason": "Won't-switch: Backup source failed ffprobe health check",
             "failed_layer": failed_layer,
+            "adk_execution": adk_execution,
             "restored": False,
+            "spine_records": recorder.get_records(),
         }
 
     # 6. Summon Human Operator
@@ -148,7 +154,9 @@ def run_single_channel_loop(
             "status": "refused_unauthorized",
             "reason": failover_res.get("reason"),
             "failed_layer": failed_layer,
+            "adk_execution": adk_execution,
             "restored": False,
+            "spine_records": recorder.get_records(),
         }
 
     # 8. Verify-by-Measurement (CRITICAL: Post-swap measurement required before declaring restored)
@@ -175,8 +183,10 @@ def run_single_channel_loop(
         "channel": channel_id,
         "status": "restored" if is_restored else "degraded",
         "failed_layer": failed_layer,
+        "adk_execution": adk_execution,
         "post_swap_offset": post_swap_offset,
         "restored": is_restored,
         "state_file": os.path.join(state_dir, f"feed_state_{channel_id}.json"),
         "state": final_state,
+        "spine_records": recorder.get_records(),
     }

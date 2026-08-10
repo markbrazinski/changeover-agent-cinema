@@ -31,8 +31,8 @@ This process takes minutes, violating compliance regulations and disrupting view
 Changeover is an autonomous broadcast accessibility agent that protects caption continuity:
 
 - **Continuous Telemetry Tracking**: Monitors live caption cue sync offset (`caption_cue_sync_offset_seconds`) and feed liveness (`feed_liveness_seconds`) across channels.
-- **Grafana Cloud MCP Investigation**: Queries live Prometheus metrics via Grafana Cloud HTTP proxy APIs.
-- **Gemini-Powered Layer Isolation**: Evaluates telemetry evidence using **Google Gemini 2.5 Flash** to discriminate between viewer-impacting caption freeze vs. main feed video liveness faults in ~2.4 seconds.
+- **Grafana Cloud MCP Investigation**: Queries live Prometheus metrics via official Grafana Labs `mcp-grafana` Go server.
+- **Gemini-Powered Layer Isolation**: Evaluates telemetry evidence using **Google Gemini 2.5 Flash** through **Google ADK** to discriminate between viewer-impacting caption freeze vs. main feed video liveness faults.
 - **Deterministic Resource Contention Arbitration**: When multiple channels fault concurrently ($N=2$) and backup capacity is scarce ($M=1$), a deterministic policy engine applies operator-declared service tiers (`Emergency/Public-Info` vs. `General Entertainment`).
 - **Human Authorization Gate**: Halts execution indefinitely before hardware actuation, requiring explicit human operator approval (`operator:mark`).
 
@@ -43,7 +43,7 @@ Changeover is an autonomous broadcast accessibility agent that protects caption 
 ### Wave 1: Single-Channel Failover (Use Case 1)
 1. **Healthy Baseline**: Channel 14 (*Tears of Steel*) plays with nominal caption sync offset ($+0.510\text{s}$).
 2. **Caption Freeze Fault**: At `t=20.0s`, captions freeze on the right viewer while the video stream continues playing smoothly.
-3. **Agent Investigation**: The agent queries Grafana Cloud MCP and invokes **Gemini 2.5 Flash**. Gemini evaluates telemetry metrics ($+2.996\text{s}$ offset) and isolates the failure to the caption layer.
+3. **Agent Investigation**: Python orchestration queries official Grafana MCP and passes telemetry evidence to **Gemini 2.5 Flash** via **Google ADK**. Gemini evaluates telemetry metrics ($+2.996\text{s}$ offset) and isolates the failure to the caption layer.
 4. **Backup Stream Verification**: `ffprobe` programmatically checks the secondary backup file (`backup.mp4`), confirming stream health.
 5. **Human Authorization Gate**: The Agent Spine opens the Human Authorization Gate (`05_awaiting_approval`) and **halts indefinitely**.
 6. **Failover Actuation**: The operator clicks **`AUTHORIZE FAILOVER`**. Source switches to backup and caption sync restores to $+0.486\text{s}$.
@@ -60,60 +60,43 @@ Changeover is an autonomous broadcast accessibility agent that protects caption 
 
 ---
 
-## 🏛️ System Architecture
+## 🏛️ System Architecture & Call Graph
 
 ```
-                    ┌───────────────────────────────────────────────┐
-                    │          Live Broadcast Feed (HLS/MP4)        │
-                    └───────────────────────┬───────────────────────┘
-                                            │
-                                            ▼
-                    ┌───────────────────────────────────────────────┐
-                    │   Prometheus Exporter & Caption Meter         │
-                    └───────────────────────┬───────────────────────┘
-                                            │
-                                            ▼ (PromQL Remote Write)
-                    ┌───────────────────────────────────────────────┐
-                    │               Grafana Cloud                   │
-                    └───────────────────────┬───────────────────────┘
-                                            │
-                                            ▼ (Model Context Protocol - MCP)
-                    ┌───────────────────────────────────────────────┐
-                    │           Changeover Agent Core               │
-                    │         (Google Agent Dev Kit - ADK)          │
-                    └───────────────────────┬───────────────────────┘
-                                            │
-                     ┌──────────────────────┴──────────────────────┐
-                     │                                             │
-                     ▼                                             ▼
-       ┌──────────────────────────┐                  ┌──────────────────────────┐
-       │   Google Gemini 2.5      │                  │   Deterministic Policy   │
-       │   Flash (Layer Isolation)│                  │   Engine (Service Tiers) │
-       └─────────────┬────────────┘                  └─────────────┬────────────┘
-                     │                                             │
-                     └──────────────────────┬──────────────────────┘
-                                            │
-                                            ▼
-                    ┌───────────────────────────────────────────────┐
-                    │      ⏸ HUMAN AUTHORIZATION GATE               │
-                    │      (Halts indefinitely for operator)        │
-                    └───────────────────────┬───────────────────────┘
-                                            │ (Operator Click)
-                                            ▼
-                    ┌───────────────────────────────────────────────┐
-                    │      Actuator Tool (Source Failover)          │
-                    └───────────────────────────────────────────────┘
+Python Orchestration
+       │
+       ▼
+Official Grafana MCP (mcp-grafana stdio)
+       │
+       ▼
+Live Operational Evidence
+       │
+       ▼
+Gemini 2.5 Flash through Google ADK
+       │
+       ▼
+Structured Layer Diagnosis
+       │
+       ▼
+Deterministic Policy Engine (Service Tiers)
+       │
+       ▼
+⏸ HUMAN AUTHORIZATION GATE (Halts for Operator)
+       │ (Operator Click)
+       ▼
+Actuator Tool (Source Failover)
 ```
 
 ---
 
 ## 🧩 How Gemini, ADK, and Grafana Power Changeover
 
-| Point | Sponsor role | Product consequence | Exact Implementation Path |
-| :--- | :--- | :--- | :--- |
-| **Telemetry Layer Isolation** | **Gemini + ADK** | Evaluates raw telemetry metrics via `google.adk.Agent` and `google.adk.Runner` to discriminate viewer-impacting caption freeze from feed liveness faults in ~2.4s. | [`changeover/agent/diagnoser.py:27-40`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/diagnoser.py#L27-L40) |
-| **Live Observability Proxy** | **Grafana** | Programmatically queries real PromQL sync metrics directly via official Grafana Labs Go server binary (`grafana/mcp-grafana`), eliminating manual dashboard hunting. | [`changeover/evidence/grafana_mcp.py:115-165`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/evidence/grafana_mcp.py#L115-L165) |
-| **Structured Decision Handoff** | **Gemini + ADK and Grafana** | Packages complex telemetry evidence into a structured, single-click human authorization decision packet. | [`changeover/agent/loop.py:80-110`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/loop.py#L80-L110) |
+| Point | Sponsor role | Product consequence |
+|---|---|---|
+| Live operational evidence | **Grafana** returns current, channel-scoped PromQL measurements through its official MCP server. | Changeover gets one operational query path across channels instead of requiring operators or incident-specific code to inspect each dashboard separately. |
+| Evidence-directed diagnosis | **Gemini + ADK and Grafana** pass current operational evidence through a structured ADK diagnosis. | Changing combinations of channel evidence become a consistent failed-layer assessment without maintaining a separate hand-authored diagnosis path for every incident shape. |
+
+Gemini does not assign service priority or authorize a switch. A deterministic policy engine applies the network’s predeclared capacity and service tiers. The human operator authorizes the consequence.
 
 ---
 
@@ -169,7 +152,7 @@ Verify the complete system using the automated test suite:
 ```bash
 # Run Backend Unit, Sponsor-Path, & Integration Tests
 PYTHONPATH="." python3 -m pytest tests/test_sponsor_path.py tests/test_slice2.py tests/test_slice6.py
-# Expected output: 10 passed in ~5.8s
+# Expected output: 13 passed
 
 # Run End-to-End Playwright Audit Suite (Headed/Headless Browser)
 npx playwright test tests/e2e/e2e_audit.spec.ts
@@ -184,7 +167,7 @@ npx playwright test tests/e2e/e2e_audit.spec.ts
 changeover-agent-cinema/
 ├── changeover/                 # Python Backend Package
 │   ├── action/                 # Actuator tools (backup_verifier, failover_tool)
-│   ├── agent/                  # Diagnoser (Gemini 2.5 Flash) & orchestration loops
+│   ├── agent/                  # Diagnoser (Gemini 2.5 Flash via ADK) & orchestration loops
 │   ├── ceilings/               # Derived safety thresholds & ceiling models
 │   ├── config/                 # Channel configurations & service tiers
 │   ├── contention/             # ContentionSupervisor (M<N capacity arbitration)
@@ -207,7 +190,15 @@ changeover-agent-cinema/
 
 - **Simulated Hardware Switching**: In this broadcast cinema demonstration, feed failover toggles media streams on screen rather than sending SDI/IP hardware router matrix commands.
 - **Predeclared Service Tiers**: Channel criticality tiers (`Emergency` vs `General`) are loaded from static configuration files (`CHANNELS`) rather than an active enterprise CMDB.
-- **Deterministic Fallback**: If `GEMINI_API_KEY` is not provided or network access is offline, the agent falls back to local evidence rules to ensure uninterrupted presentation.
+- **External Binary Requirement**: Executing live MCP queries requires the official `mcp-grafana` Go binary installed in system `PATH` or configured via `GRAFANA_MCP_BIN`.
+- **Local/Demo Metric Fallback**: When remote Grafana Cloud Prometheus queries are unpopulated or offline, local evidence rules ensure uninterrupted presentation and deterministic fallback.
+
+---
+
+## 📜 License & Attribution
+
+- **Code License**: [MIT License](LICENSE)
+- **Media Credits**: See [ATTRIBUTION.md](ATTRIBUTION.md) for full Blender Foundation CC BY 3.0 credits (*Tears of Steel* & *Sintel*).
 
 ---
 
