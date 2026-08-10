@@ -160,3 +160,23 @@ html, body {
     animation: none !important;
   }
 }
+
+/* Visible Demo Scenario Controls in Header */
+.scenario-btn {
+  transition: all 0.15s ease-in-out;
+}
+
+.scenario-btn:not(:disabled):hover {
+  border-color: #ff9800 !important;
+  color: #ffe0b2 !important;
+  background-color: rgba(255, 152, 0, 0.15) !important;
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.25);
+}
+
+.scenario-btn:not(:disabled):focus-visible {
+  border-color: #ff9800 !important;
+  color: #ffe0b2 !important;
+  background-color: rgba(255, 152, 0, 0.2) !important;
+  outline: 2px solid #ff9800;
+  outline-offset: 1px;
+}

@@ -135,13 +135,21 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## ⌨️ Canonical Replay Shortcuts
+## 🎛️ Running the Demo & Scenario Controls
 
-When viewing the application UI at `http://localhost:5173`, use these single-key shortcuts:
+When viewing the application UI at `http://localhost:5173`, use the visible controls in the top header as the primary launch method:
 
-- **Key `(1)`**: **Wave 1 Clean Demo Replay** — Starts Use Case 1 single-channel failover (no timer overlay).
-- **Key `(3)`**: **Wave 1 Training Replay** — Starts Use Case 1 with timecode timer overlay.
-- **Key `(2)`**: **Wave 2 Resource Contention Replay** — Launches 2-channel baseline, injects concurrent faults after 7.5s, runs real investigation, and opens the Human Authorization Gate for CH-14 vs CH-27 prioritization.
+| Scenario | Header control | Expected outcome |
+| --- | --- | --- |
+| Single-channel recovery | `CAPTION RECOVERY` | Changeover isolates a caption-layer failure, waits for human authorization, and restores the channel through the verified backup. |
+| Resource contention | `CAPACITY CONTENTION` | Two channels require one backup; deterministic policy presents the tradeoff, the operator authorizes it, and the final state is `PARTIALLY MITIGATED`. |
+
+### Secondary Operator Replay Shortcuts
+For operator replay or keyboard-driven demos, the top header controls are also bound to these single-key shortcuts:
+
+- **Key `(1)`**: **Single-Channel Failover Replay** — Triggers the `CAPTION RECOVERY` scenario.
+- **Key `(3)`**: **Training Overlay Replay** — Triggers single-channel recovery with timecode timer overlay.
+- **Key `(2)`**: **Resource Contention Replay** — Triggers the `CAPACITY CONTENTION` scenario.
 
 ---
 
@@ -150,14 +158,19 @@ When viewing the application UI at `http://localhost:5173`, use these single-key
 Verify the complete system using the automated test suite:
 
 ```bash
-# Run Backend Unit, Sponsor-Path, & Integration Tests
+# 1. Run Backend Unit, Sponsor-Path, & Integration Tests
 PYTHONPATH="." python3 -m pytest tests/test_sponsor_path.py tests/test_slice2.py tests/test_slice6.py
 # Expected output: 13 passed
 
-# Run End-to-End Playwright Audit Suite (Headed/Headless Browser)
+# 2. Install Playwright Browsers (if required)
+npx playwright install chromium
+
+# 3. Run End-to-End Playwright Audit Suite (Browser E2E)
 npx playwright test tests/e2e/e2e_audit.spec.ts
-# Expected output: 1 passed in ~49s
+# Expected output: 4 passed in ~1.9m
 ```
+
+The Playwright suite verifies both visible scenario header controls (`CAPTION RECOVERY` and `CAPACITY CONTENTION`), backend-driven Agent Spine evidence, the human-authorization boundary, and the two terminal outcomes (`RESTORED` and `PARTIALLY MITIGATED`).
 
 ---
 
@@ -176,7 +189,7 @@ changeover-agent-cinema/
 │   └── telemetry/              # CaptionMeter, ProgramClock, PrometheusExporter
 ├── src/                        # React Frontend Application
 │   ├── components/             # AgentSpine, SplitHero, EvidenceChart
-│   └── App.tsx                 # Main UI & single-press keyboard shortcut orchestration
+│   └── App.tsx                 # Main UI, header scenario controls & keyboard shortcut orchestration
 ├── films/                      # Open-source video streams & WebVTT caption sidecars
 ├── tests/                      # Pytest unit tests & Playwright E2E audit suites
 ├── .env.example                # Sanitized configuration template
@@ -192,13 +205,6 @@ changeover-agent-cinema/
 - **Predeclared Service Tiers**: Channel criticality tiers (`Emergency` vs `General`) are loaded from static configuration files (`CHANNELS`) rather than an active enterprise CMDB.
 - **External Binary Requirement**: Executing live MCP queries requires the official `mcp-grafana` Go binary installed in system `PATH` or configured via `GRAFANA_MCP_BIN`.
 - **Local/Demo Metric Fallback**: When remote Grafana Cloud Prometheus queries are unpopulated or offline, local evidence rules ensure uninterrupted presentation and deterministic fallback.
-
----
-
-## 📜 License & Attribution
-
-- **Code License**: [MIT License](LICENSE)
-- **Media Credits**: See [ATTRIBUTION.md](ATTRIBUTION.md) for full Blender Foundation CC BY 3.0 credits (*Tears of Steel* & *Sintel*).
 
 ---
 

@@ -33,7 +33,8 @@ export default function App() {
 
   // Live Recording Walkthrough Timecode Counter State
   const [walkthroughElapsedSec, setWalkthroughElapsedSec] = useState<number>(0);
-  const walkthroughTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const walkthroughTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
 
   const startWalkthroughTimer = () => {
     setWalkthroughElapsedSec(0);
@@ -475,6 +476,11 @@ export default function App() {
   const ch14RestoredInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
   const ch27DegradedInContention = currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated';
 
+  // Active scenario flags for header controls
+  const isScenario1Active = isPlayingWalkthrough && !isContentionStage;
+  const isScenario2Active = (isPlayingWalkthrough && isContentionStage) || (isContentionStage && currentStage !== '01_at_rest');
+
+
   // --- CONSTRUCT ACCRUING TOOL CALL LOG FOR AGENT SPINE ---
   const spineSteps: SpineStep[] = [];
 
@@ -742,7 +748,8 @@ export default function App() {
         )}
 
         {/* Master Control Header */}
-        <div
+        <header
+          data-testid="master-header"
           style={{
             backgroundColor: '#16140f',
             color: '#f5f3ec',
@@ -754,14 +761,71 @@ export default function App() {
             borderBottom: '3.5px solid var(--ink)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <CueCardIcon size={20} color="#f5f3ec" />
             <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '2px' }}>
               CHANGEOVER
             </span>
-            <span style={{ fontSize: '11px', opacity: 0.6, letterSpacing: '1px' }}>
+            <span style={{ fontSize: '11px', opacity: 0.6, letterSpacing: '1px', marginRight: '4px' }}>
               captions layer
             </span>
+
+            {/* Visible Scenario Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '4px' }}>
+              <button
+                aria-label="Run caption recovery scenario"
+                data-testid="scenario-caption-recovery-button"
+                onClick={handleRunPart1}
+                disabled={isPlayingWalkthrough || isWorking}
+                style={{
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  color: isScenario1Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                  backgroundColor: isScenario1Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                  border: isScenario1Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                  borderRadius: '4px',
+                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                }}
+                className="scenario-btn"
+              >
+                {isScenario1Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                CAPTION RECOVERY
+              </button>
+
+              <button
+                aria-label="Run capacity contention scenario"
+                data-testid="scenario-capacity-contention-button"
+                onClick={handleRunKey2}
+                disabled={isPlayingWalkthrough || isWorking}
+                style={{
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  color: isScenario2Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                  backgroundColor: isScenario2Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                  border: isScenario2Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                  borderRadius: '4px',
+                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                }}
+                className="scenario-btn"
+              >
+                {isScenario2Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                CAPACITY CONTENTION
+              </button>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '11px' }}>
@@ -792,7 +856,7 @@ export default function App() {
             </div>
             <span style={{ opacity: 0.8, fontWeight: 700 }}>{timecode}</span>
           </div>
-        </div>
+        </header>
 
         {/* Main Grid Body — Full Screen Edge-to-Edge Expansion */}
         <main style={{ display: 'grid', gridTemplateColumns: '1fr 380px', flex: 1 }}>

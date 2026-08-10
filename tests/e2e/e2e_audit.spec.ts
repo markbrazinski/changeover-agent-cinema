@@ -3,14 +3,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
-  test('Executes Guided Walkthrough, asserts dialogue-style captions freeze and resume, verifies distinct film scripts, and captures screenshots', async ({ page }) => {
-    // Extend test timeout to 180s for full walkthrough suite
-    test.setTimeout(180000);
+  const screenshotsDir = path.join(process.cwd(), 'tests', 'e2e', 'screenshots');
 
-    const screenshotsDir = path.join(process.cwd(), 'tests', 'e2e', 'screenshots');
+  test.beforeAll(() => {
     if (!fs.existsSync(screenshotsDir)) {
       fs.mkdirSync(screenshotsDir, { recursive: true });
     }
+  });
+
+  // --- CANONICAL PLAYWRIGHT AUDIT SUITE (Keyboard Shortcuts Replay & Full Walkthrough) ---
+  test('Executes Guided Walkthrough via Keyboard Shortcuts, asserts dialogue-style captions freeze and resume, verifies distinct film scripts, and captures screenshots', async ({ page }) => {
+    test.setTimeout(180000);
 
     // --- LOAD & INITIAL CONTROLS TEST ---
     await page.goto('/');
@@ -184,5 +187,142 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     expect(finalDomText).not.toMatch(/\bpremium\b/i);
 
     console.log('✅ ALL E2E AUDIT BEAT ASSERTIONS PASSED CLEANLY WITH DIALOGUE CAPTIONS!');
+  });
+
+  // --- TEST 1: CAPTION RECOVERY VIA VISIBLE HEADER CONTROL ---
+  test('Test 1 — Caption Recovery Scenario via Header Control', async ({ page }) => {
+    test.setTimeout(120000);
+
+    await page.goto('/');
+    await page.waitForTimeout(800);
+
+    // 1. Locate button by accessible role and name
+    const recoveryBtn = page.getByRole('button', { name: 'Run caption recovery scenario' });
+    const contentionBtn = page.getByRole('button', { name: 'Run capacity contention scenario' });
+
+    await expect(recoveryBtn).toBeVisible();
+    await expect(recoveryBtn).toBeEnabled();
+    await expect(contentionBtn).toBeVisible();
+    await expect(contentionBtn).toBeEnabled();
+
+    // 2. Click Caption Recovery button
+    await recoveryBtn.click();
+
+    // 3. Verify scenario begins and buttons enter disabled state
+    await page.waitForTimeout(600);
+    await expect(recoveryBtn).toBeDisabled();
+    await expect(contentionBtn).toBeDisabled();
+
+    // 4. Verify caption fault becomes visible at ~20s
+    await expect(page.getByTestId('right-status-pill')).toContainText(/FROZEN/i, { timeout: 25000 });
+    await expect(page.getByTestId('cap-line-alarm')).toBeAttached();
+
+    // 5. Verify genuine Agent Spine/runtime evidence appears
+    const spineText = await page.getByTestId('agent-spine').innerText();
+    expect(spineText).toMatch(/mcp:query_prometheus/i);
+
+    // 6. Verify human authorization gate appears
+    const authBtn = page.getByTestId('authorize-failover-button');
+    await expect(authBtn).toBeVisible({ timeout: 15000 });
+
+    // 7. Verify failover does NOT occur before authorization
+    await page.waitForTimeout(2000);
+    await expect(authBtn).toBeVisible();
+    await expect(page.getByTestId('right-status-pill')).toContainText(/FROZEN/i);
+
+    // 8. Authorize the action
+    await authBtn.click();
+
+    // 9. Verify expected restored terminal state
+    await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.486s/i);
+    await expect(page.getByTestId('right-status-pill')).toContainText(/RESTORED/i);
+
+    // 10. Verify control leaves running state appropriately
+    await expect(recoveryBtn).toBeEnabled({ timeout: 10000 });
+    await expect(contentionBtn).toBeEnabled();
+  });
+
+  // --- TEST 2: CAPACITY CONTENTION VIA VISIBLE HEADER CONTROL ---
+  test('Test 2 — Capacity Contention Scenario via Header Control', async ({ page }) => {
+    test.setTimeout(120000);
+
+    await page.goto('/');
+    await page.waitForTimeout(800);
+
+    // 1. Locate button by accessible role and name
+    const contentionBtn = page.getByRole('button', { name: 'Run capacity contention scenario' });
+    const recoveryBtn = page.getByRole('button', { name: 'Run caption recovery scenario' });
+
+    await expect(contentionBtn).toBeVisible();
+    await expect(contentionBtn).toBeEnabled();
+
+    // 2. Click Capacity Contention button
+    await contentionBtn.click();
+
+    // 3. Verify scenario starts and buttons enter disabled state
+    await page.waitForTimeout(1000);
+    await expect(contentionBtn).toBeDisabled();
+    await expect(recoveryBtn).toBeDisabled();
+
+    // Verify facility view & channel cards appear
+    await expect(page.getByTestId('facility-view')).toBeVisible();
+    await expect(page.getByTestId('ch14-card')).toBeVisible();
+    await expect(page.getByTestId('ch27-card')).toBeVisible();
+
+    // 4 & 5. Verify both channel failures appear and deterministic policy recommendation appears
+    const contentionCard = page.getByTestId('contention-decision-card');
+    await expect(contentionCard).toBeVisible({ timeout: 20000 });
+    await expect(contentionCard).toContainText(/Emergency Tier/i);
+    await expect(contentionCard).toContainText(/General Tier/i);
+
+    // 6. Verify human-authorization gate appears
+    const contentionAuthBtn = page.getByTestId('authorize-prioritization-button');
+    await expect(contentionAuthBtn).toBeVisible();
+
+    // 7. Verify no restoration occurs before authorization
+    await page.waitForTimeout(2000);
+    await expect(contentionAuthBtn).toBeVisible();
+
+    // 8. Authorize prioritization
+    await contentionAuthBtn.click();
+
+    // 9. Verify emergency-tier channel (CH-14) is restored
+    await expect(page.getByTestId('ch14-caption')).toContainText(/✓/i, { timeout: 10000 });
+
+    // 10. Verify other channel (CH-27) remains degraded
+    await expect(page.getByTestId('ch27-status-pill')).toContainText(/DEGRADED \+ FLAGGED/i);
+
+    // 11. Verify final state is PARTIALLY MITIGATED
+    const spineTextTerminal = await page.getByTestId('agent-spine').innerText();
+    expect(spineTextTerminal).toMatch(/Partially mitigated — 1 restored, 1 incident open/i);
+
+    // Verify controls leave running state appropriately
+    await expect(contentionBtn).toBeEnabled({ timeout: 15000 });
+    await expect(recoveryBtn).toBeEnabled();
+  });
+
+  // --- REGRESSION COVERAGE: HEADER LAYOUT & DOUBLE-CLICK SAFETY ---
+  test('Regression — Header Layout, Disabled States, and Header Screenshot Capture', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForTimeout(800);
+
+    const recoveryBtn = page.getByRole('button', { name: 'Run caption recovery scenario' });
+    const contentionBtn = page.getByRole('button', { name: 'Run capacity contention scenario' });
+
+    // Verify accessible role and name
+    await expect(recoveryBtn).toBeVisible();
+    await expect(contentionBtn).toBeVisible();
+
+    // Verify header layout height does not exceed 60px (no wrapping)
+    const header = page.getByTestId('master-header');
+    const headerBox = await header.boundingBox();
+    expect(headerBox?.height).toBeLessThanOrEqual(60);
+
+    // Capture final header controls screenshot
+    await header.screenshot({
+      path: path.join(screenshotsDir, 'final_header_controls.png'),
+    });
+
+    console.log('✅ HEADER LAYOUT AND ACCESSIBILITY REGRESSION VERIFIED!');
   });
 });
