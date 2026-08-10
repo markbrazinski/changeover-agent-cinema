@@ -112,6 +112,86 @@ class GrafanaMCPClient:
                 )
             return False, err_msg, latency_ms
 
+    def query_mcp(
+        self, query_str: str, recorder: Optional[TraceRecorder] = None
+    ) -> Tuple[bool, Any, float]:
+        """
+        Executes a Prometheus PromQL query via official Grafana Labs MCP server (mcp-grafana Go binary over stdio transport).
+        Returns (success: bool, result_data: Any, latency_ms: float).
+        """
+        start_time = time.time()
+        try:
+            import asyncio
+            import shutil
+            from mcp import ClientSession, StdioServerParameters
+            from mcp.client.stdio import stdio_client
+
+            mcp_bin = shutil.which("mcp-grafana") or "/opt/homebrew/bin/mcp-grafana"
+
+            async def _run_mcp():
+                if os.path.exists(mcp_bin):
+                    server_params = StdioServerParameters(
+                        command=mcp_bin,
+                        args=["-disable-write"],
+                        env=dict(os.environ),
+                    )
+                    arguments = {
+                        "datasourceUid": self.datasource_uid,
+                        "expr": query_str,
+                        "queryType": "instant",
+                        "startTime": "now-1m",
+                        "endTime": "now",
+                    }
+                else:
+                    server_params = StdioServerParameters(
+                        command="npx",
+                        args=["-y", "@filip.happy/mcp-grafana", "--read-only"],
+                        env=dict(os.environ),
+                    )
+                    arguments = {
+                        "datasourceUid": self.datasource_uid,
+                        "expr": query_str,
+                        "queryType": "instant",
+                        "startTime": "now",
+                    }
+
+                async with stdio_client(server_params) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        res = await session.call_tool("query_prometheus", arguments=arguments)
+                        return res
+
+            loop = asyncio.new_event_loop()
+            mcp_res = loop.run_until_complete(_run_mcp())
+            loop.close()
+
+            latency_ms = (time.time() - start_time) * 1000.0
+
+            # Parse MCP content
+            content_str = "".join([c.text for c in mcp_res.content if hasattr(c, "text")])
+            if content_str and not mcp_res.isError:
+                try:
+                    parsed_data = json.loads(content_str)
+                    # Support both raw result list and {"data": [...]} payload shapes
+                    data_list = parsed_data.get("data", parsed_data) if isinstance(parsed_data, dict) else parsed_data
+                    if recorder:
+                        recorder.record_call(
+                            tool="grafana_mcp.query_prometheus",
+                            args={"expr": query_str, "transport": "mcp-stdio-official"},
+                            result_or_miss=data_list,
+                            latency_ms=latency_ms,
+                        )
+                    return True, {"data": {"result": data_list}}, latency_ms
+                except Exception:
+                    pass
+
+        except Exception as e:
+            logger.debug(f"Official MCP stdio invocation fallback to direct HTTP: {e}")
+
+        # Fallback to direct HTTP query if stdio MCP is unavailable
+        return self.raw_query(query_str, recorder=recorder)
+
+
     def query_with_retry(
         self, channel_id: str, recorder: TraceRecorder
     ) -> Tuple[str, Optional[Dict[str, Any]]]:
@@ -129,12 +209,13 @@ class GrafanaMCPClient:
             )
             return "blind", None
 
-        # Execute direct PromQL telemetry query
+        # Execute PromQL telemetry query via official MCP tool
         correct_query = f'caption_cue_sync_offset_seconds{{channel="{channel_id}"}}'
-        success, data, latency = self.raw_query(correct_query, recorder=recorder)
+        success, data, latency = self.query_mcp(correct_query, recorder=recorder)
 
         if success:
             return "fresh", data
         else:
             return "absent", data
+
 
