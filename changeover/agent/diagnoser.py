@@ -15,19 +15,38 @@ logger = logging.getLogger(__name__)
 
 class Diagnoser:
     """
-    Gemini-powered telemetry diagnoser.
-    Reads telemetry evidence and names the failed layer.
+    Google ADK-powered telemetry diagnoser.
+    Executes an ADK Agent and Runner to analyze telemetry evidence and name the failed layer.
     """
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-        self.client = None
+        self.adk_agent = None
+        self.adk_runner = None
+        self.session_service = None
+
         if self.api_key:
             try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
+                import google.adk as adk
+                from google.adk.sessions import InMemorySessionService
+
+                self.adk_agent = adk.Agent(
+                    name="changeover_diagnoser",
+                    model="gemini-2.5-flash",
+                    instruction=(
+                        "You are Changeover Diagnoser, an AI broadcast accessibility agent running on Google ADK. "
+                        "Analyze broadcast telemetry evidence to isolate whether captions or sign_language failed. "
+                        "Return strict JSON: {\"failed_layer\": \"captions\" | \"sign_language\" | \"none\", \"rationale\": \"...\", \"confidence\": 1.0}"
+                    ),
+                )
+                self.session_service = InMemorySessionService()
+                self.adk_runner = adk.Runner(
+                    agent=self.adk_agent,
+                    session_service=self.session_service,
+                    app_name="changeover",
+                )
             except Exception as e:
-                logger.warning(f"Could not initialize google.genai Client: {e}")
+                logger.warning(f"Could not initialize Google ADK Agent/Runner: {e}")
 
     def diagnose(
         self,
@@ -60,30 +79,45 @@ class Diagnoser:
                 except (ValueError, TypeError, IndexError):
                     pass
 
-        # Formulate prompt for Gemini
+        # Formulate prompt for Gemini via ADK Agent/Runner
         prompt = (
-            f"You are Changeover Diagnoser, an AI broadcast accessibility agent.\n"
             f"Analyze telemetry evidence for channel '{channel_id}':\n"
             f"- Measured Caption Cue Sync Offset: {caption_offset:.3f}s (Threshold: {caption_threshold}s)\n"
             f"- Measured Feed Liveness Gap (Sign Language Stand-In): {liveness_gap:.3f}s (Threshold: {liveness_threshold}s)\n"
-            f"(Note: Audio Description is not monitored in this build).\n"
             f"Identify which layer failed. Reply in strict JSON format:\n"
             f'{{"failed_layer": "captions" | "sign_language" | "none", "rationale": "...", "confidence": 1.0}}'
         )
 
-        if self.client:
+        if self.adk_runner and self.session_service:
             try:
-                response = self.client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt,
-                )
-                text = response.text.strip()
+                import asyncio
+                from google.genai import types
+
+                async def _run_adk():
+                    session = await self.session_service.create_session(user_id="operator", app_name="changeover")
+                    content = types.Content(role="user", parts=[types.Part.from_text(text=prompt)])
+                    last_text = ""
+                    async for event in self.adk_runner.run_async(
+                        user_id="operator", session_id=session.id, new_message=content
+                    ):
+                        if hasattr(event, "content") and event.content:
+                            for part in getattr(event.content, "parts", []):
+                                if hasattr(part, "text") and part.text:
+                                    last_text += part.text
+                    return last_text
+
+                loop = asyncio.new_event_loop()
+                text = loop.run_until_complete(_run_adk()).strip()
+                loop.close()
+
                 if "{" in text and "}" in text:
                     json_str = text[text.find("{"):text.rfind("}") + 1]
                     parsed = json.loads(json_str)
+                    parsed["adk_execution"] = True
                     return parsed
             except Exception as e:
-                logger.warning(f"Gemini API call failed, falling back to deterministic reasoning: {e}")
+                logger.warning(f"Google ADK Agent execution failed, falling back to deterministic reasoning: {e}")
+
 
         # Deterministic evidence reasoning fallback
         if caption_offset > caption_threshold:

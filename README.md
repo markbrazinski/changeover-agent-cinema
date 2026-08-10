@@ -109,12 +109,11 @@ Changeover is an autonomous broadcast accessibility agent that protects caption 
 
 ## 🧩 How Gemini, ADK, and Grafana Power Changeover
 
-| Sponsor / Component | Sponsor Role | Product Consequence | Exact Implementation Path |
+| Point | Sponsor role | Product consequence | Exact Implementation Path |
 | :--- | :--- | :--- | :--- |
-| **Grafana Cloud MCP** | **Live Observability Proxy** | Programmatically queries real PromQL sync metrics directly over HTTP proxy, eliminating manual dashboard hunting. | [`changeover/evidence/grafana_mcp.py:70-75`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/evidence/grafana_mcp.py#L70-L75) |
-| **Google Gemini 2.5 Flash** | **Telemetry Layer Isolation** | Evaluates raw telemetry metrics and discriminates viewer-impacting caption freeze from feed liveness faults in ~2.4s. | [`changeover/agent/diagnoser.py:76-84`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/diagnoser.py#L76-L84) |
-| **Google ADK Pattern** | **Agent Structure & Handoff** | Packages complex telemetry evidence into a structured, single-click human authorization decision packet. | [`changeover/agent/loop.py:100-120`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/loop.py#L100-L120) |
-| **Deterministic Policy Engine** | **Scarcity Contention Policy** | Enforces operator-declared service tiers ($M=1$ vs $N=2$) through deterministic code while keeping Gemini focused on incident synthesis. | [`changeover/contention/supervisor.py:59-65`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/contention/supervisor.py#L59-L65) |
+| **Telemetry Layer Isolation** | **Gemini + ADK** | Evaluates raw telemetry metrics via `google.adk.Agent` and `google.adk.Runner` to discriminate viewer-impacting caption freeze from feed liveness faults in ~2.4s. | [`changeover/agent/diagnoser.py:27-40`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/diagnoser.py#L27-L40) |
+| **Live Observability Proxy** | **Grafana** | Programmatically queries real PromQL sync metrics directly via official Grafana Labs Go server binary (`grafana/mcp-grafana`), eliminating manual dashboard hunting. | [`changeover/evidence/grafana_mcp.py:115-165`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/evidence/grafana_mcp.py#L115-L165) |
+| **Structured Decision Handoff** | **Gemini + ADK and Grafana** | Packages complex telemetry evidence into a structured, single-click human authorization decision packet. | [`changeover/agent/loop.py:80-110`](file:///Users/markbrazinski/Desktop/coding%20fun/changeover-agent-cinema/changeover/agent/loop.py#L80-L110) |
 
 ---
 
@@ -133,15 +132,17 @@ To ensure safe, broadcast-compliant execution:
 
 ### Prerequisites
 - **Node.js**: v18+ (tested on v20+)
-- **Python**: 3.9+
+- **Python**: 3.10+ (requires `google-adk` and `mcp`)
+- **Official Grafana MCP**: `mcp-grafana` (`brew install mcp-grafana` or Go binary)
 
 ### 1-Minute Launch
 ```bash
-# 1. Install frontend & backend dependencies
+# 1. Install frontend & Python dependencies
 npm install
+python3 -m pip install -r requirements.txt
 
 # 2. Start FastAPI Backend (Port 8008)
-python3 scripts/run_server.py &
+PYTHONPATH="." python3 scripts/run_server.py &
 
 # 3. Start React Frontend (Port 5173)
 npm run dev
@@ -166,13 +167,13 @@ When viewing the application UI at `http://localhost:5173`, use these single-key
 Verify the complete system using the automated test suite:
 
 ```bash
-# Run Backend Unit & Integration Tests
-python3 -m pytest tests/test_slice2.py tests/test_slice6.py
-# Expected output: 6 passed in ~1.8s
+# Run Backend Unit, Sponsor-Path, & Integration Tests
+PYTHONPATH="." python3 -m pytest tests/test_sponsor_path.py tests/test_slice2.py tests/test_slice6.py
+# Expected output: 10 passed in ~5.8s
 
 # Run End-to-End Playwright Audit Suite (Headed/Headless Browser)
 npx playwright test tests/e2e/e2e_audit.spec.ts
-# Expected output: 1 passed in ~48s
+# Expected output: 1 passed in ~49s
 ```
 
 ---
