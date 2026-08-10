@@ -1,11 +1,37 @@
 import React from 'react';
 
+export interface DiagnosticLayer {
+  layer: string;
+  status: 'ok' | 'fail';
+  detail: string;
+}
+
+export interface PolicyEntry {
+  channel: string;
+  tier: string;
+  action: string;
+  isRecommended?: boolean;
+}
+
+export interface AuditReceipt {
+  status: string;
+  hash: string;
+  authorizer: string;
+  restoredMetric: string;
+}
+
 export interface SpineStep {
   title: string;
   sub: string;
   tone?: 'done' | 'active' | 'fill' | 'pending' | 'refuse';
   timestamp?: string;
   toolCall?: string;
+  codeSnippet?: string;
+  jsonPayload?: Record<string, any>;
+  diagnosticMatrix?: DiagnosticLayer[];
+  scarcityCapacity?: { available: number; demand: number };
+  policyComparison?: PolicyEntry[];
+  auditReceipt?: AuditReceipt;
 }
 
 interface AgentSpineProps {
@@ -48,7 +74,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
-        {/* Title */}
+        {/* Title & Badge Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div
@@ -269,7 +295,7 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '10px',
+            gap: '12px',
             overflowY: 'auto',
             paddingRight: '6px',
             flexGrow: 1,
@@ -279,77 +305,274 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
             ACCRUING TOOL CALL HISTORY (NEWEST ON TOP)
           </div>
 
-          {reversedSteps.map((step, idx) => {
-            const isDone = step.tone === 'done';
-            const isActive = step.tone === 'active';
-            const isFill = step.tone === 'fill';
-            const isRefuse = step.tone === 'refuse';
+          {reversedSteps.length === 0 ? (
+            <div
+              data-testid="spine-idle-card"
+              style={{
+                padding: '16px 14px',
+                borderRadius: '7px',
+                border: '1.5px dashed #d8d4cd',
+                backgroundColor: 'var(--panel-hi)',
+                color: 'var(--text-50)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                fontStyle: 'italic',
+                textAlign: 'center',
+              }}
+            >
+              — Agent idle · System nominal at rest —
+            </div>
+          ) : (
+            reversedSteps.map((step, idx) => {
+              const isDone = step.tone === 'done';
+              const isActive = step.tone === 'active';
+              const isFill = step.tone === 'fill';
+              const isRefuse = step.tone === 'refuse';
 
-            return (
-              <div
-                key={idx}
-                data-testid={`spine-step-${idx}`}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: '7px',
-                  border: isRefuse
-                    ? '2.5px solid var(--alarm)'
-                    : isActive
-                    ? '2.5px solid var(--ink)'
-                    : isDone
-                    ? '2px solid #b8b4ad'
-                    : '1.5px dashed #b8b4ad',
-                  backgroundColor: isActive ? 'var(--ink)' : isFill ? 'var(--panel-sunken)' : 'var(--panel-hi)',
-                  color: isActive ? '#f5f3ec' : 'var(--ink)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  flexShrink: 0,
-                  boxShadow: isActive ? '0 3px 10px rgba(0,0,0,0.15)' : 'none',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', fontWeight: 700 }}>
-                    {step.title}
+              return (
+                <div
+                  key={idx}
+                  data-testid={`spine-step-${idx}`}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: '7px',
+                    border: isRefuse
+                      ? '2.5px solid var(--alarm)'
+                      : isActive
+                      ? '2.5px solid var(--ink)'
+                      : isDone
+                      ? '2px solid #b8b4ad'
+                      : '1.5px dashed #b8b4ad',
+                    backgroundColor: isActive ? 'var(--ink)' : isFill ? 'var(--panel-sunken)' : 'var(--panel-hi)',
+                    color: isActive ? '#f5f3ec' : 'var(--ink)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    flexShrink: 0,
+                    boxShadow: isActive ? '0 4px 14px rgba(0,0,0,0.18)' : '0 1px 4px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12.5px', fontWeight: 700 }}>
+                      {step.title}
+                    </div>
+                    {step.timestamp && (
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, opacity: 0.7 }}>
+                        {step.timestamp}
+                      </div>
+                    )}
                   </div>
-                  {step.timestamp && (
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600, opacity: 0.7 }}>
-                      {step.timestamp}
+
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '11px',
+                      fontWeight: 500,
+                      opacity: isActive ? 0.9 : 0.8,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {step.sub}
+                  </div>
+
+                  {/* CODE SNIPPET / TOOL CALL INVOCATION */}
+                  {step.toolCall && (
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '10px',
+                        backgroundColor: isActive ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.06)',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        color: isActive ? '#f5f3ec' : 'var(--ink)',
+                        border: isActive ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.08)',
+                      }}
+                    >
+                      <code>{step.toolCall}</code>
+                    </div>
+                  )}
+
+                  {/* --- RICH VISUAL INSPECTOR WIDGETS --- */}
+
+                  {/* WIDGET 1: TERMINAL / FFPROBE / PROMQL OUTPUT CARD */}
+                  {step.codeSnippet && (
+                    <div
+                      style={{
+                        borderRadius: '5px',
+                        backgroundColor: '#181a1b',
+                        color: '#38d39f',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9.5px',
+                        padding: '8px 10px',
+                        border: '1px solid #2a2d2f',
+                        lineHeight: 1.4,
+                        whiteSpace: 'pre-wrap',
+                        boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.5)',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ color: '#888888', fontSize: '8.5px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        ⚡ TERMINAL OUTPUT INVENT
+                      </div>
+                      <code>{step.codeSnippet}</code>
+                    </div>
+                  )}
+
+                  {/* WIDGET 2: JSON RESPONSE PAYLOAD INSPECTOR */}
+                  {step.jsonPayload && (
+                    <div
+                      style={{
+                        borderRadius: '5px',
+                        backgroundColor: '#121415',
+                        color: '#4cc9f0',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9.5px',
+                        padding: '8px 10px',
+                        border: '1px solid #2b3034',
+                        lineHeight: 1.35,
+                        whiteSpace: 'pre-wrap',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ color: '#f72585', fontSize: '8.5px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 700 }}>
+                        📊 LIVE MCP TELEMETRY PAYLOAD
+                      </div>
+                      <pre style={{ margin: 0 }}>{JSON.stringify(step.jsonPayload, null, 2)}</pre>
+                    </div>
+                  )}
+
+                  {/* WIDGET 3: DIAGNOSTIC LAYER ISOLATION MATRIX */}
+                  {step.diagnosticMatrix && step.diagnosticMatrix.length > 0 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        padding: '8px',
+                        borderRadius: '5px',
+                        backgroundColor: isActive ? 'rgba(255,255,255,0.08)' : 'var(--panel-sunken)',
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, opacity: 0.8, letterSpacing: '0.5px' }}>
+                        DIAGNOSTIC LAYER MATRIX
+                      </div>
+                      {step.diagnosticMatrix.map((diag, dIdx) => (
+                        <div
+                          key={dIdx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '9.5px',
+                            padding: '3px 6px',
+                            borderRadius: '3px',
+                            backgroundColor: diag.status === 'fail' ? 'rgba(189,38,27,0.15)' : 'rgba(59,122,75,0.12)',
+                            color: diag.status === 'fail' ? 'var(--alarm)' : 'var(--nominal)',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>{diag.layer}: {diag.detail}</span>
+                          <span>{diag.status === 'ok' ? '✔ RULED OUT' : '✖ FAULT ISOLATED'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* WIDGET 4: SCARCITY CAPACITY ENGINE GAUGE */}
+                  {step.scarcityCapacity && (
+                    <div
+                      style={{
+                        padding: '8px',
+                        borderRadius: '5px',
+                        backgroundColor: 'rgba(184, 100, 27, 0.1)',
+                        border: '1px solid var(--accent)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, color: 'var(--accent)' }}>
+                        <span>BACKUP RESOURCE SCARCITY</span>
+                        <span>{step.scarcityCapacity.available} AVAILABLE / {step.scarcityCapacity.demand} DEMAND</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${(step.scarcityCapacity.available / step.scarcityCapacity.demand) * 100}%`, height: '100%', backgroundColor: 'var(--accent)' }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* WIDGET 5: POLICY COMPARISON MATRIX */}
+                  {step.policyComparison && step.policyComparison.length > 0 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        padding: '8px',
+                        borderRadius: '5px',
+                        backgroundColor: 'var(--panel-sunken)',
+                        border: '1px solid rgba(0,0,0,0.12)',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', fontWeight: 700, color: 'var(--text-60)' }}>
+                        OPERATOR DECLARATION PRECEDENCE
+                      </div>
+                      {step.policyComparison.map((pol, pIdx) => (
+                        <div
+                          key={pIdx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '9.5px',
+                            padding: '3px 6px',
+                            borderRadius: '3px',
+                            backgroundColor: pol.isRecommended ? 'rgba(59,122,75,0.12)' : 'rgba(0,0,0,0.05)',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span>{pol.channel} ({pol.tier})</span>
+                          <span style={{ color: pol.isRecommended ? 'var(--nominal)' : 'var(--alarm)' }}>{pol.action}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* WIDGET 6: CRYPTOGRAPHIC AUDIT RECEIPT */}
+                  {step.auditReceipt && (
+                    <div
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '5px',
+                        backgroundColor: '#1b1d1e',
+                        color: '#f5f3ec',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '3px',
+                        border: '1px solid #333',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ color: '#4cc9f0', fontWeight: 700, letterSpacing: '0.5px' }}>
+                        🔒 AUDIT RECEIPT · SIGNED & VERIFIED
+                      </div>
+                      <div>HASH: <code>{step.auditReceipt.hash}</code></div>
+                      <div>AUTHORIZER: <strong>{step.auditReceipt.authorizer}</strong></div>
+                      <div>RESTORED METRIC: <strong style={{ color: '#38d39f' }}>{step.auditReceipt.restoredMetric}</strong></div>
                     </div>
                   )}
                 </div>
-
-                <div
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '11px',
-                    fontWeight: 500,
-                    opacity: isActive ? 0.9 : 0.75,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {step.sub}
-                </div>
-
-                {step.toolCall && (
-                  <div
-                    style={{
-                      marginTop: '4px',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '10.5px',
-                      backgroundColor: isActive ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.06)',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      color: isActive ? '#f5f3ec' : 'var(--ink)',
-                      border: isActive ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.08)',
-                    }}
-                  >
-                    <code>{step.toolCall}</code>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 

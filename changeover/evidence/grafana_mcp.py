@@ -116,9 +116,7 @@ class GrafanaMCPClient:
         self, channel_id: str, recorder: TraceRecorder
     ) -> Tuple[str, Optional[Dict[str, Any]]]:
         """
-        Executes a genuine failed-query-then-retry pattern for investigating caption offset.
-        1. First query uses an intentional metric miss or narrow selector.
-        2. Second query retries with the correct PromQL query string.
+        Executes Grafana Cloud MCP query directly to retrieve caption offset telemetry.
         Returns (status: 'fresh' | 'absent' | 'blind', metric_data: Optional[Dict]).
         """
         if not self.is_available():
@@ -131,15 +129,12 @@ class GrafanaMCPClient:
             )
             return "blind", None
 
-        # Step 1: Initial query that misses (simulating wrong metric name / initial miss)
-        miss_query = f'invalid_caption_offset_seconds{{channel="{channel_id}"}}'
-        success1, data1, latency1 = self.raw_query(miss_query, recorder=recorder)
-
-        # Step 2: Retry with correct query
+        # Execute direct PromQL telemetry query
         correct_query = f'caption_cue_sync_offset_seconds{{channel="{channel_id}"}}'
-        success2, data2, latency2 = self.raw_query(correct_query, recorder=recorder)
+        success, data, latency = self.raw_query(correct_query, recorder=recorder)
 
-        if success2:
-            return "fresh", data2
+        if success:
+            return "fresh", data
         else:
-            return "absent", data2
+            return "absent", data
+

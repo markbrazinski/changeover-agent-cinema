@@ -20,6 +20,8 @@ interface DemoControlHeaderProps {
   onAuthorize: () => void;
   onContention: () => void;
   onBlind: () => void;
+  isPlayingWalkthrough?: boolean;
+  walkthroughElapsedSec?: number;
 }
 
 export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
@@ -41,6 +43,8 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
   onAuthorize,
   onContention,
   onBlind,
+  isPlayingWalkthrough = false,
+  walkthroughElapsedSec = 0,
 }) => {
   return (
     <div
@@ -103,7 +107,7 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
                 boxShadow: '0 2px 8px rgba(59,122,75,0.4)',
               }}
             >
-              ▶ START DEMO
+              ▶ START DEMO (USE CASE 1)
             </button>
           )}
 
@@ -124,6 +128,38 @@ export const DemoControlHeader: React.FC<DemoControlHeaderProps> = ({
           >
             ↺ REPLAY
           </button>
+
+          {/* Live Recording Timecode Counter Badge */}
+          {isPlayingWalkthrough && (
+            <div
+              data-testid="timecode-counter-badge"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: '#1a0d00',
+                border: '1.5px solid #ff9800',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#ffe0b2',
+                boxShadow: '0 0 12px rgba(255,152,0,0.3)',
+              }}
+            >
+              <span style={{ color: '#ff3d00', fontSize: '11px' }}>🔴 REC TIMECODE:</span>
+              <span style={{ color: '#ffffff', fontSize: '12px', letterSpacing: '0.5px' }}>
+                {String(Math.floor(walkthroughElapsedSec / 60)).padStart(2, '0')}:{String(walkthroughElapsedSec % 60).padStart(2, '0')} / 00:55
+              </span>
+              <span style={{ color: '#ffb74d', fontSize: '10px', textTransform: 'uppercase' }}>
+                {walkthroughElapsedSec < 20 && '· HEALTHY BASELINE (0:00–0:20)'}
+                {walkthroughElapsedSec >= 20 && walkthroughElapsedSec < 33 && '· CAPTION FREEZE & ADK INVESTIGATION'}
+                {walkthroughElapsedSec >= 33 && walkthroughElapsedSec < 48 && '· ⏸ OPERATOR GATE (CLICK TARGET: 0:48)'}
+                {walkthroughElapsedSec >= 48 && '· FAILOVER RESTORED (0:48–0:55)'}
+              </span>
+            </div>
+          )}
 
           {/* Mode Switcher */}
           <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden', marginLeft: '6px' }}>

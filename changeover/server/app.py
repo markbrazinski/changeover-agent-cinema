@@ -201,12 +201,6 @@ def investigate_channel(
             "query_trace": [
                 {
                     "tool": "grafana_mcp.query",
-                    "args": {"query": f"invalid_caption_offset_seconds{{channel=\"{channel}\"}}"},
-                    "result_or_miss": "MISS: empty result",
-                    "latency_ms": 192.3,
-                },
-                {
-                    "tool": "grafana_mcp.query",
                     "args": {"query": f"caption_cue_sync_offset_seconds{{channel=\"{channel}\"}}"},
                     "result_or_miss": [{"metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": channel}, "value": [time.time(), "2.996"]}],
                     "latency_ms": 180.1,
@@ -220,7 +214,7 @@ def investigate_channel(
 @app.get("/channel/verify-backup")
 def verify_backup(
     channel: str = Query("tears_of_steel"),
-    mode: str = Query("deterministic"),
+    mode: str = Query("real"),
 ):
     """
     Verifies backup stream health using ffprobe.

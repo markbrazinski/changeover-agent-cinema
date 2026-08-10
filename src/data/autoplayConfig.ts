@@ -1,37 +1,41 @@
 /**
  * Walkthrough Configuration: Timings & Verbose On-Screen Narration Copy.
- * Configured for guided interactive demo flow with protected script hold timings.
+ * Configured for locked Use Case 1 demo timeline (53–55s recording spine).
  */
 
 export const WALKTHROUGH_CONFIG = {
-  // Protected Script Holds (Tunable constants for demo filming)
+  // Operational holds (No artificial delays in natural hero execution path)
   PROTECTED_HOLDS: {
-    FREEZE_HOLD_MS: 2000,        // 2.0s hold on Beat 1 initial freeze
-    RESUME_HOLD_MS: 1500,        // 1.5s hold on Beat 5 captions resume
-    CH27_FROZEN_HOLD_MS: 2500,   // 2.5s hold on Beat 6 CH-27 frozen after contention tradeoff
-    CLOSE_HOLD_MS: 1000,         // 1.0s hold before closing
+    CHART_LAG_MS: 0,              // Direct telemetry reaction without artificial lag
+    TOOL_CALL_STAGGER_MS: 0,      // Natural service execution speed
+    FREEZE_HOLD_MS: 0,
+    RESUME_HOLD_MS: 1500,
+    CH27_FROZEN_HOLD_MS: 2500,
+    CLOSE_HOLD_MS: 1000,
   },
   TIMINGS: {
-    STAGE_01_AT_REST: 3000,          // Beat 1: At rest
-    STAGE_02_INJECT_FAULT: 2000,     // Beat 2: Fault injected (2s hold)
-    STAGE_03_INVESTIGATE: 4500,      // Beat 3: Investigate (Grafana query + retry)
-    STAGE_04_VERIFY_BACKUP: 3000,    // Beat 4: Verify backup (ffprobe)
-    STAGE_06_CHANGED_OVER: 2500,     // Beat 6: Post-swap restore (1.5s hold)
-    STAGE_BREATH: 2000,              // Beat 6.5: Breath before contention
-    STAGE_09_CONTENTION_FAIL: 3500,  // Beat 7: Contention 2 failures
-    STAGE_12_TERMINAL: 2500,         // Beat 10: Terminal partially mitigated hold (2.5s hold)
+    STAGE_01_AT_REST: 20000,         // Healthy baseline (0:00–0:20)
+    STAGE_02_INJECT_FAULT: 0,        // Caption freeze triggers at ~0:20; natural investigation follows immediately
+    STAGE_02B_GAP_UNWATCHED: 0,
+    STAGE_03_INVESTIGATE: 0,
+    STAGE_04_VERIFY_BACKUP: 0,
+    STAGE_06_CHANGED_OVER: 7000,     // Post-swap restored hold (0:48–0:55)
+    STAGE_BREATH: 2000,
+    STAGE_09_CONTENTION_FAIL: 15000,
+    STAGE_12_TERMINAL: 10000,
   },
   NARRATIONS: {
-    STAGE_01_AT_REST: "A broadcast control room. One operator, many channels. Watch the captions moving on the right.",
-    STAGE_02_INJECT_FAULT: "The captions just froze — but the board still reads green. No alarm fired. In an exception-managed room, nobody is watching this.",
-    STAGE_03_INVESTIGATE: "The agent queries Grafana, retries a failed query, and isolates the caption layer — ruling out the others.",
-    STAGE_04_VERIFY_BACKUP: "It verifies a healthy backup exists via ffprobe.",
-    STAGE_05_AWAITING_APPROVAL: "⏸ STOP — PAUSED FOR OPERATOR: The agent will not act on its own. YOU are the operator — click AUTHORIZE FAILOVER to switch this channel.",
-    STAGE_06_CHANGED_OVER: "Captions restored — confirmed by measurement (+0.486s), not assumption.",
+    STAGE_01_AT_REST: "Live television depends on many systems staying in sync. One operator watches many channels and responds when something turns red. Captions are regulated access. But this board asks whether the feed is live—not whether a viewer can still follow it. Watch the captions on the right. Everything is working.",
+    STAGE_02_INJECT_FAULT: "And then—the captions stop. The picture keeps moving.",
+    STAGE_03_INVESTIGATE: "Changeover detects the gap. Gemini works the incident through Google’s ADK, querying Grafana Cloud MCP to isolate the caption layer and verify a healthy backup.",
+    STAGE_04_VERIFY_BACKUP: "It compares caption timing with feed liveness, attaches the evidence, and stops.",
+    STAGE_05_AWAITING_APPROVAL: "Changeover can investigate and recommend. Only the operator can switch the feed.",
+    STAGE_06_CHANGED_OVER: "With the backup confirmed, the operator authorizes failover. The backup takes over. Captions return to sync. The viewer gets the next line.",
     STAGE_BREATH: "Primary stream restored. Testing multi-channel resource scarcity scenario...",
-    STAGE_09_CONTENTION_FAIL: "Now two channels fail at once. There is only one backup. The agent cannot save both.",
-    STAGE_10_CONTENTION_DECISION: "⏸ STOP — PAUSED FOR OPERATOR TRADEOFF: The agent recommends protecting the emergency channel — a priority declared before the incident, which the agent cannot change. Click AUTHORIZE PRIORITIZATION to execute.",
+    STAGE_09_CONTENTION_FAIL: "Two channels lose captions at once. One backup available. The agent evaluates priority policies.",
+    STAGE_10_CONTENTION_DECISION: "⏸ STOP — AWAITING OPERATOR SELECTION: Select policy trade-off to execute.",
     STAGE_11_CONTENTION_AUTH: "Executing human-authorized tradeoff...",
-    STAGE_12_TERMINAL: "One channel restored. One honestly degraded and flagged for a human. The agent did not pretend it saved both. This is the honest terminal state.",
+    STAGE_12_TERMINAL: "Partially mitigated: Emergency channel restored, general channel honestly flagged.",
+    STAGE_CLOSE: "The room was watching the signal. Changeover was watching the viewer.",
   },
 };

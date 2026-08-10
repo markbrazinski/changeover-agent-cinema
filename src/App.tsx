@@ -4,10 +4,11 @@ import { DemoControlHeader } from './components/DemoControlHeader';
 import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
+import { CueCardIcon } from './components/CueCardIcon';
 import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('deterministic');
+  const [mode, setMode] = useState<Mode>('real');
   const [currentStage, setCurrentStage] = useState<string>('01_at_rest');
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
   const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
@@ -17,6 +18,7 @@ export default function App() {
   // Guided interactive walkthrough states
   const [isPlayingWalkthrough, setIsPlayingWalkthrough] = useState<boolean>(false);
   const [isPausedForHuman, setIsPausedForHuman] = useState<boolean>(false);
+  const [showTimer, setShowTimer] = useState<boolean>(false);
   const walkthroughCancelledRef = useRef<boolean>(false);
   const humanApprovedResolverRef = useRef<(() => void) | null>(null);
 
@@ -29,19 +31,86 @@ export default function App() {
   const [backupHealthy, setBackupHealthy] = useState<boolean>(false);
   const [contentionData, setContentionData] = useState<ContentionResponse | null>(null);
 
+  // Live Recording Walkthrough Timecode Counter State
+  const [walkthroughElapsedSec, setWalkthroughElapsedSec] = useState<number>(0);
+  const walkthroughTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startWalkthroughTimer = () => {
+    setWalkthroughElapsedSec(0);
+    if (walkthroughTimerRef.current) clearInterval(walkthroughTimerRef.current);
+    walkthroughTimerRef.current = setInterval(() => {
+      setWalkthroughElapsedSec((prev) => prev + 1);
+    }, 1000);
+  };
+
+  const stopWalkthroughTimer = () => {
+    if (walkthroughTimerRef.current) {
+      clearInterval(walkthroughTimerRef.current);
+      walkthroughTimerRef.current = null;
+    }
+  };
+
+  // Delayed chart freeze flag (2.5s delay from visual caption freeze to chart update)
+  const [isChartFrozen, setIsChartFrozen] = useState<boolean>(false);
+  // Contention staggered tool call index
+  const [contentionStepIndex, setContentionStepIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (currentStage === '01_at_rest' || currentStage === '09a_contention_baseline') {
+      setIsChartFrozen(false);
+      setContentionStepIndex(0);
+    } else if (currentStage === '02_fault_injected' || currentStage === '09_contention_failing') {
+      setIsChartFrozen(false);
+      const timer = setTimeout(() => {
+        setIsChartFrozen(true);
+      }, WALKTHROUGH_CONFIG.PROTECTED_HOLDS.CHART_LAG_MS); // 2.5s initial chart delay
+      return () => clearTimeout(timer);
+    } else {
+      setIsChartFrozen(true);
+    }
+  }, [currentStage]);
+
+  useEffect(() => {
+    if (currentStage === '09_contention_failing') {
+      setContentionStepIndex(1);
+      const t1 = setTimeout(() => setContentionStepIndex(2), 2300);
+      const t2 = setTimeout(() => setContentionStepIndex(3), 4600);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    } else if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
+      setContentionStepIndex(3);
+    } else {
+      setContentionStepIndex(0);
+    }
+  }, [currentStage]);
+
   // Timecode generator
   const [timecode, setTimecode] = useState<string>('PGM-OUT 20:14:02');
 
+  // Wave 2 Monotonic Clock Ref & Milestone Logging Helper
+  const wave2StartTimeRef = useRef<number>(0);
+  const logWave2Milestone = (event: string, detail?: any) => {
+    const startTime = wave2StartTimeRef.current || performance.now();
+    const elapsedSec = ((performance.now() - startTime) / 1000).toFixed(3);
+    console.log(`[WAVE 2 +${elapsedSec}s] ${event}`, detail || '');
+  };
+
   // Keyboard shortcut listener:
-  // '1' = Start Part 1 (Single Channel A/B Walkthrough)
-  // '2' Press 1 = Switch to 2-channel baseline view (CH-14 Tears of Steel vs CH-27 Sintel live & distinct)
-  // '2' Press 2 = Trigger contention fault & policy trade-off authorization gate
+  // '1' = Start Part 1 (Clean Walkthrough without timer overlay)
+  // '3' = Start Part 1 (Walkthrough with Training Timer Overlay)
+  // '2' = Single-press Wave 2 Launch (2-channel baseline -> 7.5s fault -> real investigation -> human gate)
   // 'h' or 'H' = Toggle manual controls header
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'h' || e.key === 'H') {
         setIsManualOpen((prev) => !prev);
       } else if (e.key === '1') {
+        setShowTimer(false);
+        handleRunPart1();
+      } else if (e.key === '3') {
+        setShowTimer(true);
         handleRunPart1();
       } else if (e.key === '2') {
         handleRunKey2();
@@ -49,18 +118,21 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, currentStage]);
+  }, [mode, currentStage, isPlayingWalkthrough]);
 
-  // Key '2' Handler: Step 1 = Move to 2-channel baseline, Step 2 = Begin contention animations
+  // Key '2' Handler: Single-press Wave 2 launch command
   const handleRunKey2 = () => {
-    if (currentStage === '09a_contention_baseline') {
-      // Second press of '2': Begin contention failure animations & policy gate
-      handleRunContention();
-    } else {
-      // First press of '2': Move screens to 2 distinct channels (CH-14 Tears of Steel vs CH-27 Sintel) playing nominal
-      setCurrentStage('09a_contention_baseline');
-      setTimecode('PGM-OUT 20:15:00');
+    if (
+      currentStage === '09a_contention_baseline' ||
+      currentStage === '09_contention_failing' ||
+      currentStage === '10_contention_decision' ||
+      currentStage === '11_contention_authorized' ||
+      currentStage === '12_terminal_partially_mitigated'
+    ) {
+      console.log('Wave 2 already in progress. Ignoring repeated (2) keypress.');
+      return;
     }
+    handleRunPart2();
   };
 
   // Load Video Manifest on startup
@@ -209,15 +281,26 @@ export default function App() {
   // 9–11. Contention Scenario (2 Channels vs 1 Backup)
   const handleRunContention = async () => {
     setIsWorking(true);
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     try {
-      const res = await agentClient.runContention('operator:mark', mode);
-      setContentionData(res);
+      logWave2Milestone('contention_fault_injected');
       setCurrentStage('09_contention_failing');
       setTimecode('PGM-OUT 20:15:10');
 
-      await new Promise((r) => setTimeout(r, 1500));
+      logWave2Milestone('investigation_started');
+      const res = await agentClient.runContention('operator:mark', mode);
+      logWave2Milestone('grafana_results_received');
+      logWave2Milestone('gemini_synthesis_completed');
+      logWave2Milestone('policy_evaluated');
+      setContentionData(res);
+
+      // Visual staggering for Agent Spine cards (2.3s per card, slowed down by +0.5s per card)
+      await delay(2300);
+      await delay(2300);
+
       setCurrentStage('10_contention_decision');
       setTimecode('PGM-OUT 20:15:14');
+      logWave2Milestone('human_gate_ready');
     } catch (e) {
       console.error('Contention scenario error:', e);
     } finally {
@@ -227,7 +310,9 @@ export default function App() {
 
   const handleAuthorizeContention = async () => {
     setIsWorking(true);
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     try {
+      logWave2Milestone('operator_authorized');
       setCurrentStage('11_contention_authorized');
       setTimecode('PGM-OUT 20:15:20');
       setIsPausedForHuman(false);
@@ -237,9 +322,17 @@ export default function App() {
         humanApprovedResolverRef.current = null;
       }
 
-      await new Promise((r) => setTimeout(r, 2000));
+      logWave2Milestone('restoration_completed');
+
+      // 2.0s restoration animation hold
+      await delay(2000);
       setCurrentStage('12_terminal_partially_mitigated');
       setTimecode('PGM-OUT 20:15:25');
+      logWave2Milestone('terminal_partially_mitigated');
+
+      // Hold terminal state for at least 6 seconds
+      await delay(6000);
+      logWave2Milestone('closing_lockup_shown');
     } catch (e) {
       console.error('Authorize contention error:', e);
     } finally {
@@ -252,36 +345,36 @@ export default function App() {
     if (isPlayingWalkthrough) return;
     setIsPlayingWalkthrough(true);
     walkthroughCancelledRef.current = false;
+    startWalkthroughTimer();
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     try {
-      // Beat 1: At Rest
+      // 1. Reset Demo & Start Movies at 0.0s (0:00 - 0:20 Healthy Baseline)
       if (walkthroughCancelledRef.current) return;
       await handleReset();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST); // 20.0s healthy baseline
 
-      // Beat 2: Inject Fault
+      // 2. Right-side Captions Freeze at second 20 (0:20 - 0:21)
       if (walkthroughCancelledRef.current) return;
       await handleInjectFault();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_02_INJECT_FAULT);
+      await delay(2000); // 2.0s hold after freeze so VO says "And then—the captions stop."
 
-      // Beat 3: Investigate
+      // 3. Staggered Investigation & Backup Verification (0:22 - 0:30)
       if (walkthroughCancelledRef.current) return;
       await handleInvestigate();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_03_INVESTIGATE);
+      await delay(3500); // 3.5s hold while Gemini ADK & Grafana MCP evidence populates
 
-      // Beat 4: Verify Backup
       if (walkthroughCancelledRef.current) return;
       await handleVerifyBackup();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_04_VERIFY_BACKUP);
+      await delay(2500); // 2.5s hold while ffprobe backup verification populates
 
-      // Beat 5: ⏸ STOP & WAIT FOR HUMAN CLICK (Single Channel Failover)
+      // 4. Human Authorization Gate Ready at ~0:30 (0:30 - 0:48)
       if (walkthroughCancelledRef.current) return;
       handlePrepareApproval();
       setIsPausedForHuman(true);
-      await waitForHumanClick(); // HALTS UNTIL OPERATOR CLICKS AUTHORIZE FAILOVER
+      await waitForHumanClick(); // HALTS INDEFINITELY UNTIL OPERATOR CLICKS AUTHORIZE FAILOVER (CLICK TARGET: 0:48)
 
-      // Beat 6: Changed Over (Restored)
+      // 5. Failover Execution & Restoration Hold (0:48 - 0:55)
       if (walkthroughCancelledRef.current) return;
       await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER);
 
@@ -290,33 +383,55 @@ export default function App() {
     } finally {
       setIsPlayingWalkthrough(false);
       setIsPausedForHuman(false);
+      stopWalkthroughTimer();
     }
   };
 
   // --- PART 2 RECORDING WALKTHROUGH (Key 2) ---
   const handleRunPart2 = async () => {
-    if (isPlayingWalkthrough) return;
+    if (
+      currentStage === '09a_contention_baseline' ||
+      currentStage === '09_contention_failing' ||
+      currentStage === '10_contention_decision' ||
+      currentStage === '11_contention_authorized' ||
+      currentStage === '12_terminal_partially_mitigated'
+    ) {
+      return;
+    }
+
+    walkthroughCancelledRef.current = true;
     setIsPlayingWalkthrough(true);
     walkthroughCancelledRef.current = false;
+    wave2StartTimeRef.current = performance.now();
+    logWave2Milestone('wave2_started');
+    startWalkthroughTimer();
+
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     try {
-      // Beat 7 & 8: Contention Failures & ⏸ STOP & WAIT FOR HUMAN CLICK
+      // 1. T+0.0s: Enter healthy two-channel baseline
       if (walkthroughCancelledRef.current) return;
-      await handleRunContention();
-      await delay(1200);
-      setIsPausedForHuman(true);
-      await waitForHumanClick(); // HALTS UNTIL OPERATOR CLICKS AUTHORIZE PRIORITIZATION
+      setCurrentStage('09a_contention_baseline');
+      setTimecode('PGM-OUT 20:15:00');
 
-      // Beat 9 & 10: Contention Authorized & Terminal Hold
+      // 2. T+7.5s: Automatic concurrent caption failure injection after ~7.5s healthy baseline
+      await delay(7500);
       if (walkthroughCancelledRef.current) return;
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_12_TERMINAL);
+
+      // 3. Trigger concurrent fault injection & real natural-speed investigation
+      await handleRunContention();
+
+      // 4. HALT INDEFINITELY AT HUMAN GATE UNTIL OPERATOR CLICKS AUTHORIZE PRIORITIZATION
+      if (walkthroughCancelledRef.current) return;
+      setIsPausedForHuman(true);
+      await waitForHumanClick(); // HALTS INDEFINITELY UNTIL OPERATOR CLICKS
 
     } catch (e) {
       console.error('Part 2 Walkthrough error:', e);
     } finally {
       setIsPlayingWalkthrough(false);
       setIsPausedForHuman(false);
+      stopWalkthroughTimer();
     }
   };
 
@@ -345,13 +460,14 @@ export default function App() {
   else if (currentStage === '08_refusal_wont_guess') rightVideoState = 'blind';
   else rightVideoState = 'frozen';
 
-  // Determine Evidence Chart Status
-  let evidenceChartStatus: 'nominal' | 'frozen' | 'restored' | 'blind' | 'unconfirmed_backup' = 'frozen';
+  // Determine Evidence Chart Status (with 2.5s delay after visual caption freeze)
+  let evidenceChartStatus: 'nominal' | 'frozen' | 'restored' | 'blind' | 'unconfirmed_backup' = 'nominal';
   if (currentStage === '01_at_rest' || currentStage === '09a_contention_baseline') evidenceChartStatus = 'nominal';
   else if (currentStage === '06_changed_over' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') evidenceChartStatus = 'restored';
   else if (currentStage === '08_refusal_wont_guess') evidenceChartStatus = 'blind';
   else if (currentStage === '07_refusal_wont_switch') evidenceChartStatus = 'unconfirmed_backup';
-  else evidenceChartStatus = 'frozen';
+  else if (isChartFrozen) evidenceChartStatus = 'frozen';
+  else evidenceChartStatus = 'nominal';
 
   // Contention state flags
   const isContentionStage = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
@@ -363,40 +479,49 @@ export default function App() {
   const spineSteps: SpineStep[] = [];
 
   if (isContentionStage) {
-    if (isContentionBaseline) {
-      // PART 2 STEP 1: INITIAL 2-CHANNEL FACILITY MONITORING BASELINE
-      spineSteps.push({
-        title: 'mcp:query_prometheus',
-        sub: 'watching 2 active channels · CH-14 & CH-27 nominal',
-        tone: 'active',
-        timestamp: 'T+00:00',
-        toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
-      });
-    } else {
-      // PART 2 STEP 2: TWO-CHANNEL CONTENTION ACCRUING TOOL CALL LOG
-      spineSteps.push({
-        title: 'mcp:query_prometheus',
-        sub: '2 concurrent CAP freezes · CH-14 (+2.996s) & CH-27 (+2.996s)',
-        tone: 'done',
-        timestamp: 'T+00:00',
-        toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
-      });
+    if (!isContentionBaseline) {
+      // PART 2: TWO-CHANNEL CONTENTION ACCRUING TOOL CALL LOG (Staggered by 1.8s)
+      if (contentionStepIndex >= 1) {
+        spineSteps.push({
+          title: 'mcp:query_prometheus',
+          sub: '2 concurrent CAP freezes · CH-14 (+2.996s) & CH-27 (+2.996s)',
+          tone: contentionStepIndex === 1 ? 'active' : 'done',
+          timestamp: 'T+00:00',
+          toolCall: 'query_prometheus(metric="caption_sync", channels=["ch14","ch27"])',
+          jsonPayload: {
+            ch14_caption_drift: "+2.996s",
+            ch27_caption_drift: "+2.996s",
+            concurrent_faults: 2,
+            liveness_plane: "nominal_ok",
+          },
+        });
+      }
 
-      spineSteps.push({
-        title: 'policy_engine:evaluate_capacity',
-        sub: '⚠ shared backup line · capacity 0/1 available',
-        tone: 'fill',
-        timestamp: 'T+00:02',
-        toolCall: 'evaluate_capacity(backup_count=1, failing_count=2)',
-      });
+      if (contentionStepIndex >= 2) {
+        spineSteps.push({
+          title: 'policy_engine:evaluate_capacity',
+          sub: '⚠ shared backup line · capacity 0/1 available',
+          tone: contentionStepIndex === 2 ? 'fill' : 'done',
+          timestamp: 'T+00:02',
+          toolCall: 'evaluate_capacity(backup_count=1, failing_count=2)',
+          scarcityCapacity: { available: 1, demand: 2 },
+          codeSnippet: `$ changeover-policy eval --capacity\nDemand: CH-14 (Emergency) + CH-27 (General) = 2\nCapacity: 1 Shared Backup Stream\nStatus: SCARCITY_REAL (Resource Exhausted)`,
+        });
+      }
 
-      spineSteps.push({
-        title: 'policy_engine:evaluate_tiers',
-        sub: 'CH-14: Emergency Tier > CH-27: General Tier',
-        tone: 'active',
-        timestamp: 'T+00:04',
-        toolCall: 'evaluate_tiers(ch14="emergency", ch27="general")',
-      });
+      if (contentionStepIndex >= 3) {
+        spineSteps.push({
+          title: 'policy_engine:evaluate_tiers',
+          sub: 'CH-14: Emergency Tier > CH-27: General Tier',
+          tone: 'done',
+          timestamp: 'T+00:04',
+          toolCall: 'evaluate_tiers(ch14="emergency", ch27="general")',
+          policyComparison: [
+            { channel: 'CH-14 (Tears of Steel)', tier: 'Emergency / Public-Info', action: 'RECOMMENDED RESTORE', isRecommended: true },
+            { channel: 'CH-27 (Sintel)', tier: 'General Entertainment', action: 'FLAG UNMITIGATED', isRecommended: false },
+          ],
+        });
+      }
 
       if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
         spineSteps.push({
@@ -415,6 +540,7 @@ export default function App() {
           tone: 'done',
           timestamp: 'T+00:08',
           toolCall: 'execute_priority_restoration(target="ch14")',
+          codeSnippet: `SUCCESS: Priority restoration executed on CH-14.\nMeasured offset: +0.486s (RESTORED)\nCH-27: Untouched (0 capacity) — Flagged Degraded`,
         });
 
         spineSteps.push({
@@ -423,45 +549,71 @@ export default function App() {
           tone: 'done',
           timestamp: 'T+00:10',
           toolCall: 'record_state(status="partially_mitigated", incident_open=1)',
+          auditReceipt: {
+            status: 'PARTIALLY_MITIGATED',
+            hash: '0x8f3c4e92a1b5e01f',
+            authorizer: 'operator:mark',
+            restoredMetric: '+0.486s (CH-14 Restored)',
+          },
         });
       }
     }
 
   } else {
     // PART 1: SINGLE-CHANNEL A/B ACCRUING TOOL CALL LOG
-    spineSteps.push({
-      title: 'mcp:query_prometheus',
-      sub: 'watching program clock sync · CAP & SIGN nominal',
-      tone: currentStage === '01_at_rest' ? 'active' : 'done',
-      timestamp: 'T+00:00',
-      toolCall: 'query_prometheus(metric="caption_sync", channel="ch14")',
-    });
-
     if (currentStage !== '01_at_rest') {
       spineSteps.push({
         title: 'mcp:query_prometheus',
         sub: `⚠ CAP FREEZE detected · offset +${captionOffset.toFixed(3)}s > 0.759s`,
         tone: currentStage === '02_fault_injected' ? 'active' : 'done',
-        timestamp: 'T+00:02',
+        timestamp: 'T+00:00',
         toolCall: 'query_prometheus(channel="ch14", metric="caption_sync")',
+        jsonPayload: {
+          channel: "ch14",
+          metric: "caption_sync_offset_seconds",
+          value: Number(captionOffset.toFixed(3)),
+          threshold: 0.759,
+          alarm: true,
+        },
       });
     }
 
     if (currentStage === '03_investigating' || currentStage === '04_backup_verified' || currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
       spineSteps.push({
-        title: 'mcp:query_prometheus (retry)',
-        sub: 'MISS (192ms timeout) → RETRY success (180ms) · SIGN flat',
-        tone: currentStage === '03_investigating' ? 'active' : 'done',
-        timestamp: 'T+00:04',
-        toolCall: 'query_prometheus(retry=1, timeout=1200ms)',
+        title: 'mcp:query_prometheus',
+        sub: `fresh telemetry returned · caption_sync_offset_seconds=${captionOffset.toFixed(3)}`,
+        tone: 'done',
+        timestamp: 'T+00:01',
+        toolCall: 'query_prometheus(channel="ch14", metric="caption_sync")',
+        jsonPayload: {
+          status: "200 OK",
+          latency_ms: 42,
+          caption_sync_offset_seconds: Number(captionOffset.toFixed(3)),
+          peer_liveness: 0.000,
+          evidence_tier: evidenceTier || "fresh",
+        },
+      });
+
+      spineSteps.push({
+        title: 'adk_agent:measure_clock_drift',
+        sub: `program_clock=20:14:19 · caption_sync_gap=${captionOffset.toFixed(3)}s`,
+        tone: 'done',
+        timestamp: 'T+00:02',
+        toolCall: 'measure_clock_drift(feed="tears_of_steel")',
+        codeSnippet: `$ adk-measure --feed tears_of_steel\nPGM_CLOCK: 20:14:19.482\nCAP_CLOCK: 20:14:16.486\nDRIFT_GAP: +${captionOffset.toFixed(3)}s [CRITICAL DRIFT]`,
       });
 
       spineSteps.push({
         title: 'adk_agent:isolate_layer',
-        sub: 'CAP_FAILED · SIGN_ISOLATED (not program-wide)',
-        tone: 'done',
-        timestamp: 'T+00:05',
+        sub: 'CAP_FAILED · SIGN_ISOLATED (feed-liveness flat 0.000s -> peer ruled out)',
+        tone: currentStage === '03_investigating' ? 'active' : 'done',
+        timestamp: 'T+00:03',
         toolCall: 'isolate_layer(evidence=["cap_freeze", "sign_ok"])',
+        diagnosticMatrix: [
+          { layer: 'VIDEO (SIGN)', status: 'ok', detail: '1080p60 · Ruled Out' },
+          { layer: 'AUDIO (PCM)', status: 'ok', detail: '-14 dBFS · Ruled Out' },
+          { layer: 'CAPTIONS (VTT)', status: 'fail', detail: `Drift +${captionOffset.toFixed(3)}s · Fault Isolated` },
+        ],
       });
     }
 
@@ -472,6 +624,7 @@ export default function App() {
         tone: currentStage === '04_backup_verified' ? 'fill' : 'done',
         timestamp: 'T+00:06',
         toolCall: 'ffprobe(file="tears_of_steel/backup.mp4")',
+        codeSnippet: `$ ffprobe -v error -show_entries stream=duration,codec_name tears_of_steel/backup.mp4\n[STREAM 0] h264 · 1080p24 · HEALTHY\n[STREAM 1] aac  · 48kHz stereo · HEALTHY\n[STREAM 2] vtt   · timecode aligned (15ms offset)`,
       });
     }
 
@@ -482,6 +635,9 @@ export default function App() {
         tone: currentStage === '05_awaiting_approval' ? 'active' : 'done',
         timestamp: 'T+00:08',
         toolCall: 'request_authorization(action="failover_ch14")',
+        policyComparison: [
+          { channel: 'CH-14 (Tears of Steel)', tier: 'Emergency Tier', action: 'RECOMMENDED FAILOVER', isRecommended: true },
+        ],
       });
     }
 
@@ -492,6 +648,7 @@ export default function App() {
         tone: 'done',
         timestamp: 'T+00:10',
         toolCall: 'execute_failover(from="primary", to="backup")',
+        codeSnippet: `SUCCESS: CH-14 primary -> backup feed switch executed.\nMeasured post-swap caption offset: +0.486s (VERIFIED RESTORED)`,
       });
 
       spineSteps.push({
@@ -500,6 +657,12 @@ export default function App() {
         tone: 'done',
         timestamp: 'T+00:12',
         toolCall: 'write_state(feed="tears_of_steel", status="restored")',
+        auditReceipt: {
+          status: 'RESTORED',
+          hash: '0x3a7b1c90d8ef',
+          authorizer: 'operator:mark',
+          restoredMetric: '+0.486s (Measured Post-Swap)',
+        },
       });
     }
 
@@ -573,6 +736,8 @@ export default function App() {
             onAuthorize={handleExecuteApprove}
             onContention={handleRunContention}
             onBlind={handleRefuseBlind}
+            isPlayingWalkthrough={isPlayingWalkthrough && showTimer}
+            walkthroughElapsedSec={walkthroughElapsedSec}
           />
         )}
 
@@ -590,15 +755,7 @@ export default function App() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div
-              style={{
-                width: '14px',
-                height: '14px',
-                borderRadius: '3px',
-                backgroundColor: 'var(--accent)',
-                boxShadow: '0 0 8px rgba(184, 100, 27, 0.8)',
-              }}
-            />
+            <CueCardIcon size={20} color="#f5f3ec" />
             <span style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '2px' }}>
               CHANGEOVER
             </span>
@@ -608,6 +765,27 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '11px' }}>
+            {isPlayingWalkthrough && showTimer && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: '#261200',
+                  border: '1px solid #ff9800',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  color: '#ffe0b2',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                }}
+              >
+                <span style={{ color: '#ff3d00' }}>🔴 REC TIMECODE</span>
+                <span style={{ color: '#ffffff' }}>
+                  {String(Math.floor(walkthroughElapsedSec / 60)).padStart(2, '0')}:{String(walkthroughElapsedSec % 60).padStart(2, '0')} / 00:55
+                </span>
+              </div>
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div className="animate-pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#d9381e' }} />
               <span style={{ fontWeight: 700, color: '#d9381e', letterSpacing: '1px' }}>ON AIR</span>
@@ -622,11 +800,14 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRight: '3.5px solid var(--ink)' }}>
             {/* SplitHero Video Viewer */}
             <SplitHero
+              currentStage={currentStage}
               rightState={rightVideoState}
               isContention={isContentionStage}
               isContentionBaseline={isContentionBaseline}
               ch14Restored={ch14RestoredInContention}
               ch27Degraded={ch27DegradedInContention}
+              isPlayingWalkthrough={isPlayingWalkthrough && showTimer}
+              walkthroughElapsedSec={walkthroughElapsedSec}
             />
 
             {/* Layer Telemetry Chart Card */}
@@ -681,7 +862,7 @@ export default function App() {
         >
           {/* Left: Dynamic Disclosure Notes */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span>Authored captions over open-license film · cue timing is real</span>
+            <span>CC BY 3.0 Blender Foundation · Tears of Steel & Sintel</span>
             {(currentStage === '04_backup_verified' || currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') && (
               <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
                 · Backup: pre-cut stand-in for a scarce live caption source

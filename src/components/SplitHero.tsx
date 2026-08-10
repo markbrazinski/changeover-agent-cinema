@@ -15,6 +15,9 @@ interface SplitHeroProps {
   isContentionBaseline?: boolean;
   ch14Restored?: boolean;
   ch27Degraded?: boolean;
+  currentStage?: string;
+  isPlayingWalkthrough?: boolean;
+  walkthroughElapsedSec?: number;
 }
 
 export const SplitHero: React.FC<SplitHeroProps> = ({
@@ -28,16 +31,19 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   isContentionBaseline = false,
   ch14Restored = false,
   ch27Degraded = false,
+  currentStage,
+  isPlayingWalkthrough = false,
+  walkthroughElapsedSec = 0,
 }) => {
   const leftVideoRef = useRef<HTMLVideoElement>(null);
   const rightVideoRef = useRef<HTMLVideoElement>(null);
 
   // Frame-synced timecode playhead ref
-  const savedPlayheadRef = useRef<number>(28.0);
+  const savedPlayheadRef = useRef<number>(4.0);
 
   // Moving caption states
-  const [leftTime, setLeftTime] = useState<number>(28.0);
-  const [rightTime, setRightTime] = useState<number>(28.0);
+  const [leftTime, setLeftTime] = useState<number>(4.0);
+  const [rightTime, setRightTime] = useState<number>(4.0);
 
   // Single-channel frozen cue (Tears of Steel)
   const [frozenRightCue, setFrozenRightCue] = useState<string | null>(null);
@@ -47,8 +53,30 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const [frozenSintelCue, setFrozenSintelCue] = useState<string | null>(null);
   const frozenSintelCueRef = useRef<string | null>(null);
 
-  // Reset ref locks when state changes
+  // Reset ref locks and seek playheads on stage resets
   useEffect(() => {
+    if (currentStage === '01_at_rest') {
+      const left = leftVideoRef.current;
+      const right = rightVideoRef.current;
+      if (left && right) {
+        left.currentTime = 4.0;
+        right.currentTime = 4.0;
+        savedPlayheadRef.current = 4.0;
+        setLeftTime(4.0);
+        setRightTime(4.0);
+      }
+    }
+    if (currentStage === '09a_contention_baseline') {
+      const left = leftVideoRef.current;
+      const right = rightVideoRef.current;
+      if (left && right) {
+        left.currentTime = 15.0;
+        right.currentTime = 90.0;
+        savedPlayheadRef.current = 15.0;
+        setLeftTime(15.0);
+        setRightTime(90.0);
+      }
+    }
     if (rightState !== 'frozen' && !(isContention && !ch14Restored && !isContentionBaseline)) {
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
@@ -57,7 +85,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       frozenSintelCueRef.current = null;
       setFrozenSintelCue(null);
     }
-  }, [rightState, isContention, ch14Restored, isContentionBaseline]);
+  }, [rightState, isContention, ch14Restored, isContentionBaseline, currentStage]);
 
   // Sync video playback and track currentTime for frame-accurate failover cutover
   useEffect(() => {
@@ -66,11 +94,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
     let animationFrameId: number;
 
     if (left && right) {
-      const activeTime = savedPlayheadRef.current > 2.0 ? savedPlayheadRef.current : 28.0;
-      if (left.currentTime === 0 || left.currentTime < 2.0) {
+      const activeTime = savedPlayheadRef.current;
+      if (left.currentTime === 0 && activeTime > 0) {
         left.currentTime = activeTime;
       }
-      if (right.currentTime === 0 || right.currentTime < 2.0) {
+      if (right.currentTime === 0 && activeTime > 0) {
         right.currentTime = activeTime;
       }
 
@@ -88,16 +116,18 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
             // Lock frozen cue mid-line on fault injection
             if (!frozenRightCueRef.current && left) {
               const liveCue = getCueForTime(TEARS_OF_STEEL_CUES, left.currentTime);
-              frozenRightCueRef.current = liveCue;
-              setFrozenRightCue(liveCue);
+              const cueToFreeze = liveCue || "— THOM: All right, fine! I'm freaked out! —";
+              frozenRightCueRef.current = cueToFreeze;
+              setFrozenRightCue(cueToFreeze);
             }
           }
 
           if (isContention && !ch14Restored && !isContentionBaseline) {
             if (!frozenSintelCueRef.current && right) {
               const liveSintelCue = getCueForTime(SINTEL_CUES, right.currentTime);
-              frozenSintelCueRef.current = liveSintelCue;
-              setFrozenSintelCue(liveSintelCue);
+              const cueToFreeze = liveSintelCue || "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —";
+              frozenSintelCueRef.current = cueToFreeze;
+              setFrozenSintelCue(cueToFreeze);
             }
           }
 
@@ -117,13 +147,13 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
   // Get active spoken dialogue caption cues per film
   const rawLeftCue = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
-  const leftCaptionText = rawLeftCue;
+  const leftCaptionText = rawLeftCue || '\u00A0';
 
   const rawRightCue = getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
-  const rightCaptionText = frozenRightCue || rawRightCue;
+  const rightCaptionText = frozenRightCue || rawRightCue || '\u00A0';
 
   const rawSintelCue = getCueForTime(SINTEL_CUES, rightTime);
-  const sintelCaptionText = frozenSintelCue || rawSintelCue;
+  const sintelCaptionText = frozenSintelCue || rawSintelCue || '\u00A0';
 
   // Render Contention 2-Channel Facility View
   if (isContention) {
@@ -893,6 +923,42 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Live Recording Timecode Counter Overlay */}
+      {isPlayingWalkthrough && (
+        <div
+          data-testid="hero-timecode-overlay"
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '16px',
+            zIndex: 100,
+            backgroundColor: 'rgba(15, 14, 11, 0.94)',
+            border: '1.5px solid #ff9800',
+            backdropFilter: 'blur(8px)',
+            padding: '6px 14px',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontFamily: 'var(--font-mono)',
+            color: '#ffffff',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+          }}
+        >
+          <span style={{ color: '#ff3d00', fontWeight: 800, fontSize: '11px', letterSpacing: '0.5px' }}>🔴 REC</span>
+          <span style={{ fontWeight: 700, fontSize: '13px', color: '#ffb74d', letterSpacing: '0.5px' }}>
+            {String(Math.floor(walkthroughElapsedSec / 60)).padStart(2, '0')}:{String(walkthroughElapsedSec % 60).padStart(2, '0')}
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '11px' }}>/ 00:55</span>
+          <span style={{ color: '#ffcc80', fontSize: '10px', fontWeight: 600, borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px' }}>
+            {walkthroughElapsedSec < 20 && 'HEALTHY BASELINE'}
+            {walkthroughElapsedSec >= 20 && walkthroughElapsedSec < 33 && 'ADK INVESTIGATION'}
+            {walkthroughElapsedSec >= 33 && walkthroughElapsedSec < 48 && '⏸ OPERATOR GATE (CLICK TARGET: 0:48)'}
+            {walkthroughElapsedSec >= 48 && 'FAILOVER RESTORED'}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
