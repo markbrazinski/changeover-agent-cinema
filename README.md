@@ -4,14 +4,14 @@
 
 ---
 
-## 📺 Product Demonstration & Screenshots
+## Product Demonstration & Screenshots
 
 ![Human Authorization Gate](tests/e2e/screenshots/beat_05_awaiting_approval.png)
 *Figure 1: The Human Authorization Gate halts the incident workflow until a human broadcast engineer authorizes failover. Real PromQL sync offset (+2.996s) and Gemini diagnostic rationale are displayed on the right Agent Spine panel.*
 
 ---
 
-## 💥 The Problem
+## The Problem
 
 In live television broadcasting, captions often drift or freeze silently while the primary video and audio feeds remain perfectly healthy. When a caption encoder fails, viewers who rely on closed captions suffer an immediate accessibility blackout.
 
@@ -26,7 +26,7 @@ This process takes minutes, violating compliance regulations and disrupting view
 
 ---
 
-## ⚡ What Changeover Does
+## What Changeover Does
 
 Changeover is an autonomous broadcast accessibility agent that protects caption continuity:
 
@@ -38,7 +38,7 @@ Changeover is an autonomous broadcast accessibility agent that protects caption 
 
 ---
 
-## 🔄 Demonstrated End-to-End Flow
+## Demonstrated End-to-End Flow
 
 ### Wave 1: Single-Channel Failover (Use Case 1)
 1. **Healthy Baseline**: Channel 14 (*Tears of Steel*) plays with nominal caption sync offset ($+0.510\text{s}$).
@@ -60,7 +60,7 @@ Changeover is an autonomous broadcast accessibility agent that protects caption 
 
 ---
 
-## 🏛️ System Architecture & Call Graph
+## System Architecture & Call Graph
 
 ```
 Python Orchestration
@@ -89,7 +89,7 @@ Actuator Tool (Source Failover)
 
 ---
 
-## 🧩 How Gemini, ADK, and Grafana Power Changeover
+## How Gemini, ADK, and Grafana Power Changeover
 
 | Point | Sponsor role | Product consequence |
 |---|---|---|
@@ -100,7 +100,7 @@ Gemini does not assign service priority or authorize a switch. A deterministic p
 
 ---
 
-## ⚖️ Authority Boundaries
+## Authority Boundaries
 
 To ensure safe, broadcast-compliant execution:
 
@@ -111,7 +111,7 @@ To ensure safe, broadcast-compliant execution:
 
 ---
 
-## 🚀 Judge Quickstart
+## Judge Quickstart
 
 ### Prerequisites
 - **Node.js**: v18+ (tested on v20+)
@@ -135,25 +135,25 @@ Open **`http://localhost:5173`** in your browser.
 
 ---
 
-## 🎛️ Running the Demo & Scenario Controls
+## Running the Demo & Scenario Controls
 
-When viewing the application UI at `http://localhost:5173`, use the visible controls in the top header as the primary launch method:
+When viewing the application UI at `http://localhost:5173`, simply click the visible buttons in the top header bar to launch each scenario. You do **NOT** need to use keyboard shortcuts or press `(1)` or `(2)`:
 
-| Scenario | Header control | Expected outcome |
+| Scenario | Header control button | Expected outcome |
 | --- | --- | --- |
-| Single-channel recovery | `CAPTION RECOVERY` | Changeover isolates a caption-layer failure, waits for human authorization, and restores the channel through the verified backup. |
-| Resource contention | `CAPACITY CONTENTION` | Two channels require one backup; deterministic policy presents the tradeoff, the operator authorizes it, and the final state is `PARTIALLY MITIGATED`. |
+| Single-channel recovery | `CAPTION RECOVERY` | Launches single-channel scenario directly. Changeover isolates a caption-layer failure, halts at the human authorization gate, and restores the channel through the verified backup upon approval. |
+| Resource contention | `CAPACITY CONTENTION` | Launches 2-channel scenario directly. Two channels experience concurrent caption faults requiring one backup line; deterministic policy presents the tradeoff, the operator authorizes it, and the final state is `PARTIALLY MITIGATED`. |
 
-### Secondary Operator Replay Shortcuts
-For operator replay or keyboard-driven demos, the top header controls are also bound to these single-key shortcuts:
+### Secondary Operator Keyboard Shortcuts
+For hands-free or keyboard-driven demos, the header buttons are also mapped to single-key shortcuts:
 
-- **Key `(1)`**: **Single-Channel Failover Replay** — Triggers the `CAPTION RECOVERY` scenario.
+- **Key `(1)`**: **Single-Channel Failover Replay** — Triggers the `CAPTION RECOVERY` button.
 - **Key `(3)`**: **Training Overlay Replay** — Triggers single-channel recovery with timecode timer overlay.
-- **Key `(2)`**: **Resource Contention Replay** — Triggers the `CAPACITY CONTENTION` scenario.
+- **Key `(2)`**: **Resource Contention Replay** — Triggers the `CAPACITY CONTENTION` button.
 
 ---
 
-## 🧪 Tests & Verification
+## Tests & Verification
 
 Verify the complete system using the automated test suite:
 
@@ -174,7 +174,7 @@ The Playwright suite verifies both visible scenario header controls (`CAPTION RE
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 changeover-agent-cinema/
@@ -199,7 +199,7 @@ changeover-agent-cinema/
 
 ---
 
-## 💡 Honest Limitations
+## Honest Limitations
 
 - **Simulated Hardware Switching**: In this broadcast cinema demonstration, feed failover toggles media streams on screen rather than sending SDI/IP hardware router matrix commands.
 - **Predeclared Service Tiers**: Channel criticality tiers (`Emergency` vs `General`) are loaded from static configuration files (`CHANNELS`) rather than an active enterprise CMDB.
@@ -208,7 +208,7 @@ changeover-agent-cinema/
 
 ---
 
-## 📜 License & Attribution
+## License & Attribution
 
 - **Code License**: [MIT License](LICENSE)
 - **Media Credits**: See [ATTRIBUTION.md](ATTRIBUTION.md) for full Blender Foundation CC BY 3.0 credits (*Tears of Steel* & *Sintel*).
