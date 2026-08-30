@@ -5,10 +5,10 @@
  */
 
 // Import raw JSON traces generated freshly from back-end execution
-import traceTearsOfSteel from '../../logs/traces/trace_tears_of_steel.json';
-import traceSintel from '../../logs/traces/trace_sintel.json';
-import acceptanceTable from '../../logs/acceptance_table.json';
-import contentionAuthorized from '../../logs/contention_authorized.json';
+import traceTearsOfSteel from './fixtures/trace_tears_of_steel.json';
+import traceSintel from './fixtures/trace_sintel.json';
+import acceptanceTable from './fixtures/acceptance_table.json';
+import contentionAuthorized from './fixtures/contention_authorized.json';
 
 export interface TelemetryReading {
   channel: string;
