@@ -1,0 +1,10 @@
+.gcloudignore
+.git
+.gitignore
+.env
+.env.*
+films/
+node_modules/
+logs/
+reports/
+test-results/

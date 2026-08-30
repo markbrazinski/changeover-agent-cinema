@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.gitignore
+films/
+node_modules/
+logs/
+reports/
+test-results/
+Dockerfile
+.dockerignore
+.gcloudignore
+README.md

@@ -4,13 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none'><rect x='10' y='10' width='80' height='80' rx='22' stroke='%2316140f' stroke-width='8' fill='%23f5f3ec'/><rect x='22' y='26' width='6' height='13' rx='3' fill='%2316140f' opacity='0.55'/><rect x='22' y='44' width='6' height='13' rx='3' fill='%2316140f' opacity='0.55'/><rect x='22' y='62' width='6' height='13' rx='3' fill='%2316140f' opacity='0.55'/><circle cx='66' cy='34' r='13' fill='%2316140f'/></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Changeover — Broadcast Accessibility Operations</title>
+    <title>Changeover — Broadcast Accessibility Agent Replay</title>
+    <meta name="description" content="Faithful deterministic replay of Changeover broadcast accessibility agent executions powered by Google Gemini, ADK, and Grafana MCP." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="background:#16140f; color:#f5f3ec; min-height:100vh; padding:24px; font-family:'Space Mono',monospace;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+          <span style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); border-radius:4px; padding:4px 8px; font-size:11px; font-weight:700;">
+            ● REPLAY — DETERMINISTIC MODE
+          </span>
+          <span style="font-size:12px; opacity:0.8;">Recorded run · No live external calls</span>
+        </div>
+        <h1 style="font-size:20px; font-weight:700; margin:0 0 8px 0;">CHANGEOVER — Broadcast Accessibility Operations</h1>
+        <p style="font-size:12px; opacity:0.7; margin:0;">Loading replay interface...</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

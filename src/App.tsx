@@ -5,10 +5,11 @@ import { SplitHero, VideoState } from './components/SplitHero';
 import { EvidenceChart } from './components/EvidenceChart';
 import { AgentSpine, SpineStep } from './components/AgentSpine';
 import { CueCardIcon } from './components/CueCardIcon';
+import { ReplayProvenanceBanner } from './components/ReplayProvenanceBanner';
 import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('real');
+  const [mode, setMode] = useState<Mode>('deterministic');
   const [currentStage, setCurrentStage] = useState<string>('01_at_rest');
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
   const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
@@ -235,7 +236,7 @@ export default function App() {
   const handleExecuteApprove = async () => {
     setIsWorking(true);
     try {
-      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
+      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:demo', mode);
       setCurrentStage('06_changed_over');
       setPostSwapOffset(res.post_swap_measured_offset || 0.486);
       setTimecode('PGM-OUT 20:14:33');
@@ -289,7 +290,7 @@ export default function App() {
       setTimecode('PGM-OUT 20:15:10');
 
       logWave2Milestone('investigation_started');
-      const res = await agentClient.runContention('operator:mark', mode);
+      const res = await agentClient.runContention('operator:demo', mode);
       logWave2Milestone('grafana_results_received');
       logWave2Milestone('gemini_synthesis_completed');
       logWave2Milestone('policy_evaluated');
@@ -532,7 +533,7 @@ export default function App() {
       if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
         spineSteps.push({
           title: 'human_gate:request_prioritization',
-          sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:mark)',
+          sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:demo)',
           tone: currentStage === '10_contention_decision' ? 'active' : 'done',
           timestamp: 'T+00:06',
           toolCall: 'request_prioritization(policy_recommendation="CH-14")',
@@ -558,7 +559,7 @@ export default function App() {
           auditReceipt: {
             status: 'PARTIALLY_MITIGATED',
             hash: '0x8f3c4e92a1b5e01f',
-            authorizer: 'operator:mark',
+            authorizer: 'operator:demo',
             restoredMetric: '+0.486s (CH-14 Restored)',
           },
         });
@@ -637,7 +638,7 @@ export default function App() {
     if (currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
       spineSteps.push({
         title: 'human_gate:request_authorization',
-        sub: currentStage === '05_awaiting_approval' ? 'AWAITING OPERATOR AUTHORIZATION' : 'APPROVED (operator:mark)',
+        sub: currentStage === '05_awaiting_approval' ? 'AWAITING OPERATOR AUTHORIZATION' : 'APPROVED (operator:demo)',
         tone: currentStage === '05_awaiting_approval' ? 'active' : 'done',
         timestamp: 'T+00:08',
         toolCall: 'request_authorization(action="failover_ch14")',
@@ -666,7 +667,7 @@ export default function App() {
         auditReceipt: {
           status: 'RESTORED',
           hash: '0x3a7b1c90d8ef',
-          authorizer: 'operator:mark',
+          authorizer: 'operator:demo',
           restoredMetric: '+0.486s (Measured Post-Swap)',
         },
       });
@@ -746,6 +747,9 @@ export default function App() {
             walkthroughElapsedSec={walkthroughElapsedSec}
           />
         )}
+
+        {/* Truthful Replay Provenance Banner */}
+        <ReplayProvenanceBanner />
 
         {/* Master Control Header */}
         <header

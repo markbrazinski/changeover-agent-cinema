@@ -1,9 +1,9 @@
 /**
- * API Client for Changeover FastAPI Server (http://localhost:8008).
- * Communicates with backend orchestration endpoints in either 'deterministic' or 'real' mode.
+ * API Client for Changeover Hosted Judge Replay Mode.
+ * Resolves all endpoints locally from deterministic trace fixtures without network calls.
  */
 
-const API_BASE = 'http://localhost:8008';
+import { DETERMINISTIC_RESPONSES } from '../data/deterministicResponses';
 
 export type Mode = 'deterministic' | 'real';
 
@@ -88,58 +88,42 @@ export interface ContentionResponse {
 }
 
 export const agentClient = {
-  async getManifest(mode: Mode = 'deterministic'): Promise<VideoManifest> {
-    const res = await fetch(`${API_BASE}/video/manifest?mode=${mode}`);
-    return res.json();
+  async getManifest(_mode: Mode = 'deterministic'): Promise<VideoManifest> {
+    return DETERMINISTIC_RESPONSES.getManifest;
   },
 
-  async resetDemo(mode: Mode = 'deterministic'): Promise<any> {
-    const res = await fetch(`${API_BASE}/demo/reset?mode=${mode}`, { method: 'POST' });
-    return res.json();
+  async resetDemo(_mode: Mode = 'deterministic'): Promise<any> {
+    return DETERMINISTIC_RESPONSES.resetDemo;
   },
 
-  async injectFault(channel: string = 'tears_of_steel', mode: Mode = 'deterministic'): Promise<any> {
-    const res = await fetch(`${API_BASE}/channel/inject-fault?channel=${channel}&mode=${mode}`, { method: 'POST' });
-    return res.json();
+  async injectFault(channel: string = 'tears_of_steel', _mode: Mode = 'deterministic'): Promise<any> {
+    return DETERMINISTIC_RESPONSES.injectFault(channel);
   },
 
-  async investigate(channel: string = 'tears_of_steel', mode: Mode = 'deterministic'): Promise<InvestigateResponse> {
-    const res = await fetch(`${API_BASE}/channel/investigate?channel=${channel}&mode=${mode}`);
-    return res.json();
+  async investigate(channel: string = 'tears_of_steel', _mode: Mode = 'deterministic'): Promise<InvestigateResponse> {
+    return DETERMINISTIC_RESPONSES.investigate(channel);
   },
 
-  async verifyBackup(channel: string = 'tears_of_steel', mode: Mode = 'deterministic'): Promise<BackupVerifyResponse> {
-    const res = await fetch(`${API_BASE}/channel/verify-backup?channel=${channel}&mode=${mode}`);
-    return res.json();
+  async verifyBackup(channel: string = 'tears_of_steel', _mode: Mode = 'deterministic'): Promise<BackupVerifyResponse> {
+    return DETERMINISTIC_RESPONSES.verifyBackup(channel);
   },
 
   async authorizeFailover(
     channel: string = 'tears_of_steel',
-    authorizer: string = 'operator:mark',
-    mode: Mode = 'deterministic'
+    authorizer: string = 'operator:demo',
+    _mode: Mode = 'deterministic'
   ): Promise<FailoverResponse> {
-    const res = await fetch(
-      `${API_BASE}/channel/authorize-failover?channel=${channel}&human_authorizer=${encodeURIComponent(
-        authorizer
-      )}&mode=${mode}`,
-      { method: 'POST' }
-    );
-    return res.json();
+    return DETERMINISTIC_RESPONSES.authorizeFailover(channel, authorizer);
   },
 
-  async getBlindRefusal(channel: string = 'tears_of_steel', mode: Mode = 'deterministic'): Promise<any> {
-    const res = await fetch(`${API_BASE}/channel/blind?channel=${channel}&mode=${mode}`);
-    return res.json();
+  async getBlindRefusal(channel: string = 'tears_of_steel', _mode: Mode = 'deterministic'): Promise<any> {
+    return DETERMINISTIC_RESPONSES.getBlindRefusal(channel);
   },
 
   async runContention(
-    authorizer: string = 'operator:mark',
-    mode: Mode = 'deterministic'
+    authorizer: string = 'operator:demo',
+    _mode: Mode = 'deterministic'
   ): Promise<ContentionResponse> {
-    const res = await fetch(
-      `${API_BASE}/contention/run?human_authorizer=${encodeURIComponent(authorizer)}&mode=${mode}`,
-      { method: 'POST' }
-    );
-    return res.json();
+    return DETERMINISTIC_RESPONSES.runContention(authorizer);
   },
 };

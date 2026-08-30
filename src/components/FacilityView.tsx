@@ -100,9 +100,9 @@ export const FacilityView: React.FC<FacilityViewProps> = ({
           {/* Video Player */}
           <div style={{ height: '110px', borderRadius: '4px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.2)' }}>
             <video
-              src={ch14Restored ? 'http://localhost:8008/films/tears_of_steel/backup.mp4' : 'http://localhost:8008/films/tears_of_steel/source.mp4'}
-              autoPlay
+              src={ch14Restored ? '/media/tos_backup.mp4' : '/media/tos_source.mp4'}
               muted
+              playsInline
               loop
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -171,9 +171,9 @@ export const FacilityView: React.FC<FacilityViewProps> = ({
           {/* Video Player */}
           <div style={{ height: '110px', borderRadius: '4px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.2)' }}>
             <video
-              src="http://localhost:8008/films/sintel/source.mp4"
-              autoPlay
+              src="/media/sintel_source.mp4"
               muted
+              playsInline
               loop
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />

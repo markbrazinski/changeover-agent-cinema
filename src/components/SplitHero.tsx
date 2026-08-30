@@ -23,9 +23,9 @@ interface SplitHeroProps {
 export const SplitHero: React.FC<SplitHeroProps> = ({
   rightState = 'frozen',
   channelName = 'TEARS OF STEEL',
-  sourceVideoUrl = 'http://localhost:8008/films/tears_of_steel/source.mp4',
-  backupVideoUrl = 'http://localhost:8008/films/tears_of_steel/backup.mp4',
-  captionsVttUrl = 'http://localhost:8008/films/tears_of_steel/captions.vtt',
+  sourceVideoUrl = '/media/tos_source.mp4',
+  backupVideoUrl = '/media/tos_backup.mp4',
+  captionsVttUrl = '/media/captions_tos.vtt',
   isFaultInjected = false,
   isContention = false,
   isContentionBaseline = false,
@@ -424,7 +424,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
               <video
                 ref={rightVideoRef}
                 data-testid="ch27-video"
-                src="http://localhost:8008/films/sintel/source.mp4"
+                src="/media/sintel_source.mp4"
                 muted
                 loop
                 playsInline

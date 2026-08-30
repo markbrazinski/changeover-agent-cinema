@@ -173,7 +173,7 @@ export const SCREEN_STATES: Record<string, StateDefinition> = {
     failedLayer: 'captions',
     evidenceStatus: 'fresh',
     spineSteps: [
-      { title: 'approved ✔', sub: 'authorizer: operator:mark', tone: 'done' },
+      { title: 'approved ✔', sub: 'authorizer: operator:demo', tone: 'done' },
       { title: 'switched → re-measuring backup', sub: 'post-swap read pending…', tone: 'fill' },
       { title: '✓ confirmed restored · 0.486s', sub: 'watching for regression', tone: 'done' },
       { title: 'audit entry logged ✎', sub: 'logs/state/feed_state_tears_of_steel.json', tone: 'done' },
@@ -263,7 +263,7 @@ export const SCREEN_STATES: Record<string, StateDefinition> = {
     failedLayer: 'captions',
     evidenceStatus: 'fresh',
     spineSteps: [
-      { title: 'authorized ✔ · CH-14 priority', sub: 'operator:mark approved tradeoff', tone: 'done' },
+      { title: 'authorized ✔ · CH-14 priority', sub: 'operator:demo approved tradeoff', tone: 'done' },
       { title: 'switched → post-swap read ✓', sub: 'CH-14 CAP rejoined baseline (0.486s)', tone: 'fill' },
       { title: 'CH-27 held DEGRADED + FLAGGED', sub: 'cost kept visible · state file untouched', tone: 'done' },
     ],
