@@ -11,7 +11,7 @@ test.describe('End-to-End Voiceover (VO) Script & Audit Suite', () => {
     }
 
     // 1. Navigate to main application page
-    await page.goto('http://localhost:5173');
+    await page.goto('/');
     await expect(page).toHaveTitle(/Changeover/i);
     await page.waitForTimeout(1000);
 
