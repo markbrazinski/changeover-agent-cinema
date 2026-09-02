@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Machine-readable event contract for Claude Design UI rendering and video sync",
+  "project": "Changeover",
+  "qualification_branch": "spike/grafana-evidence-audit",
+  "operator_identifier": "operator:mark",
+  "events": [
+    {
+      "order": 1,
+      "event_name": "telemetry_remote_write",
+      "responsible_system": "PrometheusExporter",
+      "earliest_appearance_s": 0.0,
+      "measured_real_duration_ms": 1522.67,
+      "required_ui_state": "INGESTING_LIVE_STREAM_METRICS",
+      "narration_may_continue": true
+    },
+    {
+      "order": 2,
+      "event_name": "grafana_cloud_ingestion_ready",
+      "responsible_system": "Grafana Cloud Mimir",
+      "earliest_appearance_s": 0.1,
+      "measured_real_duration_ms": 2140.65,
+      "required_ui_state": "METRICS_AVAILABLE_IN_GRAFANA",
+      "narration_may_continue": true
+    },
+    {
+      "order": 3,
+      "event_name": "mcp_dual_signal_investigation",
+      "responsible_system": "GrafanaMCPClient (mcp-grafana stdio)",
+      "earliest_appearance_s": 0.5,
+      "measured_real_duration_ms": 1580.05,
+      "required_ui_state": "MCP_STDIO_QUERY_ACTIVE",
+      "narration_may_continue": true
+    },
+    {
+      "order": 4,
+      "event_name": "gemini_adk_layer_diagnosis",
+      "responsible_system": "google.adk.Runner (gemini-2.5-flash)",
+      "earliest_appearance_s": 1.8,
+      "measured_real_duration_ms": 3730.01,
+      "required_ui_state": "AI_AGENT_DIAGNOSING_TELEMETRY",
+      "narration_may_continue": true
+    },
+    {
+      "order": 5,
+      "event_name": "backup_feed_health_verify",
+      "responsible_system": "ffprobe_verifier",
+      "earliest_appearance_s": 6.1,
+      "measured_real_duration_ms": 0.07,
+      "required_ui_state": "BACKUP_SOURCE_VERIFIED_HEALTHY",
+      "narration_may_continue": true
+    },
+    {
+      "order": 6,
+      "event_name": "operator_human_authorization_gate",
+      "responsible_system": "Changeover Human Gate",
+      "earliest_appearance_s": 6.2,
+      "measured_real_duration_ms": 10990.51,
+      "required_ui_state": "AWAITING_OPERATOR_AUTHORIZATION",
+      "narration_may_continue": false
+    },
+    {
+      "order": 7,
+      "event_name": "post_authorization_grafana_annotation_write",
+      "responsible_system": "GrafanaMCPClient create_annotation",
+      "earliest_appearance_s": 6.5,
+      "measured_real_duration_ms": 1004.46,
+      "required_ui_state": "GRAFANA_ANNOTATION_WRITTEN",
+      "narration_may_continue": true
+    },
+    {
+      "order": 8,
+      "event_name": "annotation_stdio_retrieval_and_audit",
+      "responsible_system": "GrafanaMCPClient get_annotations",
+      "earliest_appearance_s": 7.8,
+      "measured_real_duration_ms": 1034.47,
+      "required_ui_state": "EVIDENCE_TO_AUDIT_TRAIL_COMPLETE",
+      "narration_may_continue": true
+    }
+  ]
+}

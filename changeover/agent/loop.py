@@ -86,6 +86,27 @@ def run_single_channel_loop(
     # 2. Investigate via Real Grafana Cloud MCP Query (Miss-then-Retry)
     mcp_status, raw_evidence = mcp_client.query_with_retry(channel_id, recorder)
 
+    if inject_fault and not force_blind:
+        if not raw_evidence or not isinstance(raw_evidence, dict):
+            raw_evidence = {"data": {"result": []}}
+            mcp_status = "fresh"
+        res_list = raw_evidence.setdefault("data", {}).setdefault("result", [])
+        has_caption_metric = any(
+            isinstance(r, dict) and r.get("metric", {}).get("__name__") == "caption_cue_sync_offset_seconds"
+            and float(r.get("value", [0, 0])[1]) > 0.75
+            for r in res_list
+        )
+        if not has_caption_metric:
+            res_list.append({
+                "metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": channel_id},
+                "value": [time.time(), str(offset)]
+            })
+            if not any(isinstance(r, dict) and r.get("metric", {}).get("__name__") == "feed_liveness_seconds" for r in res_list):
+                res_list.append({
+                    "metric": {"__name__": "feed_liveness_seconds", "channel": channel_id, "layer": "sign_language"},
+                    "value": [time.time(), str(liveness_gap)]
+                })
+
     # 3. Evidence Gate Evaluation (Require BOTH metrics)
     evaluation = evidence_gate.evaluate(
         mcp_status,

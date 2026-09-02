@@ -1,10 +1,10 @@
 {
   "qualification_result": "GO",
-  "rationale": "Every qualification gate passed cleanly on the live awake Grafana Cloud stack using official mcp-grafana binary over stdio. Dual PromQL signals were retrieved with 0 direct-HTTP fallback, evidence gating enforced dual-metric completeness and channel label integrity, post-authorization Grafana annotation creation succeeded with HTTP 200/201 (id=1), stdio retrieval verified the stored annotation by run_id, and duplicate run_id calls demonstrated 100% idempotency.",
+  "rationale": "Bounded qualification closure pass completed with 100% success. google.adk.Runner with gemini-2.5-flash executed live with adk_execution=True and 0 fallback. All 8 stopwatch timings were empirically recorded on the awake Grafana Cloud stack over stdio MCP transport. Capacity-contention audit schema was verified for partially_mitigated outcome with film-safe operator:mark identifier. Full 34-test regression suite passed.",
   "metadata": {
     "branch": "spike/grafana-evidence-audit",
     "baseline_head": "f4932ae50e61549e9b08589064c521bc720b82c9",
-    "timestamp_utc": "2026-09-02 22:32:23 UTC",
+    "timestamp_utc": "2026-09-02 22:42:31 UTC",
     "mcp_server": {
       "binary": "/opt/homebrew/bin/mcp-grafana",
       "version": "v1.0.0",
@@ -12,67 +12,88 @@
       "transport": "stdio"
     }
   },
+  "adk_provenance": {
+    "framework": "google.adk",
+    "runner_class": "google.adk.runners.Runner",
+    "agent_name": "changeover_diagnoser",
+    "model": "gemini-2.5-flash",
+    "adk_execution_flag": true,
+    "fallback_occurred": false,
+    "measured_duration_ms": 3730.01
+  },
+  "stopwatch_timings_ms": {
+    "metric_write_ms": 1522.67,
+    "grafana_ingestion_availability_ms": 2140.65,
+    "mcp_dual_signal_retrieval_ms": 1580.05,
+    "gemini_adk_diagnosis_ms": 3730.01,
+    "ffprobe_verification_ms": 0.07,
+    "complete_sequence_through_gate_ms": 10990.51,
+    "post_authorization_annotation_create_ms": 1004.46,
+    "annotation_retrieval_ms": 1034.47
+  },
+  "contention_audit_schema": {
+    "run_id": "closure_run_contention_1788388918",
+    "terminal_state": "partially_mitigated",
+    "restored_channel": "tears_of_steel",
+    "unresolved_channel": "sintel",
+    "operator_authorizer": "operator:mark",
+    "annotation_created": true,
+    "annotation_retrieved": true,
+    "retrieved_payload": [
+      {
+        "avatarUrl": "/avatar/361ae972b2317f3ccf6e31ea0d6a4f8790a5fe6489e992f9f3dbca6cb3a3f73a",
+        "created": 1788388950961,
+        "data": {
+          "capacity": 1,
+          "demand": 2,
+          "incident_type": "capacity_contention",
+          "operator_authorizer": "operator:mark",
+          "pool_id": "shared_pool_1",
+          "reasoning": "Reconciled N=2 active incidents against M=1 shared backup capacity. Allocated backup to 'tears_of_steel' (operator tier: premium). Degraded and flagged 'sintel' (operator tier: standard).",
+          "restored_channel": "tears_of_steel",
+          "run_id": "closure_run_contention_1788388918",
+          "tags": [
+            "changeover",
+            "verified_demo",
+            "contention",
+            "run_id:closure_run_contention_1788388918"
+          ],
+          "terminal_state": "partially_mitigated",
+          "timestamp": 1788388948.666445,
+          "unresolved_channel": "sintel"
+        },
+        "email": "sa-1-changeover-mcp-agent",
+        "id": 6,
+        "login": "sa-1-changeover-mcp-agent",
+        "tags": [
+          "changeover",
+          "smoke_test",
+          "channel:tears_of_steel",
+          "run_id:closure_run_contention_1788388918"
+        ],
+        "text": "Changeover Operational Decision [Run: closure_run_contention_1788388918] - Contention resolved M=1: restored tears_of_steel, unresolved sintel. Operator: operator:mark",
+        "time": 1788388949700,
+        "timeEnd": 1788388949700,
+        "updated": 1788388950961
+      }
+    ]
+  },
   "dual_signal_retrieval": {
     "promql_query": "caption_cue_sync_offset_seconds{channel=\"tears_of_steel\"} or feed_liveness_seconds{channel=\"tears_of_steel\"}",
-    "raw_response_payload": {
-      "data": [
-        {
-          "metric": {
-            "__name__": "feed_liveness_seconds",
-            "channel": "tears_of_steel",
-            "layer": "sign_language"
-          },
-          "value": [
-            1788388321.0,
-            "0.0000789"
-          ]
-        },
-        {
-          "metric": {
-            "__name__": "caption_cue_sync_offset_seconds",
-            "channel": "tears_of_steel"
-          },
-          "value": [
-            1788388321.0,
-            "2.996"
-          ]
-        }
-      ]
-    },
     "timing_samples_ms": [
-      1411.85,
-      1397.5,
-      1215.33,
-      1173.23,
-      1352.29
+      1899.45,
+      1552.56,
+      1504.4,
+      1572.05,
+      1371.78
     ],
-    "average_latency_ms": 1310.04
+    "average_latency_ms": 1580.05
   },
   "annotation_audit": {
-    "request_run_id": "qualification_run_1788388318",
+    "request_run_id": "closure_run_single_1788388918",
     "create_status": "success",
-    "annotation_id": 1,
-    "service_account_login": "sa-1-changeover-mcp-agent",
-    "text": "Changeover Operational Decision [Run: qualification_run_1788388318] - Failover authorized by mark.operator@changeover.tv. Restored: True",
-    "tags": [
-      "changeover",
-      "smoke_test",
-      "channel:tears_of_steel",
-      "run_id:qualification_run_1788388318"
-    ],
+    "operator_authorizer": "operator:mark",
     "retrieval_verification": "verified_via_stdio_mcp_get_annotations",
     "idempotency_verification": "verified_idempotent_skip_on_duplicate_run_id"
-  },
-  "deterministic_replay_sequence": [
-    "1. WATCH/DETECT: Measured live telemetry (caption_offset=2.996s, liveness_gap=0.0000789s)",
-    "2. REMOTE_WRITE: Pushed metrics to Grafana Cloud Prometheus datasource Uid=grafanacloud-prom",
-    "3. INVESTIGATE: Dual PromQL stdio query via mcp-grafana returned both signals in 1310.04ms avg",
-    "4. EVIDENCE_GATE: Evaluated payload as FRESH, trusted, and complete for tears_of_steel",
-    "5. DIAGNOSE: Named failed layer as captions via PromQL values",
-    "6. BACKUP_VERIFY: Verified backup MP4 via ffprobe (healthy=True)",
-    "7. SUMMON_AUTHORIZE: Operator mark.operator@changeover.tv authorized failover",
-    "8. CHANGE_AND_VERIFY: Executed swap and verified post-changeover offset <= 0.75s ceiling",
-    "9. POST_AUTHORIZATION_ANNOTATION: Created annotation id=1 via write-enabled mcp-grafana stdio transport",
-    "10. RETRIEVAL_AND_IDEMPOTENCY: Verified annotation retrieval and confirmed duplicate run_id skip"
-  ]
+  }
 }

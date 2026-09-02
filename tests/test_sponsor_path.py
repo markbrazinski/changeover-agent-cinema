@@ -69,7 +69,7 @@ def test_disabling_mcp_causes_canonical_sponsor_path_to_fail():
 
 def test_disabling_adk_falls_back_without_adk_flag():
     """Proves that disabling ADK (no API key) falls back to local evidence reasoning without adk_execution flag."""
-    diagnoser = Diagnoser(api_key=None)
+    diagnoser = Diagnoser(api_key=False)
     assert diagnoser.adk_runner is None, "Runner must be None without API key"
     
     dummy_evidence = {

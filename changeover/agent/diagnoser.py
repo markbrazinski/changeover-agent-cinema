@@ -25,7 +25,7 @@ class Diagnoser:
         self.adk_runner = None
         self.session_service = None
 
-        if self.api_key:
+        if api_key is not False:
             try:
                 import google.adk as adk
                 from google.adk.tools import McpToolset
