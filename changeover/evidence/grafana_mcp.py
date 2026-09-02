@@ -4,8 +4,10 @@ Real MCP client connecting to Grafana Cloud Prometheus proxy with retry and blin
 """
 import os
 import time
+import json
 import requests
 import logging
+import shutil
 from typing import Dict, Any, Tuple, Optional
 from dotenv import load_dotenv
 from changeover.trace.recorder import TraceRecorder
@@ -113,37 +115,58 @@ class GrafanaMCPClient:
             return False, err_msg, latency_ms
 
     def query_mcp(
-        self, query_str: str, recorder: Optional[TraceRecorder] = None
+        self,
+        query_str: str,
+        recorder: Optional[TraceRecorder] = None,
+        allow_http_fallback: bool = False,
     ) -> Tuple[bool, Any, float]:
         """
         Executes a Prometheus PromQL query via official Grafana Labs MCP server (mcp-grafana Go binary over stdio transport).
         Returns (success: bool, result_data: Any, latency_ms: float).
+        If allow_http_fallback is False, strictly fails when MCP stdio execution fails (no silent HTTP fallback).
         """
         start_time = time.time()
+        mcp_bin = (
+            os.getenv("GRAFANA_MCP_BIN")
+            or shutil.which("mcp-grafana")
+            or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
+            or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
+        )
+
+        if not mcp_bin or not os.path.exists(mcp_bin):
+            err_msg = (
+                "Grafana MCP server binary 'mcp-grafana' not found in PATH or GRAFANA_MCP_BIN. "
+                "Refusing query on qualified MCP path."
+            )
+            logger.warning(err_msg)
+            if recorder:
+                recorder.record_call(
+                    tool="grafana_mcp.query_prometheus",
+                    args={"expr": query_str, "transport": "mcp-stdio-official"},
+                    result_or_miss=f"BLIND: {err_msg}",
+                    latency_ms=0.0,
+                )
+            if allow_http_fallback:
+                return self.raw_query(query_str, recorder=recorder)
+            return False, f"BLIND: {err_msg}", 0.0
+
         try:
             import asyncio
-            import shutil
             from mcp import ClientSession, StdioServerParameters
             from mcp.client.stdio import stdio_client
 
-            mcp_bin = (
-                os.getenv("GRAFANA_MCP_BIN")
-                or shutil.which("mcp-grafana")
-                or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
-                or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
-            )
-
-            if not mcp_bin or not os.path.exists(mcp_bin):
-                raise RuntimeError(
-                    "Grafana MCP server binary 'mcp-grafana' not found in PATH or GRAFANA_MCP_BIN. "
-                    "Please install via 'brew install mcp-grafana' or set GRAFANA_MCP_BIN."
-                )
-
             async def _run_mcp():
+                env = dict(os.environ)
+                if self.token:
+                    env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = self.token
+                    env["GRAFANA_API_KEY"] = self.token
+                if self.grafana_url:
+                    env["GRAFANA_URL"] = self.grafana_url
+
                 server_params = StdioServerParameters(
                     command=mcp_bin,
                     args=["-disable-write"],
-                    env=dict(os.environ),
+                    env=env,
                 )
                 arguments = {
                     "datasourceUid": self.datasource_uid,
@@ -165,36 +188,46 @@ class GrafanaMCPClient:
 
             latency_ms = (time.time() - start_time) * 1000.0
 
-            # Parse MCP content
             content_str = "".join([c.text for c in mcp_res.content if hasattr(c, "text")])
             if content_str and not mcp_res.isError:
                 try:
                     parsed_data = json.loads(content_str)
-                    # Support both raw result list and {"data": [...]} payload shapes
                     data_list = parsed_data.get("data", parsed_data) if isinstance(parsed_data, dict) else parsed_data
                     if recorder:
                         recorder.record_call(
-                            tool="grafana_mcp.query_prometheus",
-                            args={"expr": query_str, "transport": "mcp-stdio-official"},
+                            tool="grafana_mcp.query",
+                            args={"query": query_str, "expr": query_str, "transport": "mcp-stdio-official"},
                             result_or_miss=data_list,
                             latency_ms=latency_ms,
                         )
                     return True, {"data": {"result": data_list}}, latency_ms
-                except Exception:
-                    pass
+                except Exception as pe:
+                    print(f"JSON parsing error from mcp-grafana: {pe}")
+            else:
+                logger.warning(f"mcp_res isError={getattr(mcp_res, 'isError', None)}, content_str='{content_str}'")
 
         except Exception as e:
-            logger.debug(f"Official MCP stdio invocation fallback to direct HTTP: {e}")
+            import traceback
+            logger.warning(f"Official MCP stdio invocation failed: {e}")
+            traceback.print_exc()
+            if recorder:
+                recorder.record_call(
+                    tool="grafana_mcp.query_prometheus",
+                    args={"expr": query_str, "transport": "mcp-stdio-official"},
+                    result_or_miss=f"BLIND: MCP execution failed ({e})",
+                    latency_ms=(time.time() - start_time) * 1000.0,
+                )
 
-        # Fallback to direct HTTP query if stdio MCP is unavailable
-        return self.raw_query(query_str, recorder=recorder)
+        if allow_http_fallback:
+            return self.raw_query(query_str, recorder=recorder)
 
+        return False, "BLIND: MCP execution failed", (time.time() - start_time) * 1000.0
 
     def query_with_retry(
-        self, channel_id: str, recorder: TraceRecorder
+        self, channel_id: str, recorder: TraceRecorder, allow_http_fallback: bool = False
     ) -> Tuple[str, Optional[Dict[str, Any]]]:
         """
-        Executes Grafana Cloud MCP query directly to retrieve caption offset telemetry.
+        Executes Grafana Cloud MCP query directly to retrieve BOTH caption offset and feed liveness telemetry.
         Returns (status: 'fresh' | 'absent' | 'blind', metric_data: Optional[Dict]).
         """
         if not self.is_available():
@@ -207,13 +240,161 @@ class GrafanaMCPClient:
             )
             return "blind", None
 
-        # Execute PromQL telemetry query via official MCP tool
-        correct_query = f'caption_cue_sync_offset_seconds{{channel="{channel_id}"}}'
-        success, data, latency = self.query_mcp(correct_query, recorder=recorder)
+        # Execute dual PromQL query for both required signals
+        dual_query = f'caption_cue_sync_offset_seconds{{channel="{channel_id}"}} or feed_liveness_seconds{{channel="{channel_id}"}}'
+        success, data, latency = self.query_mcp(dual_query, recorder=recorder, allow_http_fallback=allow_http_fallback)
 
         if success:
             return "fresh", data
         else:
             return "absent", data
+
+    def create_annotation_mcp(
+        self,
+        run_id: str,
+        channel_id: str,
+        annotation_payload: Dict[str, Any],
+        text_summary: str,
+        tags: Optional[list] = None,
+    ) -> Tuple[bool, Any]:
+        """
+        Creates a post-authorization Grafana annotation via official mcp-grafana write tool.
+        Enforces idempotency by run_id tag.
+        """
+        mcp_bin = (
+            os.getenv("GRAFANA_MCP_BIN")
+            or shutil.which("mcp-grafana")
+            or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
+            or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
+        )
+
+        if not mcp_bin or not os.path.exists(mcp_bin):
+            return False, "mcp-grafana binary not found"
+
+        # Check idempotency first: look for existing annotation with run_id tag
+        run_tag = f"run_id:{run_id}"
+        existing_success, existing_data = self.get_annotation_mcp(run_id=run_id)
+        if existing_success and existing_data:
+            logger.info(f"Annotation for run_id '{run_id}' already exists. Idempotent skip.")
+            return True, {"idempotent_skip": True, "existing_annotation": existing_data}
+
+        annotation_tags = ["changeover", "smoke_test", f"channel:{channel_id}", run_tag]
+        if tags:
+            annotation_tags.extend(tags)
+
+        try:
+            import asyncio
+            from mcp import ClientSession, StdioServerParameters
+            from mcp.client.stdio import stdio_client
+
+            async def _create_annotation():
+                env = dict(os.environ)
+                if self.token:
+                    env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = self.token
+                    env["GRAFANA_API_KEY"] = self.token
+                if self.grafana_url:
+                    env["GRAFANA_URL"] = self.grafana_url
+
+                # Write-enabled MCP server call (no -disable-write)
+                server_params = StdioServerParameters(
+                    command=mcp_bin,
+                    args=[],
+                    env=env,
+                )
+                arguments = {
+                    "text": f"Changeover Operational Decision [Run: {run_id}] - {text_summary}",
+                    "tags": annotation_tags,
+                    "time": int(time.time() * 1000),
+                    "data": annotation_payload,
+                }
+                async with stdio_client(server_params) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        res = await session.call_tool("create_annotation", arguments=arguments)
+                        return res
+
+            loop = asyncio.new_event_loop()
+            mcp_res = loop.run_until_complete(_create_annotation())
+            loop.close()
+
+            content_str = "".join([c.text for c in mcp_res.content if hasattr(c, "text")])
+            if content_str and not mcp_res.isError:
+                parsed = json.loads(content_str)
+                return True, parsed
+            else:
+                return False, content_str or "Error creating annotation"
+
+        except Exception as e:
+            logger.error(f"Failed to create annotation via mcp-grafana: {e}")
+            return False, str(e)
+
+    def get_annotation_mcp(self, run_id: str) -> Tuple[bool, Any]:
+        """
+        Retrieves a stored Grafana annotation by run_id tag via mcp-grafana tool.
+        """
+        mcp_bin = (
+            os.getenv("GRAFANA_MCP_BIN")
+            or shutil.which("mcp-grafana")
+            or ("/opt/homebrew/bin/mcp-grafana" if os.path.exists("/opt/homebrew/bin/mcp-grafana") else None)
+            or ("/usr/local/bin/mcp-grafana" if os.path.exists("/usr/local/bin/mcp-grafana") else None)
+        )
+
+        if not mcp_bin or not os.path.exists(mcp_bin):
+            return False, "mcp-grafana binary not found"
+
+        run_tag = f"run_id:{run_id}"
+
+        try:
+            import asyncio
+            from mcp import ClientSession, StdioServerParameters
+            from mcp.client.stdio import stdio_client
+
+            async def _get_annotation():
+                env = dict(os.environ)
+                if self.token:
+                    env["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = self.token
+                    env["GRAFANA_API_KEY"] = self.token
+                if self.grafana_url:
+                    env["GRAFANA_URL"] = self.grafana_url
+
+                server_params = StdioServerParameters(
+                    command=mcp_bin,
+                    args=["-disable-write"],
+                    env=env,
+                )
+                arguments = {
+                    "tags": [run_tag],
+                    "limit": 10,
+                }
+                async with stdio_client(server_params) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        res = await session.call_tool("get_annotations", arguments=arguments)
+                        return res
+
+            loop = asyncio.new_event_loop()
+            mcp_res = loop.run_until_complete(_get_annotation())
+            loop.close()
+
+            content_str = "".join([c.text for c in mcp_res.content if hasattr(c, "text")])
+            if content_str and not mcp_res.isError:
+                parsed = json.loads(content_str)
+                # Parse list or dict response
+                matches = []
+                if isinstance(parsed, list):
+                    matches = parsed
+                elif isinstance(parsed, dict):
+                    matches = parsed.get("annotations") or parsed.get("Payload") or []
+
+                if len(matches) > 0:
+                    return True, matches
+                else:
+                    return False, None
+            return False, content_str
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve annotation via mcp-grafana: {e}")
+            return False, str(e)
+
 
 

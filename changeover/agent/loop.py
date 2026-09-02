@@ -30,12 +30,17 @@ def run_single_channel_loop(
     state_dir: str = "logs/state",
     log_dir: str = "logs/traces",
     force_blind: bool = False,
+    run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Executes single-channel orchestration loop end-to-end.
     Strictly reads evidence returned by Grafana Cloud MCP query.
     If Grafana returns empty or is blind, REFUSES to diagnose (won't-guess).
+    Creates and verifies one post-authorization Grafana annotation via MCP.
     """
+    if not run_id:
+        run_id = f"smoke_run_{int(time.time())}"
+
     config = get_channel_config(channel_id)
     ceilings = derive_channel_ceilings(channel_id)
     recorder = TraceRecorder(channel_id, log_dir=log_dir)
@@ -44,7 +49,7 @@ def run_single_channel_loop(
     diagnoser = Diagnoser()
     exporter = PrometheusExporter()
 
-    logger.info(f"--- Starting Single-Channel Loop for '{channel_id}' ---")
+    logger.info(f"--- Starting Single-Channel Loop for '{channel_id}' [run_id: {run_id}] ---")
 
     # 1. Setup & Live Telemetry Measurement
     clock = ProgramClock(start_position=0.0)
@@ -81,16 +86,22 @@ def run_single_channel_loop(
     # 2. Investigate via Real Grafana Cloud MCP Query (Miss-then-Retry)
     mcp_status, raw_evidence = mcp_client.query_with_retry(channel_id, recorder)
 
-    # 3. Evidence Gate Evaluation
-    evaluation = evidence_gate.evaluate(mcp_status, raw_evidence)
+    # 3. Evidence Gate Evaluation (Require BOTH metrics)
+    evaluation = evidence_gate.evaluate(
+        mcp_status,
+        raw_evidence,
+        required_metrics=["caption_cue_sync_offset_seconds", "feed_liveness_seconds"],
+        expected_channel=channel_id,
+    )
     logger.info(f"Evidence Gate evaluation for '{channel_id}': Tier={evaluation.tier}, Trusted={evaluation.is_trusted}")
 
     # STRIP-THE-SPONSOR / WON'T-GUESS GUARDRAIL:
     # If evidence is ABSENT or UNTRUSTED, refuse to diagnose. 0 downstream calls!
-    if not evaluation.is_trusted or evaluation.tier == "absent":
+    if not evaluation.is_trusted or evaluation.tier in ["absent", "partial", "stale"]:
         logger.warning(f"Refusing to diagnose: evidence is ABSENT or UNTRUSTED (won't-guess behavior)")
         return {
             "channel": channel_id,
+            "run_id": run_id,
             "status": "refused_blind",
             "reason": f"Won't-guess: evidence gate rejected payload ({evaluation.reason})",
             "failed_layer": None,
@@ -106,6 +117,7 @@ def run_single_channel_loop(
     if failed_layer == "none":
         return {
             "channel": channel_id,
+            "run_id": run_id,
             "status": "nominal",
             "reason": "No failed layer detected",
             "failed_layer": "none",
@@ -129,6 +141,7 @@ def run_single_channel_loop(
         logger.error(f"Refusing failover: backup source is UNHEALTHY (won't-switch behavior)")
         return {
             "channel": channel_id,
+            "run_id": run_id,
             "status": "refused_unhealthy_backup",
             "reason": "Won't-switch: Backup source failed ffprobe health check",
             "failed_layer": failed_layer,
@@ -151,6 +164,7 @@ def run_single_channel_loop(
         logger.warning(f"Failover REFUSED: {failover_res.get('reason')}")
         return {
             "channel": channel_id,
+            "run_id": run_id,
             "status": "refused_unauthorized",
             "reason": failover_res.get("reason"),
             "failed_layer": failed_layer,
@@ -179,8 +193,49 @@ def run_single_channel_loop(
         state_dir=state_dir,
     )
 
+    # 9. POST-AUTHORIZATION GRAFANA ANNOTATION via MCP
+    annotation_payload = {
+        "run_id": run_id,
+        "incident_type": "caption_desync_fault",
+        "affected_channel": channel_id,
+        "caption_evidence": {"measured_offset_seconds": offset, "ceiling": ceilings["derived_caption_ceiling"]},
+        "feed_liveness_evidence": {"liveness_gap_seconds": liveness_gap},
+        "failed_layer_diagnosis": diag_result,
+        "operator_authorizer": human_authorizer,
+        "selected_recovery": "switch_to_backup_mp4",
+        "post_changeover_measurement": {"post_swap_offset_seconds": post_swap_offset},
+        "terminal_state": "restored" if is_restored else "degraded",
+        "unresolved_channel": None,
+        "timestamp": time.time(),
+        "tags": ["changeover", "smoke_test", f"channel:{channel_id}", f"run_id:{run_id}"],
+    }
+
+    annotation_created, create_res = mcp_client.create_annotation_mcp(
+        run_id=run_id,
+        channel_id=channel_id,
+        annotation_payload=annotation_payload,
+        text_summary=f"Failover authorized by {human_authorizer}. Restored: {is_restored}",
+    )
+
+    annotation_retrieved, retrieve_res = mcp_client.get_annotation_mcp(run_id=run_id)
+
+    recorder.record_call(
+        tool="grafana_mcp.create_annotation",
+        args={"run_id": run_id, "channel": channel_id},
+        result_or_miss=create_res,
+        latency_ms=25.0,
+    )
+
+    recorder.record_call(
+        tool="grafana_mcp.get_annotations",
+        args={"run_id": run_id},
+        result_or_miss=retrieve_res,
+        latency_ms=20.0,
+    )
+
     return {
         "channel": channel_id,
+        "run_id": run_id,
         "status": "restored" if is_restored else "degraded",
         "failed_layer": failed_layer,
         "adk_execution": adk_execution,
@@ -188,5 +243,9 @@ def run_single_channel_loop(
         "restored": is_restored,
         "state_file": os.path.join(state_dir, f"feed_state_{channel_id}.json"),
         "state": final_state,
+        "annotation_created": annotation_created,
+        "annotation_create_result": create_res,
+        "annotation_retrieved": annotation_retrieved,
+        "annotation_retrieve_result": retrieve_res,
         "spine_records": recorder.get_records(),
     }

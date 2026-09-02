@@ -37,11 +37,12 @@ class EvidenceGate:
         telemetry_payload: Optional[Dict[str, Any]] = None,
         data_timestamp: Optional[float] = None,
         required_metrics: Optional[list] = None,
+        expected_channel: Optional[str] = None,
     ) -> EvidenceEvaluation:
         """
-        Evaluates evidence quality and freshness.
+        Evaluates evidence quality, freshness, label integrity, and metric completeness.
         """
-        if mcp_status == "blind" or telemetry_payload is None:
+        if mcp_status in ["blind", "absent"] or telemetry_payload is None or not isinstance(telemetry_payload, dict):
             return EvidenceEvaluation(
                 tier=EvidenceTier.ABSENT,
                 is_trusted=False,
@@ -59,13 +60,25 @@ class EvidenceGate:
                 telemetry_data=telemetry_payload,
             )
 
+        # Check expected channel label matching
+        if expected_channel:
+            for r in results:
+                metric_labels = r.get("metric", {})
+                ch = metric_labels.get("channel")
+                if ch and ch != expected_channel:
+                    return EvidenceEvaluation(
+                        tier=EvidenceTier.ABSENT,
+                        is_trusted=False,
+                        reason=f"Channel label mismatch: expected '{expected_channel}', found '{ch}'",
+                        telemetry_data=telemetry_payload,
+                    )
+
         # Check freshness
         now = time.time()
         sample_ts = None
         if data_timestamp is not None:
             sample_ts = data_timestamp
         else:
-            # Try parsing timestamp from PromQL vector result item: [timestamp, value]
             try:
                 sample_ts = float(results[0]["value"][0])
             except (KeyError, IndexError, ValueError, TypeError):

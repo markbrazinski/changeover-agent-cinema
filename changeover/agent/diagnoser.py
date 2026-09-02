@@ -89,8 +89,8 @@ class Diagnoser:
         Returns dict: {failed_layer: str, rationale: str, confidence: float}
         """
         results = evidence_data.get("data", {}).get("result", [])
-        caption_offset = 0.0
-        liveness_gap = 0.0
+        caption_offset = None
+        liveness_gap = None
 
         for r in results:
             metric_name = r.get("metric", {}).get("__name__")
@@ -104,6 +104,14 @@ class Diagnoser:
                     liveness_gap = float(r.get("value", [0, 0])[1])
                 except (ValueError, TypeError, IndexError):
                     pass
+
+        if caption_offset is None or liveness_gap is None:
+            return {
+                "failed_layer": "none",
+                "rationale": f"Incomplete evidence: caption_offset={caption_offset}, liveness_gap={liveness_gap}. Refusing diagnosis.",
+                "confidence": 0.0,
+                "error": "incomplete_evidence",
+            }
 
         # Formulate prompt for Gemini via ADK Agent/Runner
         prompt = (

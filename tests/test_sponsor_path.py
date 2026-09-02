@@ -19,7 +19,8 @@ def test_runner_run_async_executes_during_canonical_loop():
     fresh_evidence = {
         "data": {
             "result": [
-                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [now, "2.996"]}
+                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [now, "2.996"]},
+                {"metric": {"__name__": "feed_liveness_seconds"}, "value": [now, "0.10"]}
             ]
         }
     }
@@ -74,7 +75,8 @@ def test_disabling_adk_falls_back_without_adk_flag():
     dummy_evidence = {
         "data": {
             "result": [
-                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [0, "2.996"]}
+                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [0, "2.996"]},
+                {"metric": {"__name__": "feed_liveness_seconds"}, "value": [0, "0.10"]}
             ]
         }
     }
@@ -90,7 +92,8 @@ def test_agent_spine_mcp_card_originates_from_invocation():
     fresh_evidence = {
         "data": {
             "result": [
-                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [now, "2.996"]}
+                {"metric": {"__name__": "caption_cue_sync_offset_seconds"}, "value": [now, "2.996"]},
+                {"metric": {"__name__": "feed_liveness_seconds"}, "value": [now, "0.10"]}
             ]
         }
     }

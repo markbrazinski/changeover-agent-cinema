@@ -1,0 +1,78 @@
+{
+  "qualification_result": "GO",
+  "rationale": "Every qualification gate passed cleanly on the live awake Grafana Cloud stack using official mcp-grafana binary over stdio. Dual PromQL signals were retrieved with 0 direct-HTTP fallback, evidence gating enforced dual-metric completeness and channel label integrity, post-authorization Grafana annotation creation succeeded with HTTP 200/201 (id=1), stdio retrieval verified the stored annotation by run_id, and duplicate run_id calls demonstrated 100% idempotency.",
+  "metadata": {
+    "branch": "spike/grafana-evidence-audit",
+    "baseline_head": "f4932ae50e61549e9b08589064c521bc720b82c9",
+    "timestamp_utc": "2026-09-02 22:32:23 UTC",
+    "mcp_server": {
+      "binary": "/opt/homebrew/bin/mcp-grafana",
+      "version": "v1.0.0",
+      "license": "Apache-2.0",
+      "transport": "stdio"
+    }
+  },
+  "dual_signal_retrieval": {
+    "promql_query": "caption_cue_sync_offset_seconds{channel=\"tears_of_steel\"} or feed_liveness_seconds{channel=\"tears_of_steel\"}",
+    "raw_response_payload": {
+      "data": [
+        {
+          "metric": {
+            "__name__": "feed_liveness_seconds",
+            "channel": "tears_of_steel",
+            "layer": "sign_language"
+          },
+          "value": [
+            1788388321.0,
+            "0.0000789"
+          ]
+        },
+        {
+          "metric": {
+            "__name__": "caption_cue_sync_offset_seconds",
+            "channel": "tears_of_steel"
+          },
+          "value": [
+            1788388321.0,
+            "2.996"
+          ]
+        }
+      ]
+    },
+    "timing_samples_ms": [
+      1411.85,
+      1397.5,
+      1215.33,
+      1173.23,
+      1352.29
+    ],
+    "average_latency_ms": 1310.04
+  },
+  "annotation_audit": {
+    "request_run_id": "qualification_run_1788388318",
+    "create_status": "success",
+    "annotation_id": 1,
+    "service_account_login": "sa-1-changeover-mcp-agent",
+    "text": "Changeover Operational Decision [Run: qualification_run_1788388318] - Failover authorized by mark.operator@changeover.tv. Restored: True",
+    "tags": [
+      "changeover",
+      "smoke_test",
+      "channel:tears_of_steel",
+      "run_id:qualification_run_1788388318"
+    ],
+    "retrieval_verification": "verified_via_stdio_mcp_get_annotations",
+    "idempotency_verification": "verified_idempotent_skip_on_duplicate_run_id"
+  },
+  "deterministic_replay_sequence": [
+    "1. WATCH/DETECT: Measured live telemetry (caption_offset=2.996s, liveness_gap=0.0000789s)",
+    "2. REMOTE_WRITE: Pushed metrics to Grafana Cloud Prometheus datasource Uid=grafanacloud-prom",
+    "3. INVESTIGATE: Dual PromQL stdio query via mcp-grafana returned both signals in 1310.04ms avg",
+    "4. EVIDENCE_GATE: Evaluated payload as FRESH, trusted, and complete for tears_of_steel",
+    "5. DIAGNOSE: Named failed layer as captions via PromQL values",
+    "6. BACKUP_VERIFY: Verified backup MP4 via ffprobe (healthy=True)",
+    "7. SUMMON_AUTHORIZE: Operator mark.operator@changeover.tv authorized failover",
+    "8. CHANGE_AND_VERIFY: Executed swap and verified post-changeover offset <= 0.75s ceiling",
+    "9. POST_AUTHORIZATION_ANNOTATION: Created annotation id=1 via write-enabled mcp-grafana stdio transport",
+    "10. RETRIEVAL_AND_IDEMPOTENCY: Verified annotation retrieval and confirmed duplicate run_id skip"
+  ]
+}
