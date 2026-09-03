@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { TEARS_OF_STEEL_CUES, SINTEL_CUES, getCueForTime } from '../data/vttParser';
-import { EndingSlide } from './EndingSlide';
 
 export type VideoState = 'clean' | 'fine' | 'frozen' | 'restored' | 'blind';
 
@@ -182,11 +181,6 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
   const rawSintelCue = getCueForTime(SINTEL_CUES, rightTime);
   const sintelCaptionText = frozenSintelCue || rawSintelCue || '\u00A0';
-
-  // Render Ending or Attribution Slides
-  if (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') {
-    return <EndingSlide currentStage={currentStage} />;
-  }
 
   // Render Contention 2-Channel Facility View
   if (isContention) {

@@ -34,8 +34,6 @@ export const WALKTHROUGH_CONFIG = {
     REFUSAL_BASELINE_HOLD: 3000,
     REFUSAL_WARNING_HOLD: 2000,
     REFUSAL_TERMINAL_HOLD: 5000,
-    ENDING_SLIDE_HOLD: 4000,
-    ATTRIBUTION_HOLD: 4000,
   },
   NARRATIONS: {
     STAGE_01_AT_REST: "Live television depends on many systems staying in sync. One operator watches many channels and responds when something turns red. Captions are regulated access. But this board asks whether the feed is live—not whether a viewer can still follow it. Watch the captions on the right. Everything is working.",

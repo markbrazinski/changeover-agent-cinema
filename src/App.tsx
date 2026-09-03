@@ -433,19 +433,6 @@ export default function App() {
       if (seqId !== sequenceIdRef.current) return;
 
       if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.TERMINAL_HOLD, seqId))) return;
-
-      // --- ENDING SLIDE ---
-      if (seqId !== sequenceIdRef.current) return;
-      setCurrentStage('13_ending_slide');
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.ENDING_SLIDE_HOLD, seqId))) return;
-
-      // --- ATTRIBUTION SLIDE ---
-      if (seqId !== sequenceIdRef.current) return;
-      setCurrentStage('14_attribution_slide');
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.ATTRIBUTION_HOLD, seqId))) return;
-
-      if (seqId !== sequenceIdRef.current) return;
-      setCurrentStage('15_completed');
     } catch (e) {
       console.error('Full demo error:', e);
     } finally {
@@ -985,9 +972,9 @@ export default function App() {
                     fontSize: '10px',
                     fontWeight: 700,
                     letterSpacing: '0.5px',
-                    color: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
-                    backgroundColor: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
-                    border: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                    color: isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec',
+                    backgroundColor: isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)',
+                    border: isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)',
                     borderRadius: '4px',
                     cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
                     display: 'flex',
@@ -997,7 +984,6 @@ export default function App() {
                   }}
                   className="scenario-btn"
                 >
-                  {(currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
                   FULL DEMO
                 </button>
 
