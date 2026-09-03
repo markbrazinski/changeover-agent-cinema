@@ -10,8 +10,8 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     // Press 'F' to start master timeline
     await page.keyboard.press('f');
 
-    // 23.7s: Act I Human Gate opens
-    await expect(page.getByTestId('authorize-failover-button')).toBeVisible({ timeout: 28000 });
+    // 32.0s: Act I Human Gate opens
+    await expect(page.getByTestId('authorize-failover-button')).toBeVisible({ timeout: 40000 });
 
     // Click authorize during Act I gate window at ~26s
     const act1AuthBtn = page.getByTestId('authorize-failover-button');
@@ -64,7 +64,7 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     await page.keyboard.press('f');
 
     // Wait for Act I gate button, but DO NOT click it!
-    await expect(page.getByTestId('authorize-failover-button')).toBeVisible({ timeout: 35000 });
+    await expect(page.getByTestId('authorize-failover-button')).toBeVisible({ timeout: 40000 });
 
     // 54.0s: Hard cut to Refusal MUST occur on schedule despite missed click!
     await page.waitForFunction(() => {
@@ -73,8 +73,8 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     }, { timeout: 40000 });
 
     const cut1Time = (Date.now() - startTime) / 1000;
-    console.log(`[E2E TIMING UNCLICKED] Hard cut to Refusal at: ${cut1Time.toFixed(2)}s (Target: 60.6s)`);
-    expect(cut1Time).toBeGreaterThanOrEqual(58.0);
-    expect(cut1Time).toBeLessThanOrEqual(63.0);
+    console.log(`[E2E TIMING UNCLICKED] Hard cut to Refusal at: ${cut1Time.toFixed(2)}s (Target: 54.0s)`);
+    expect(cut1Time).toBeGreaterThanOrEqual(52.0);
+    expect(cut1Time).toBeLessThanOrEqual(56.5);
   });
 });
