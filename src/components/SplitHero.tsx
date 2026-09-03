@@ -70,14 +70,14 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       setFrozenRightCue(null);
     }
 
-    if (currentStage === '08a_refusal_baseline' || currentStage === '08_refusal_stale_evidence') {
+    if (currentStage?.startsWith('08')) {
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
-        left.currentTime = 0.0;
+        left.currentTime = 116.5;
         right.currentTime = 116.5;
-        savedPlayheadRef.current = 0.0;
-        setLeftTime(0.0);
+        savedPlayheadRef.current = 116.5;
+        setLeftTime(116.5);
         setRightTime(116.5);
       }
       // Lock Sintel cue to the refusal line from before
