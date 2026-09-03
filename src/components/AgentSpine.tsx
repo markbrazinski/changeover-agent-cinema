@@ -280,23 +280,28 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
           </div>
         )}
 
-        {/* Hold Note Banner */}
+        {/* CTA 3: Refusal / Deterministic Hold Note Banner (No Buttons Exposed) */}
         {holdNote && (
           <div
             data-testid="refusal-banner"
             style={{
-              padding: '10px 12px',
-              borderRadius: '5px',
-              border: isSolidHoldNote ? '2px solid var(--ink)' : '1.5px dashed var(--alarm)',
-              backgroundColor: isSolidHoldNote ? 'var(--panel-hi)' : 'var(--surface)',
-              color: isSolidHoldNote ? 'var(--ink)' : 'var(--alarm)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '10px',
-              fontWeight: 700,
+              padding: '14px',
+              borderRadius: '8px',
+              backgroundColor: 'var(--panel-sunken)',
+              border: '2.5px solid var(--accent)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
               flexShrink: 0,
+              boxShadow: '0 4px 14px rgba(184, 100, 27, 0.25)',
             }}
           >
-            {holdNote}
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.8px', textAlign: 'center' }}>
+              ⚠ DETERMINISTIC POLICY HOLD · NO FAILOVER BUTTONS
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--ink)', lineHeight: 1.35 }}>
+              {holdNote}
+            </div>
           </div>
         )}
 

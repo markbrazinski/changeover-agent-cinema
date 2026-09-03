@@ -42,8 +42,11 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     await expect(page.getByTestId('right-status-pill')).toContainText(/LOOKS FINE/i);
     await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.510s/i);
 
-    // Wait until t=10.5s into Beat 1 when Celia speaks her dialogue line from start of movie
-    await page.waitForTimeout(10000);
+    // Wait until t=13s into Beat 1 when Celia speaks her dialogue line from start of movie
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="right-caption-text"]');
+      return el && el.textContent && el.textContent.includes('CELIA');
+    }, { timeout: 18000 });
     const rightDialogue1 = await page.getByTestId('right-caption-text').innerText();
     expect(rightDialogue1).toContain('CELIA');
 

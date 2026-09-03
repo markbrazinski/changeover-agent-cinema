@@ -40,11 +40,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const rightVideoRef = useRef<HTMLVideoElement>(null);
 
   // Frame-synced timecode playhead ref
-  const savedPlayheadRef = useRef<number>(4.0);
+  const savedPlayheadRef = useRef<number>(0.0);
 
   // Moving caption states
-  const [leftTime, setLeftTime] = useState<number>(4.0);
-  const [rightTime, setRightTime] = useState<number>(4.0);
+  const [leftTime, setLeftTime] = useState<number>(0.0);
+  const [rightTime, setRightTime] = useState<number>(0.0);
 
   // Single-channel frozen cue (Tears of Steel)
   const [frozenRightCue, setFrozenRightCue] = useState<string | null>(null);
@@ -60,25 +60,49 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
-        left.currentTime = 4.0;
-        right.currentTime = 4.0;
-        savedPlayheadRef.current = 4.0;
-        setLeftTime(4.0);
-        setRightTime(4.0);
+        left.currentTime = 0.0;
+        right.currentTime = 0.0;
+        savedPlayheadRef.current = 0.0;
+        setLeftTime(0.0);
+        setRightTime(0.0);
       }
+      frozenRightCueRef.current = null;
+      setFrozenRightCue(null);
     }
+
+    if (currentStage === '08a_refusal_baseline' || currentStage === '08_refusal_stale_evidence') {
+      const left = leftVideoRef.current;
+      const right = rightVideoRef.current;
+      if (left && right) {
+        left.currentTime = 0.0;
+        right.currentTime = 0.0;
+        savedPlayheadRef.current = 0.0;
+        setLeftTime(0.0);
+        setRightTime(0.0);
+      }
+      // Lock Sintel cue to an unseen dialogue line from before
+      const sintelLockedCue = "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —";
+      frozenRightCueRef.current = sintelLockedCue;
+      setFrozenRightCue(sintelLockedCue);
+    }
+
     if (currentStage === '09a_contention_baseline') {
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
-        left.currentTime = 15.0;
-        right.currentTime = 90.0;
-        savedPlayheadRef.current = 15.0;
-        setLeftTime(15.0);
-        setRightTime(90.0);
+        left.currentTime = 0.0;
+        right.currentTime = 0.0;
+        savedPlayheadRef.current = 0.0;
+        setLeftTime(0.0);
+        setRightTime(0.0);
       }
+      frozenRightCueRef.current = null;
+      setFrozenRightCue(null);
+      frozenSintelCueRef.current = null;
+      setFrozenSintelCue(null);
     }
-    if (rightState !== 'frozen' && !(isContention && !ch14Restored && !isContentionBaseline)) {
+
+    if (rightState !== 'frozen' && !currentStage?.startsWith('08') && !(isContention && !ch14Restored && !isContentionBaseline)) {
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
     }
@@ -114,8 +138,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
 
         if (right) {
           if (rightState === 'frozen' || (isContention && !ch14Restored && !isContentionBaseline)) {
-            // Lock frozen cue mid-line on fault injection
-            if (!frozenRightCueRef.current && left) {
+            // Lock frozen cue mid-line on fault injection (Act I)
+            if (!frozenRightCueRef.current && left && !currentStage?.startsWith('08')) {
               const liveCue = getCueForTime(TEARS_OF_STEEL_CUES, left.currentTime);
               const cueToFreeze = liveCue || "— THOM: All right, fine! I'm freaked out! —";
               frozenRightCueRef.current = cueToFreeze;

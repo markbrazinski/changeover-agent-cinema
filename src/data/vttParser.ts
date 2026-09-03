@@ -31,26 +31,20 @@ export const TEARS_OF_STEEL_CUES: VttCue[] = [
   { id: 12, startTime: 136.000, endTime: 138.000, text: "— BARLEY: It's not my fault, you know? —" },
 ];
 
-// SINTEL (CH-27) — Exact Spoken Dialogue Cues Only (0s - 160s)
+// SINTEL (CH-27) — Exact Spoken Dialogue Cues Only (0s - 30s)
 export const SINTEL_CUES: VttCue[] = [
-  // 90.0s - 156.28s: Shaman & Sintel Spoken Dialogue in Hearth Hut
-  { id: 1, startTime: 90.000, endTime: 114.280, text: "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —" },
-  { id: 2, startTime: 115.280, endTime: 120.280, text: "— SHAMAN: You're a fool for traveling alone so completely unprepared... —" },
-  { id: 3, startTime: 120.280, endTime: 124.280, text: "— SHAMAN: You're lucky your blood is still flowing. —" },
-  { id: 4, startTime: 124.280, endTime: 126.280, text: "— SINTEL: Thank you. —" },
-  { id: 5, startTime: 126.280, endTime: 132.280, text: "— SHAMAN: So, what brings you to the land of the gatekeepers? —" },
-  { id: 6, startTime: 132.280, endTime: 137.280, text: "— SINTEL: I'm searching for someone. —" },
-  { id: 7, startTime: 137.280, endTime: 142.280, text: "— SINTEL: Someone very dear, a kindred spirit. —" },
-  { id: 8, startTime: 143.280, endTime: 145.280, text: "— SHAMAN: A dragon? —" },
-  { id: 9, startTime: 148.280, endTime: 152.280, text: "— SHAMAN: A dangerous quest for an unknown hunter. —" },
-  { id: 10, startTime: 152.280, endTime: 156.280, text: "— SINTEL: I've been alone for as long as I can remember. —" },
+  { id: 1, startTime: 0.000, endTime: 12.000, text: "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —" },
+  { id: 2, startTime: 12.000, endTime: 18.000, text: "— SHAMAN: You're a fool for traveling alone so completely unprepared... —" },
+  { id: 3, startTime: 18.000, endTime: 22.000, text: "— SHAMAN: You're lucky your blood is still flowing. —" },
+  { id: 4, startTime: 22.000, endTime: 25.000, text: "— SINTEL: Thank you. —" },
+  { id: 5, startTime: 25.000, endTime: 30.000, text: "— SHAMAN: So, what brings you to the land of the gatekeepers? —" },
 ];
 
 export function getCueForTime(cues: VttCue[], currentTime: number): string {
   if (!cues || cues.length === 0) return "";
   
-  // Total duration set to 180.0 seconds for continuous non-overlapping loop
-  const totalDuration = 180.0;
+  // Total duration set to 30.0 seconds for continuous 30s video loops
+  const totalDuration = 30.0;
   const wrappedTime = currentTime % totalDuration;
 
   const activeCue = cues.find((c) => wrappedTime >= c.startTime && wrappedTime <= c.endTime);
