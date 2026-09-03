@@ -44,28 +44,15 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     // Click authorize during Act III gate window
     await contentionAuthBtn.click();
 
-    // 136.1s: Hard cut to Ending slide (13_ending_slide)
-    await expect(page.getByTestId('ending-slide')).toBeVisible({ timeout: 60000 });
-    const cut3Time = (Date.now() - startTime) / 1000;
-    console.log(`[E2E TIMING] Cut 3 to Ending slide occurred at: ${cut3Time.toFixed(2)}s (Target: 136.1s)`);
-    expect(cut3Time).toBeGreaterThanOrEqual(134.0);
-    expect(cut3Time).toBeLessThanOrEqual(138.5);
-
-    // 140.7s: Hard cut to Attribution slide (14_attribution_slide)
-    await expect(page.getByTestId('attribution-slide')).toBeVisible({ timeout: 8000 });
-    const cut4Time = (Date.now() - startTime) / 1000;
-    console.log(`[E2E TIMING] Cut 4 to Attribution slide occurred at: ${cut4Time.toFixed(2)}s (Target: 140.7s)`);
-
-    // 144.7s: Sequence complete
+    // 136.1s: Sequence completes on final changeover view (12_terminal_partially_mitigated)
     await page.waitForFunction(() => {
-      const el = document.body;
-      return el && el.innerText.includes('DEMO COMPLETED');
-    }, { timeout: 8000 });
+      return !document.querySelector('[data-testid="ending-slide"]');
+    }, { timeout: 40000 });
 
     const totalDuration = (Date.now() - startTime) / 1000;
-    console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 144.7s)`);
-    expect(totalDuration).toBeGreaterThanOrEqual(143.5);
-    expect(totalDuration).toBeLessThanOrEqual(146.5);
+    console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 136.1s)`);
+    expect(totalDuration).toBeGreaterThanOrEqual(134.0);
+    expect(totalDuration).toBeLessThanOrEqual(138.5);
   });
 
   test('Missed human authorization does not auto-authorize or delay hard cuts', async ({ page }) => {

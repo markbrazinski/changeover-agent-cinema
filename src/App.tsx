@@ -504,26 +504,12 @@ export default function App() {
       // 134.6s: Beat 8 ends
       if (!(await waitUntilAbsoluteSec(134.6, seqId))) return;
 
-      // 136.1s: Operational record hold ends -> Hard cut to Ending slide
+      // 136.1s: Last use case changeover completed -> Demo track done on final changeover view
       if (!(await waitUntilAbsoluteSec(136.1, seqId))) return;
       setIsPausedForHuman(false);
       if (!isAct3AuthorizedRef.current) {
         console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 136.1s');
       }
-      setCurrentStage('13_ending_slide');
-      setTimecode('PGM-OUT 20:15:30');
-
-      // 139.7s: Closing narration ends
-      if (!(await waitUntilAbsoluteSec(139.7, seqId))) return;
-
-      // 140.7s: Hard cut to Attribution slide
-      if (!(await waitUntilAbsoluteSec(140.7, seqId))) return;
-      setCurrentStage('14_attribution_slide');
-      setTimecode('PGM-OUT 20:15:35');
-
-      // 144.7s: Sequence complete
-      if (!(await waitUntilAbsoluteSec(144.7, seqId))) return;
-      setCurrentStage('15_completed');
     } catch (e) {
       console.error('Full demo error:', e);
     } finally {
