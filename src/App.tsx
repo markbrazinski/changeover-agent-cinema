@@ -474,8 +474,8 @@ export default function App() {
       setCurrentStage('08b_refusal_warning');
       setTimecode('PGM-OUT 20:14:38');
 
-      // 77.3s: Refusal recommendation appears (sits on screen 3 full seconds before Cut 2 at 80.3s)
-      if (!(await waitUntilAbsoluteSec(77.3, seqId))) return;
+      // 70.0s: Refusal recommendation & policy headline appear (sits on screen 10.3 full seconds before Cut 2 at 80.3s)
+      if (!(await waitUntilAbsoluteSec(70.0, seqId))) return;
       setCurrentStage('08_refusal_stale_evidence');
       setTimecode('PGM-OUT 20:14:40');
 
@@ -488,27 +488,15 @@ export default function App() {
       if (!(await waitUntilAbsoluteSec(84.3, seqId))) return;
       await handleRunContention();
 
-      // 106.3s: Beat 6 ends -> Contention human gate opens
-      if (!(await waitUntilAbsoluteSec(106.3, seqId))) return;
+      // 90.0s: Contention investigation completes -> Human gate opens
+      if (!(await waitUntilAbsoluteSec(90.0, seqId))) return;
       setIsPausedForHuman(true);
 
-      // 108.8s: Contention gate silence ends
-      if (!(await waitUntilAbsoluteSec(108.8, seqId))) return;
-
-      // 122.7s: Beat 7 ends
-      if (!(await waitUntilAbsoluteSec(122.7, seqId))) return;
-
-      // 124.2s: Partial outcome hold ends
-      if (!(await waitUntilAbsoluteSec(124.2, seqId))) return;
-
-      // 134.6s: Beat 8 ends
-      if (!(await waitUntilAbsoluteSec(134.6, seqId))) return;
-
-      // 136.1s: Last use case changeover completed -> Demo track done on final changeover view
-      if (!(await waitUntilAbsoluteSec(136.1, seqId))) return;
+      // 103.0s: Last use case changeover & terminal state completed -> Demo track done
+      if (!(await waitUntilAbsoluteSec(103.0, seqId))) return;
       setIsPausedForHuman(false);
       if (!isAct3AuthorizedRef.current) {
-        console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 136.1s');
+        console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 103.0s');
       }
     } catch (e) {
       console.error('Full demo error:', e);
@@ -932,7 +920,7 @@ export default function App() {
       });
     }
 
-    if (currentStage === '08_refusal_stale_evidence') {
+    if (currentStage === '08b_refusal_warning' || currentStage === '08_refusal_stale_evidence') {
       spineSteps.push({
         title: 'mcp:query_prometheus',
         sub: '⚠ STALE CAPTION TELEMETRY · Sintel age 25.0s > threshold 15.0s',
@@ -956,7 +944,9 @@ export default function App() {
         toolCall: 'evaluate_evidence(mcp_status="fresh", required=["caption_sync","feed_liveness"])',
         codeSnippet: `EVIDENCE GATE EVALUATION:\nChannel: sintel\nTier: STALE (25.0s > 15.0s limit)\nTrusted: FALSE\nReason: Evidence is stale (25.0s old > threshold 15.0s)`,
       });
+    }
 
+    if (currentStage === '08_refusal_stale_evidence') {
       spineSteps.push({
         title: 'changeover:refuse_action',
         sub: '✕ RECOMMENDATION WITHHELD · NO CHANGE EXECUTED',
@@ -964,6 +954,9 @@ export default function App() {
         timestamp: 'T+00:04',
         toolCall: 'refuse_action(reason="refused_stale_evidence")',
         codeSnippet: `REFUSAL DECISION:\nExplanation: The available caption evidence is too old to justify changing a live feed.\nAction: 0 downstream calls · No failover recommended · Feed untouched`,
+        policyComparison: [
+          { channel: 'CH-14 (Tears of Steel)', tier: 'Emergency Tier', action: 'NO FAILOVER (STALE EVIDENCE)', isRecommended: false },
+        ],
       });
     }
   }

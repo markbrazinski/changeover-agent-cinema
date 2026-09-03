@@ -37,22 +37,22 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     const cut2Time = (Date.now() - startTime) / 1000;
     console.log(`[E2E TIMING] Cut 2 to Contention occurred at: ${cut2Time.toFixed(2)}s (Target: 80.3s)`);
 
-    // 106.3s: Act III Contention Human Gate opens
+    // 90.0s: Act III Contention Human Gate opens
     const contentionAuthBtn = page.getByTestId('authorize-prioritization-button');
-    await expect(contentionAuthBtn).toBeVisible({ timeout: 30000 });
+    await expect(contentionAuthBtn).toBeVisible({ timeout: 20000 });
 
     // Click authorize during Act III gate window
     await contentionAuthBtn.click();
 
-    // 136.1s: Sequence completes on final changeover view (12_terminal_partially_mitigated)
+    // 103.0s: Sequence completes on final changeover view (12_terminal_partially_mitigated)
     await page.waitForFunction(() => {
       return !document.querySelector('[data-testid="ending-slide"]');
-    }, { timeout: 40000 });
+    }, { timeout: 20000 });
 
     const totalDuration = (Date.now() - startTime) / 1000;
-    console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 136.1s)`);
-    expect(totalDuration).toBeGreaterThanOrEqual(134.0);
-    expect(totalDuration).toBeLessThanOrEqual(138.5);
+    console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 103.0s)`);
+    expect(totalDuration).toBeGreaterThanOrEqual(100.0);
+    expect(totalDuration).toBeLessThanOrEqual(106.0);
   });
 
   test('Missed human authorization does not auto-authorize or delay hard cuts', async ({ page }) => {
