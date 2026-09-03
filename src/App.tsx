@@ -359,9 +359,10 @@ export default function App() {
       logWave2Milestone('policy_evaluated');
       setContentionData(res);
 
-      // Visual staggering for Agent Spine cards (2.3s per card, slowed down by +0.5s per card)
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2);
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2);
+      // Visual staggering for Agent Spine cards (spaced out to 34.0s human gate mark)
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2); // 9.5s -> Step 2 at 14.0s mark (86.0s abs)
+      await delay(10000); // +10.0s -> Step 3 at 24.0s mark (96.0s abs)
+      await delay(10000); // +10.0s -> Human Gate at 34.0s mark (106.0s abs)
 
       setCurrentStage('10_contention_decision');
       setTimecode('PGM-OUT 20:15:14');
