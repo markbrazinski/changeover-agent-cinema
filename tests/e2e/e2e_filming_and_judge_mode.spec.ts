@@ -122,9 +122,9 @@ test.describe('End-to-End Filming, Act Controls, and Mode Qualification Suite', 
     // Verify contention facility header
     await expect(page.getByTestId('facility-view')).toBeVisible({ timeout: 10000 });
 
-    // Wait for fault injection and investigation to reach the human gate (~8s)
+    // Wait for fault injection and investigation to reach the human gate (spaced to 34s mark)
     const contentionAuthBtn = page.getByTestId('authorize-prioritization-button');
-    await expect(contentionAuthBtn).toBeVisible({ timeout: 15000 });
+    await expect(contentionAuthBtn).toBeVisible({ timeout: 40000 });
 
     // ASSERT: Human gate HALTS indefinitely without auto-authorizing
     await page.waitForTimeout(2500);
