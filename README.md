@@ -5,7 +5,7 @@ In live television broadcasting, closed captions silently freeze or drift out of
 ![Primary Product Proof](tests/e2e/screenshots/beat_05_awaiting_approval.png)
 *Figure 1: The Human Authorization Gate halts the incident workflow until a human broadcast engineer authorizes failover. Real PromQL sync offset (+2.996s) and Gemini diagnostic rationale are displayed on the right Agent Spine panel.*
 
-![Outcome & System Proof](tests/e2e/screenshots/beat_12_terminal_partially_mitigated.png)
+![Outcome & System Proof](tests/e2e/screenshots/beat_10_terminal.png)
 *Figure 2: Multi-channel resource contention outcome. Channel 14 restored to backup line while Channel 27 is honestly flagged as unmitigated per deterministic policy.*
 
 ## How it works
@@ -119,7 +119,8 @@ changeover-agent-cinema/
 
 ## Sample outputs
 
-- **Sample Telemetry Trace**: [tests/fixtures/recorded_run.json](tests/fixtures/recorded_run.json)
+- **Qualification Artifact**: [logs/qualification_artifact.json](logs/qualification_artifact.json)
+- **Event Contract**: [logs/event_contract.json](logs/event_contract.json)
 - **Captured Screenshots**: [tests/e2e/screenshots/](tests/e2e/screenshots/)
 
 ## License
