@@ -46,8 +46,8 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     // Click authorize during Act III gate window
     await contentionAuthBtn.click();
 
-    // Wait for full 126.0s timeline completion
-    await page.waitForTimeout(20000);
+    // Wait for full 126.0s timeline completion (from 96.0s authorization mark + 30s = 126.0s total)
+    await page.waitForTimeout(30000);
 
     const totalDuration = (Date.now() - startTime) / 1000;
     console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 126.0s)`);
