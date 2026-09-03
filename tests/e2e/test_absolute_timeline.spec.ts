@@ -39,9 +39,9 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     expect(cut2Time).toBeGreaterThanOrEqual(70.0);
     expect(cut2Time).toBeLessThanOrEqual(74.5);
 
-    // 106.0s: Act III Contention Human Gate opens
+    // 96.0s: Act III Contention Human Gate opens (24s mark of Act 3)
     const contentionAuthBtn = page.getByTestId('authorize-prioritization-button');
-    await expect(contentionAuthBtn).toBeVisible({ timeout: 40000 });
+    await expect(contentionAuthBtn).toBeVisible({ timeout: 30000 });
 
     // Click authorize during Act III gate window
     await contentionAuthBtn.click();
