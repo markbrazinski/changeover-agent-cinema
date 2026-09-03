@@ -35,6 +35,20 @@ test.describe('End-to-End Filming, Act Controls, and Mode Qualification Suite', 
     await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.510s/i);
   });
 
+  // 1b. REAL MODE URL TEST (?mode=real)
+  test('Real Mode (?mode=real) hides scenario buttons like filming mode and activates real API mode', async ({ page }) => {
+    await page.goto('/?mode=real');
+    await page.waitForTimeout(600);
+
+    // Scenario controls top bar must NOT be visible in real mode
+    const scenarioControls = page.getByTestId('scenario-controls');
+    await expect(scenarioControls).not.toBeVisible();
+
+    // Provenance banner and master header remain visible
+    await expect(page.getByTestId('replay-provenance-banner')).toBeVisible();
+    await expect(page.getByTestId('master-header')).toBeVisible();
+  });
+
   // 2. JUDGE MODE URL TEST (?mode=judge)
   test('Judge Mode (?mode=judge or /) displays all four scenario buttons in narrative order', async ({ page }) => {
     await page.goto('/?mode=judge');
@@ -79,12 +93,11 @@ test.describe('End-to-End Filming, Act Controls, and Mode Qualification Suite', 
     const videoSrc = await rightVideo.getAttribute('src');
     expect(videoSrc).toContain('sintel');
 
-    // Wait for baseline to transition to terminal refusal hold (~3s)
-    await page.waitForTimeout(3500);
-
-    // Verify amber refusal hold note in Agent Spine
-    const spineText = await page.getByTestId('agent-spine').innerText();
-    expect(spineText).toMatch(/RECOMMENDATION WITHHELD|Captions stopped on Sintel feed/i);
+    // Wait for baseline to transition to terminal refusal hold
+    await page.waitForFunction(() => {
+      const el = document.querySelector('[data-testid="agent-spine"]');
+      return el && /RECOMMENDATION WITHHELD|REFUSED|NO CHANGE EXECUTED/i.test(el.innerText);
+    }, { timeout: 8000 });
 
     // Verify video currentTime keeps advancing while dialogue caption remains frozen
     const t1 = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);

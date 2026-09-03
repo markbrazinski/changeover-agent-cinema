@@ -9,7 +9,15 @@ import { ReplayProvenanceBanner } from './components/ReplayProvenanceBanner';
 import { WALKTHROUGH_CONFIG } from './data/autoplayConfig';
 
 export default function App() {
-  const [mode, setMode] = useState<Mode>('deterministic');
+  const [mode, setMode] = useState<Mode>(() => {
+    if (typeof window !== 'undefined') {
+      const search = window.location.search;
+      if (search.includes('mode=real') || search.includes('api=real')) {
+        return 'real';
+      }
+    }
+    return 'deterministic';
+  });
   const [currentStage, setCurrentStage] = useState<string>('01_at_rest');
   const [captionOffset, setCaptionOffset] = useState<number>(0.510);
   const [postSwapOffset, setPostSwapOffset] = useState<number | undefined>(undefined);
@@ -100,9 +108,15 @@ export default function App() {
   };
 
   const sequenceIdRef = useRef<number>(0);
+  const sequenceStartTimeRef = useRef<number>(0);
+  const activeFullDemoAuthRef = useRef<{
+    onAct1Authorize?: () => void;
+    onAct3Authorize?: () => void;
+  } | null>(null);
 
   const startNewSequence = () => {
     sequenceIdRef.current += 1;
+    activeFullDemoAuthRef.current = null;
     walkthroughCancelledRef.current = true;
     setIsPlayingWalkthrough(false);
     setIsPausedForHuman(false);
@@ -122,7 +136,22 @@ export default function App() {
     });
   };
 
-  const isFilmingMode = typeof window !== 'undefined' && window.location.search.includes('mode=film');
+  const waitUntilAbsoluteSec = async (targetOffsetSec: number, seqId: number): Promise<boolean> => {
+    if (seqId !== sequenceIdRef.current) return false;
+    const targetMs = sequenceStartTimeRef.current + targetOffsetSec * 1000;
+    const remainingMs = targetMs - performance.now();
+    if (remainingMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remainingMs));
+    }
+    return seqId === sequenceIdRef.current;
+  };
+
+  const isFilmingMode =
+    (typeof window !== 'undefined' &&
+      (window.location.search.includes('mode=film') ||
+        window.location.search.includes('mode=real') ||
+        window.location.search.includes('api=real'))) ||
+    mode === 'real';
 
   // Keyboard shortcut listener:
   // 'F' = Start Full End-to-End Demo (Act I -> Act II -> Act III -> Ending -> Attribution)
@@ -272,6 +301,10 @@ export default function App() {
       setTimecode('PGM-OUT 20:14:33');
       setIsPausedForHuman(false);
 
+      if (activeFullDemoAuthRef.current?.onAct1Authorize) {
+        activeFullDemoAuthRef.current.onAct1Authorize();
+      }
+
       if (humanApprovedResolverRef.current) {
         humanApprovedResolverRef.current();
         humanApprovedResolverRef.current = null;
@@ -349,6 +382,10 @@ export default function App() {
       setTimecode('PGM-OUT 20:15:20');
       setIsPausedForHuman(false);
 
+      if (activeFullDemoAuthRef.current?.onAct3Authorize) {
+        activeFullDemoAuthRef.current.onAct3Authorize();
+      }
+
       if (humanApprovedResolverRef.current) {
         humanApprovedResolverRef.current();
         humanApprovedResolverRef.current = null;
@@ -380,59 +417,113 @@ export default function App() {
     setIsPlayingWalkthrough(true);
     walkthroughCancelledRef.current = false;
     startWalkthroughTimer();
+    sequenceStartTimeRef.current = performance.now();
+
+    const isAct1AuthorizedRef = { current: false };
+    const isAct3AuthorizedRef = { current: false };
+
+    activeFullDemoAuthRef.current = {
+      onAct1Authorize: () => {
+        isAct1AuthorizedRef.current = true;
+      },
+      onAct3Authorize: () => {
+        isAct3AuthorizedRef.current = true;
+      },
+    };
 
     try {
-      // --- ACT I: CAPTION RECOVERY ---
+      // 0.0s: Master Start -> Reset to nominal
       if (seqId !== sequenceIdRef.current) return;
       await handleReset();
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST, seqId))) return;
+      setCurrentStage('01_at_rest');
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 2.0s: Beat 1 narration begins
+      if (!(await waitUntilAbsoluteSec(2.0, seqId))) return;
+
+      // 17.8s: Beat 1 ends -> Inject fault (caption freeze)
+      if (!(await waitUntilAbsoluteSec(17.8, seqId))) return;
       await handleInjectFault();
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD, seqId))) return;
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 19.3s: Beat 2 begins -> Investigation
+      if (!(await waitUntilAbsoluteSec(19.3, seqId))) return;
       await handleInvestigate();
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.INVESTIGATION_HOLD, seqId))) return;
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 22.7s: Beat 2 ends -> Verify backup
+      if (!(await waitUntilAbsoluteSec(22.7, seqId))) return;
       await handleVerifyBackup();
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.VERIFY_BACKUP_HOLD, seqId))) return;
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 23.7s: Beats 3+4 begin -> Human gate opens for Act I
+      if (!(await waitUntilAbsoluteSec(23.7, seqId))) return;
       handlePrepareApproval();
       setIsPausedForHuman(true);
-      await waitForHumanClick();
-      if (seqId !== sequenceIdRef.current) return;
 
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER, seqId))) return;
+      // 58.6s: Beats 3+4 & internal gate padding end (Window closes)
+      if (!(await waitUntilAbsoluteSec(58.6, seqId))) return;
 
-      // --- ACT II: EVIDENCE REFUSAL ---
-      if (seqId !== sequenceIdRef.current) return;
+      // 60.6s: Arc I terminal hold ends -> Hard cut to Refusal
+      if (!(await waitUntilAbsoluteSec(60.6, seqId))) return;
+      setIsPausedForHuman(false);
+      if (!isAct1AuthorizedRef.current) {
+        console.warn('[FILM DIAGNOSTIC] Act I authorization missed/incomplete at 60.6s');
+      }
       setCurrentStage('08a_refusal_baseline');
       setTimecode('PGM-OUT 20:14:35');
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_BASELINE_HOLD, seqId))) return;
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 62.1s: Refusal narration begins -> Refusal warning
+      if (!(await waitUntilAbsoluteSec(62.1, seqId))) return;
+      setCurrentStage('08b_refusal_warning');
+      setTimecode('PGM-OUT 20:14:38');
+
+      // 78.3s: Refusal narration ends -> Terminal refusal
+      if (!(await waitUntilAbsoluteSec(78.3, seqId))) return;
       setCurrentStage('08_refusal_stale_evidence');
       setTimecode('PGM-OUT 20:14:40');
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_TERMINAL_HOLD, seqId))) return;
 
-      // --- ACT III: CAPACITY CONTENTION ---
-      if (seqId !== sequenceIdRef.current) return;
+      // 80.3s: Refusal hold ends -> Hard cut to Contention
+      if (!(await waitUntilAbsoluteSec(80.3, seqId))) return;
       setCurrentStage('09a_contention_baseline');
       setTimecode('PGM-OUT 20:15:00');
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_BASELINE_HOLD, seqId))) return;
 
-      if (seqId !== sequenceIdRef.current) return;
+      // 81.8s: Contention narration begins -> Investigation
+      if (!(await waitUntilAbsoluteSec(81.8, seqId))) return;
       await handleRunContention();
-      if (seqId !== sequenceIdRef.current) return;
 
+      // 106.3s: Beat 6 ends -> Contention human gate opens
+      if (!(await waitUntilAbsoluteSec(106.3, seqId))) return;
       setIsPausedForHuman(true);
-      await waitForHumanClick();
-      if (seqId !== sequenceIdRef.current) return;
 
-      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.TERMINAL_HOLD, seqId))) return;
+      // 108.8s: Contention gate silence ends
+      if (!(await waitUntilAbsoluteSec(108.8, seqId))) return;
+
+      // 122.7s: Beat 7 ends
+      if (!(await waitUntilAbsoluteSec(122.7, seqId))) return;
+
+      // 124.2s: Partial outcome hold ends
+      if (!(await waitUntilAbsoluteSec(124.2, seqId))) return;
+
+      // 134.6s: Beat 8 ends
+      if (!(await waitUntilAbsoluteSec(134.6, seqId))) return;
+
+      // 136.1s: Operational record hold ends -> Hard cut to Ending slide
+      if (!(await waitUntilAbsoluteSec(136.1, seqId))) return;
+      setIsPausedForHuman(false);
+      if (!isAct3AuthorizedRef.current) {
+        console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 136.1s');
+      }
+      setCurrentStage('13_ending_slide');
+      setTimecode('PGM-OUT 20:15:30');
+
+      // 139.7s: Closing narration ends
+      if (!(await waitUntilAbsoluteSec(139.7, seqId))) return;
+
+      // 140.7s: Hard cut to Attribution slide
+      if (!(await waitUntilAbsoluteSec(140.7, seqId))) return;
+      setCurrentStage('14_attribution_slide');
+      setTimecode('PGM-OUT 20:15:35');
+
+      // 144.7s: Sequence complete
+      if (!(await waitUntilAbsoluteSec(144.7, seqId))) return;
+      setCurrentStage('15_completed');
     } catch (e) {
       console.error('Full demo error:', e);
     } finally {
@@ -440,6 +531,7 @@ export default function App() {
         setIsPlayingWalkthrough(false);
         setIsPausedForHuman(false);
         stopWalkthroughTimer();
+        activeFullDemoAuthRef.current = null;
       }
     }
   };
@@ -498,6 +590,11 @@ export default function App() {
       setCurrentStage('08a_refusal_baseline');
       setTimecode('PGM-OUT 20:14:35');
       if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_BASELINE_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('08b_refusal_warning');
+      setTimecode('PGM-OUT 20:14:38');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_WARNING_HOLD, seqId))) return;
 
       if (seqId !== sequenceIdRef.current) return;
       setCurrentStage('08_refusal_stale_evidence');
@@ -1115,10 +1212,10 @@ export default function App() {
               ch27Degraded={ch27DegradedInContention}
               isPlayingWalkthrough={isPlayingWalkthrough && showTimer}
               walkthroughElapsedSec={walkthroughElapsedSec}
-              channelName={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? 'SINTEL' : 'TEARS OF STEEL'}
-              sourceVideoUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/sintel_source.mp4' : '/media/tos_source.mp4'}
-              backupVideoUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/sintel_backup.mp4' : '/media/tos_backup.mp4'}
-              captionsVttUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/captions_sintel.vtt' : '/media/captions_tos.vtt'}
+              channelName={currentStage.startsWith('08') ? 'SINTEL' : 'TEARS OF STEEL'}
+              sourceVideoUrl={currentStage.startsWith('08') ? '/media/sintel_source.mp4' : '/media/tos_source.mp4'}
+              backupVideoUrl={currentStage.startsWith('08') ? '/media/sintel_backup.mp4' : '/media/tos_backup.mp4'}
+              captionsVttUrl={currentStage.startsWith('08') ? '/media/captions_sintel.vtt' : '/media/captions_tos.vtt'}
             />
 
             {/* Layer Telemetry Chart Card */}
