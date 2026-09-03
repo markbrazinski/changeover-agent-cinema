@@ -60,11 +60,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
-        left.currentTime = 0.0;
-        right.currentTime = 0.0;
-        savedPlayheadRef.current = 0.0;
-        setLeftTime(0.0);
-        setRightTime(0.0);
+        left.currentTime = 7.0;
+        right.currentTime = 7.0;
+        savedPlayheadRef.current = 7.0;
+        setLeftTime(7.0);
+        setRightTime(7.0);
       }
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
