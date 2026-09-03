@@ -54,7 +54,10 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   const [frozenSintelCue, setFrozenSintelCue] = useState<string | null>(null);
   const frozenSintelCueRef = useRef<string | null>(null);
 
-  // Reset ref locks and seek playheads on stage resets
+  // Track previous stage to prevent repeated video re-seeking within Act 2 and Act 3
+  const prevStageRef = useRef<string | undefined>(undefined);
+
+  // Reset ref locks and seek playheads ONLY on initial entry into acts/stages
   useEffect(() => {
     if (currentStage === '01_at_rest') {
       const left = leftVideoRef.current;
@@ -70,7 +73,11 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       setFrozenRightCue(null);
     }
 
-    if (currentStage?.startsWith('08')) {
+    // INITIAL ENTRY INTO ACT 2 ONLY (08 prefix) -> Seek once to 116.5, do NOT re-seek on 08b or 08_stale!
+    const isEnteringAct2 =
+      Boolean(currentStage?.startsWith('08')) && !prevStageRef.current?.startsWith('08');
+
+    if (isEnteringAct2) {
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
@@ -86,16 +93,24 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       setFrozenRightCue(sintelLockedCue);
     }
 
-    if (currentStage?.startsWith('09')) {
+    // INITIAL ENTRY INTO ACT 3 ONLY (09/10 prefix) -> Seek once (Sintel at 93.0s, 3s later to skip title screen)
+    const isEnteringAct3 =
+      Boolean(currentStage?.startsWith('09') || currentStage?.startsWith('10')) &&
+      !prevStageRef.current?.startsWith('09') &&
+      !prevStageRef.current?.startsWith('10');
+
+    if (isEnteringAct3) {
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
-      if (left && right) {
+      if (left) {
         left.currentTime = 30.4;
-        right.currentTime = 90.0;
-        savedPlayheadRef.current = 30.4;
         setLeftTime(30.4);
-        setRightTime(90.0);
       }
+      if (right) {
+        right.currentTime = 93.0; // 3 seconds later in Sintel to skip title screen & CC overlay
+        setRightTime(93.0);
+      }
+      savedPlayheadRef.current = 30.4;
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
       frozenSintelCueRef.current = null;
@@ -110,6 +125,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       frozenSintelCueRef.current = null;
       setFrozenSintelCue(null);
     }
+
+    prevStageRef.current = currentStage;
   }, [rightState, isContention, ch14Restored, isContentionBaseline, currentStage]);
 
   // Sync video playback and track currentTime for frame-accurate failover cutover
@@ -123,8 +140,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       if (left.currentTime === 0 && activeTime > 0) {
         left.currentTime = activeTime;
       }
-      if (right.currentTime === 0 && activeTime > 0) {
-        right.currentTime = activeTime;
+      if (right.currentTime === 0) {
+        right.currentTime = isContention ? 93.0 : (activeTime > 0 ? activeTime : 7.0);
       }
 
       left.play().catch(() => {});
