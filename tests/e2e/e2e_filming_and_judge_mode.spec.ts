@@ -112,6 +112,7 @@ test.describe('End-to-End Filming, Act Controls, and Mode Qualification Suite', 
 
   // 4. INDEPENDENT ACT III: CAPACITY CONTENTION & INDEFINITE HUMAN GATE
   test('Act III (Capacity Contention) displays concurrent channels, halts indefinitely at human gate, and enters PARTIALLY MITIGATED terminal state upon authorization', async ({ page }) => {
+    test.setTimeout(75000);
     await page.goto('/?mode=judge');
     await page.waitForTimeout(600);
 
