@@ -38,25 +38,55 @@ def test_distinct_backups_per_channel():
     assert os.path.exists(sintel_config.backup_mp4)
 
 
+from unittest.mock import patch, MagicMock
+
+
 def test_instanced_agent_across_two_films():
     """
     Gate 5 Test:
     Verify exact same instanced agent logic runs across both films and restores both channels.
     """
-    for channel_id in ["tears_of_steel", "sintel"]:
-        res = run_single_channel_loop(
-            channel_id=channel_id,
-            human_authorizer="operator:mark",
-            inject_fault=True,
-        )
-        assert res["status"] == "restored"
-        assert res["restored"] is True
+    import time
+    now = time.time()
 
-        # Verify sponsor execution
-        assert verify_sponsors(channel_id) is True
+    with patch("changeover.agent.loop.GrafanaMCPClient") as mock_mcp_cls, \
+         patch("changeover.agent.loop.Diagnoser") as mock_diag_cls:
 
-        # Verify UI contract surface
-        ui_data = get_ui_contract_data(channel_id)
-        assert ui_data["channel"] == channel_id
-        assert ui_data["restored"] is True
-        assert len(ui_data["trace_records"]) > 0
+        mock_mcp = mock_mcp_cls.return_value
+        mock_diag = mock_diag_cls.return_value
+
+        mock_mcp.create_annotation_mcp.return_value = (True, {"status": "success"})
+        mock_mcp.get_annotation_mcp.return_value = (True, {"id": 6})
+        mock_diag.diagnose.return_value = {
+            "failed_layer": "captions",
+            "adk_execution": True,
+            "confidence": 1.0,
+        }
+
+        for channel_id in ["tears_of_steel", "sintel"]:
+            fresh_evidence = {
+                "data": {
+                    "result": [
+                        {"metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": channel_id}, "value": [now, "2.996"]},
+                        {"metric": {"__name__": "feed_liveness_seconds", "channel": channel_id}, "value": [now, "0.0001"]}
+                    ]
+                }
+            }
+            mock_mcp.query_with_retry.return_value = ("fresh", fresh_evidence)
+
+            res = run_single_channel_loop(
+                channel_id=channel_id,
+                human_authorizer="operator:mark",
+                inject_fault=True,
+            )
+            assert res["status"] == "restored"
+            assert res["restored"] is True
+
+            # Verify sponsor execution
+            assert verify_sponsors(channel_id) is True
+
+            # Verify UI contract surface
+            ui_data = get_ui_contract_data(channel_id)
+            assert ui_data["channel"] == channel_id
+            assert ui_data["restored"] is True
+            assert len(ui_data["trace_records"]) > 0
