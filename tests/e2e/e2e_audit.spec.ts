@@ -325,4 +325,37 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
 
     console.log('✅ HEADER LAYOUT AND ACCESSIBILITY REGRESSION VERIFIED!');
   });
+
+  // --- TEST 3: SINTEL EVIDENCE REFUSAL VIA VISIBLE HEADER CONTROL ---
+  test('Test 3 — Sintel Evidence Refusal Scenario via Header Control', async ({ page }) => {
+    test.setTimeout(60000);
+
+    await page.goto('/');
+    await page.waitForTimeout(800);
+
+    // 1. Locate button by accessible role and name
+    const refusalBtn = page.getByRole('button', { name: 'Run evidence refusal scenario' });
+    await expect(refusalBtn).toBeVisible();
+    await expect(refusalBtn).toBeEnabled();
+
+    // 2. Click Evidence Refusal button
+    await refusalBtn.click();
+    await page.waitForTimeout(600);
+
+    // 3. Verify refusal banner appears with explicit stale explanation
+    const refusalBanner = page.getByTestId('refusal-banner');
+    await expect(refusalBanner).toBeVisible();
+    await expect(refusalBanner).toContainText(/too old to justify changing a live feed/i);
+
+    // 4. Verify no authorization button appears
+    const authBtn = page.getByTestId('authorize-failover-button');
+    await expect(authBtn).not.toBeVisible();
+
+    // 5. Verify Agent Spine logs refusal step
+    const spineText = await page.getByTestId('agent-spine').innerText();
+    expect(spineText).toMatch(/EVIDENCE STALE/i);
+    expect(spineText).toMatch(/RECOMMENDATION WITHHELD/i);
+
+    console.log('✅ SINTEL EVIDENCE REFUSAL E2E ASSERTIONS PASSED CLEANLY!');
+  });
 });

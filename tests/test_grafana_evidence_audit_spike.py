@@ -200,4 +200,4 @@ def test_loop_unauthorized_refusal_no_annotation(tmp_path):
     )
     assert result["status"] == "refused_blind"
     assert result["restored"] is False
-    assert "annotation_created" not in result
+    assert result.get("annotation_created") is False

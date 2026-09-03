@@ -20,6 +20,15 @@ export interface AuditReceipt {
   restoredMetric: string;
 }
 
+export interface GrafanaRecord {
+  runId: string;
+  annotationId: number;
+  why: string;
+  action: string;
+  followUp?: string;
+  readBackVerified: boolean;
+}
+
 export interface SpineStep {
   title: string;
   sub: string;
@@ -32,6 +41,7 @@ export interface SpineStep {
   scarcityCapacity?: { available: number; demand: number };
   policyComparison?: PolicyEntry[];
   auditReceipt?: AuditReceipt;
+  grafanaRecord?: GrafanaRecord;
 }
 
 interface AgentSpineProps {
@@ -567,6 +577,39 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                       <div>HASH: <code>{step.auditReceipt.hash}</code></div>
                       <div>AUTHORIZER: <strong>{step.auditReceipt.authorizer}</strong></div>
                       <div>RESTORED METRIC: <strong style={{ color: '#38d39f' }}>{step.auditReceipt.restoredMetric}</strong></div>
+                    </div>
+                  )}
+
+                  {/* WIDGET 7: GRAFANA OPERATIONAL RECORD CARD */}
+                  {step.grafanaRecord && (
+                    <div
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '5px',
+                        backgroundColor: '#1b1d1e',
+                        color: '#f5f3ec',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '9px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        border: '1px solid #ff9800',
+                        marginTop: '2px',
+                      }}
+                    >
+                      <div style={{ color: '#ff9800', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>OPERATIONAL RECORD WRITTEN</span>
+                        <span style={{ color: '#38d39f', fontSize: '8.5px' }}>✓ READ-BACK VERIFIED</span>
+                      </div>
+                      <div>RUN ID: <code>{step.grafanaRecord.runId}</code> (Annotation #{step.grafanaRecord.annotationId})</div>
+                      <div>WHY: <strong style={{ color: '#f5f3ec' }}>{step.grafanaRecord.why}</strong></div>
+                      <div>ACTION: <strong style={{ color: '#38d39f' }}>{step.grafanaRecord.action}</strong></div>
+                      {step.grafanaRecord.followUp && (
+                        <div>FOLLOW-UP: <strong style={{ color: '#f72585' }}>{step.grafanaRecord.followUp}</strong></div>
+                      )}
+                      <div style={{ fontSize: '8.5px', color: '#888888', fontStyle: 'italic', marginTop: '2px' }}>
+                        RECORDED ONCE · Idempotent Grafana Cloud Annotation
+                      </div>
                     </div>
                   )}
                 </div>

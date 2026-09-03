@@ -47,6 +47,10 @@ class TraceRecorder:
         with open(self.trace_file, "w", encoding="utf-8") as f:
             json.dump(self.records, f, indent=2)
 
+    def flush(self) -> None:
+        """Alias for save()."""
+        self.save()
+
     def get_records(self) -> List[Dict[str, Any]]:
         """Returns all recorded trace items, loading from disk if needed."""
         if not self.records and os.path.exists(self.trace_file):

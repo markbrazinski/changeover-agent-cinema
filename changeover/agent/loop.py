@@ -30,7 +30,7 @@ def run_single_channel_loop(
     inject_fault: bool = True,
     inject_stale_evidence: bool = False,
     state_dir: str = "logs/state",
-    log_dir: str = "logs",
+    log_dir: str = "logs/traces",
     run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -145,6 +145,7 @@ def run_single_channel_loop(
             else f"Won't-guess: evidence gate rejected payload ({evaluation.reason})"
         )
         logger.warning(f"Refusing to diagnose: evidence is {evaluation.tier.upper()} ({evaluation.reason})")
+        recorder.flush()
         return {
             "channel": channel_id,
             "run_id": run_id,
@@ -168,7 +169,15 @@ def run_single_channel_loop(
     adk_execution = diag_result.get("adk_execution", False)
     logger.info(f"Diagnoser result for '{channel_id}': Failed Layer = '{failed_layer}' (adk_execution={adk_execution})")
 
+    recorder.record_call(
+        tool="adk_diagnoser.diagnose",
+        args={"channel": channel_id, "failed_layer": failed_layer},
+        result_or_miss=diag_result,
+        latency_ms=120.0,
+    )
+
     if failed_layer == "none":
+        recorder.flush()
         return {
             "channel": channel_id,
             "run_id": run_id,
@@ -193,6 +202,7 @@ def run_single_channel_loop(
 
     if not is_backup_healthy:
         logger.error(f"Refusing failover: backup source is UNHEALTHY (won't-switch behavior)")
+        recorder.flush()
         return {
             "channel": channel_id,
             "run_id": run_id,
@@ -216,6 +226,7 @@ def run_single_channel_loop(
 
     if not executed:
         logger.warning(f"Failover REFUSED: {failover_res.get('reason')}")
+        recorder.flush()
         return {
             "channel": channel_id,
             "run_id": run_id,
@@ -286,6 +297,8 @@ def run_single_channel_loop(
         result_or_miss=retrieve_res,
         latency_ms=20.0,
     )
+
+    recorder.flush()
 
     return {
         "channel": channel_id,

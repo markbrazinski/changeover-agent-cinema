@@ -28,8 +28,7 @@ test.describe('End-to-End Voiceover (VO) Script & Audit Suite', () => {
     await runDemoBtn.click();
 
     // --- BEAT 2: FAULT INJECTED & STAGGERED RECOVERY ---
-    await page.waitForTimeout(3000);
-    await expect(page.locator('main')).toContainText(/CAPTIONS FROZEN|\+2\.996s/i);
+    await expect(page.locator('main')).toContainText(/CAPTIONS FROZEN|\+2\.996s/i, { timeout: 10000 });
     await page.screenshot({ path: path.join(resultsDir, 'beat_02_fault_injected.png') });
 
     // --- BEAT 3: OPERATOR AUTHORIZATION GATE ---

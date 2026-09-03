@@ -471,6 +471,18 @@ export default function App() {
   else if (isChartFrozen) evidenceChartStatus = 'frozen';
   else evidenceChartStatus = 'nominal';
 
+  const handleRunRefusal = async () => {
+    setIsWorking(true);
+    try {
+      setCurrentStage('08_refusal_stale_evidence');
+      setTimecode('PGM-OUT 20:14:45');
+    } catch (e) {
+      console.error('Refusal stale evidence error:', e);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
   // Contention state flags
   const isContentionStage = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
   const isContentionBaseline = currentStage === '09a_contention_baseline';
@@ -480,6 +492,7 @@ export default function App() {
   // Active scenario flags for header controls
   const isScenario1Active = isPlayingWalkthrough && !isContentionStage;
   const isScenario2Active = (isPlayingWalkthrough && isContentionStage) || (isContentionStage && currentStage !== '01_at_rest');
+  const isScenario3Active = currentStage === '08_refusal_stale_evidence' || currentStage === '08_refusal_wont_guess';
 
 
   // --- CONSTRUCT ACCRUING TOOL CALL LOG FOR AGENT SPINE ---
@@ -561,6 +574,22 @@ export default function App() {
             hash: '0x8f3c4e92a1b5e01f',
             authorizer: 'operator:demo',
             restoredMetric: '+0.486s (CH-14 Restored)',
+          },
+        });
+
+        spineSteps.push({
+          title: 'grafana:record_annotation',
+          sub: 'Post-decision operational record written & read-back verified',
+          tone: 'done',
+          timestamp: 'T+00:12',
+          toolCall: 'create_annotation_mcp(run_id="contention_run_1723216382", channels=["ch14","ch27"])',
+          grafanaRecord: {
+            runId: 'contention_run_1723216382',
+            annotationId: 2,
+            why: '2 concurrent caption failures vs 1 shared backup stream (Scarcity Real)',
+            action: 'Authorized prioritization of CH-14 (Emergency Tier)',
+            followUp: 'CH-27 (Sintel) unresolved / open incident (General Tier)',
+            readBackVerified: true,
           },
         });
       }
@@ -671,6 +700,21 @@ export default function App() {
           restoredMetric: '+0.486s (Measured Post-Swap)',
         },
       });
+
+      spineSteps.push({
+        title: 'grafana:record_annotation',
+        sub: 'Post-decision operational record written & read-back verified',
+        tone: 'done',
+        timestamp: 'T+00:14',
+        toolCall: 'create_annotation_mcp(run_id="smoke_run_1723216382", channel="tears_of_steel")',
+        grafanaRecord: {
+          runId: 'smoke_run_1723216382',
+          annotationId: 1,
+          why: 'Caption drift (+2.996s) exceeded ceiling (+0.759s) while feed liveness remained healthy (0.000s)',
+          action: 'Authorized failover to verified backup line (operator:demo)',
+          readBackVerified: true,
+        },
+      });
     }
 
     // Refusal special cases
@@ -705,6 +749,41 @@ export default function App() {
         tone: 'refuse',
         timestamp: 'T+00:06',
         toolCall: 'refuse(reason="unreadable_evidence")',
+      });
+    }
+
+    if (currentStage === '08_refusal_stale_evidence') {
+      spineSteps.push({
+        title: 'mcp:query_prometheus',
+        sub: '⚠ STALE CAPTION TELEMETRY · Sintel age 25.0s > threshold 15.0s',
+        tone: 'refuse',
+        timestamp: 'T+00:00',
+        toolCall: 'query_prometheus(channel="sintel", metric="caption_sync")',
+        jsonPayload: {
+          channel: "sintel",
+          caption_sync_offset_seconds: 2.996,
+          feed_liveness_seconds: 0.0000789,
+          measured_age_seconds: 25.0,
+          allowed_freshness_threshold: 15.0,
+        },
+      });
+
+      spineSteps.push({
+        title: 'evidence_gate:evaluate',
+        sub: '✕ EVIDENCE STALE (25.0s old > 15.0s limit)',
+        tone: 'refuse',
+        timestamp: 'T+00:02',
+        toolCall: 'evaluate_evidence(mcp_status="fresh", required=["caption_sync","feed_liveness"])',
+        codeSnippet: `EVIDENCE GATE EVALUATION:\nChannel: sintel\nTier: STALE (25.0s > 15.0s limit)\nTrusted: FALSE\nReason: Evidence is stale (25.0s old > threshold 15.0s)`,
+      });
+
+      spineSteps.push({
+        title: 'changeover:refuse_action',
+        sub: '✕ RECOMMENDATION WITHHELD · NO CHANGE EXECUTED',
+        tone: 'refuse',
+        timestamp: 'T+00:04',
+        toolCall: 'refuse_action(reason="refused_stale_evidence")',
+        codeSnippet: `REFUSAL DECISION:\nExplanation: The available caption evidence is too old to justify changing a live feed.\nAction: 0 downstream calls · No failover recommended · Feed untouched`,
       });
     }
   }
@@ -829,6 +908,33 @@ export default function App() {
                 {isScenario2Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
                 CAPACITY CONTENTION
               </button>
+
+              <button
+                aria-label="Run evidence refusal scenario"
+                data-testid="scenario-evidence-refusal-button"
+                onClick={handleRunRefusal}
+                disabled={isPlayingWalkthrough || isWorking}
+                style={{
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  color: isScenario3Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                  backgroundColor: isScenario3Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                  border: isScenario3Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                  borderRadius: '4px',
+                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  whiteSpace: 'nowrap',
+                }}
+                className="scenario-btn"
+              >
+                {isScenario3Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                EVIDENCE REFUSAL
+              </button>
             </div>
           </div>
 
@@ -902,13 +1008,15 @@ export default function App() {
               onAlternativeApprove={handleAuthorizeContention}
               onHold={handleStopWalkthrough}
               holdNote={
-                currentStage === '07_refusal_wont_switch'
+                currentStage === '08_refusal_stale_evidence'
+                  ? '✕ REFUSED: The available caption evidence is too old to justify changing a live feed.'
+                  : currentStage === '07_refusal_wont_switch'
                   ? '✕ REFUSED: Candidate backup line unconfirmed by ffprobe. Holding active feed.'
                   : currentStage === '08_refusal_wont_guess'
                   ? '✕ REFUSED: Evidence plane unreadable (Grafana query empty). Agent won\'t guess.'
                   : undefined
               }
-              isSolidHoldNote={currentStage === '08_refusal_wont_guess'}
+              isSolidHoldNote={currentStage === '08_refusal_stale_evidence' || currentStage === '08_refusal_wont_guess'}
             />
           </div>
         </main>
