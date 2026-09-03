@@ -51,56 +51,135 @@ def test_refusal_arc_evidence_gate_stale():
     assert "Evidence is stale" in eval_res.reason
 
 
+from unittest.mock import patch
+
 def test_refusal_arc_single_channel_loop_invariants():
-    """Verify run_single_channel_loop enforces all refusal invariants for Sintel."""
-    res = run_single_channel_loop(
-        channel_id="sintel",
-        human_authorizer="operator:mark",  # Even if operator is present!
-        inject_fault=True,
-        inject_stale_evidence=True,
-        run_id="test_sintel_refusal_1",
-    )
+    """Verify run_single_channel_loop enforces all refusal invariants for Sintel using collaborator spies."""
+    stale_ts = time.time() - 25.0
+    stale_payload = {
+        "data": {
+            "result": [
+                {
+                    "metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": "sintel"},
+                    "value": [stale_ts, "2.996"]
+                },
+                {
+                    "metric": {"__name__": "feed_liveness_seconds", "channel": "sintel", "layer": "sign_language"},
+                    "value": [stale_ts, "0.0000789"]
+                }
+            ]
+        }
+    }
 
-    # Invariant 1: Explicit refusal status
-    assert res["status"] == "refused_stale_evidence"
+    with patch("changeover.agent.loop.Diagnoser") as mock_diag, \
+         patch("changeover.agent.loop.verify_backup_source") as mock_ffprobe, \
+         patch("changeover.agent.loop.execute_failover") as mock_failover, \
+         patch("changeover.agent.loop.GrafanaMCPClient") as mock_mcp:
 
-    # Invariant 2: Correct channel and tier
-    assert res["channel"] == "sintel"
-    assert res["evidence_tier"] == "stale"
-    assert res["evidence_age_seconds"] >= 24.0
-    assert res["allowed_freshness_threshold_seconds"] == 15.0
+        mock_mcp.return_value.query_with_retry.return_value = ("fresh", stale_payload)
 
-    # Invariant 3: Explanation for operator / UI
-    assert res["user_explanation"] == "The available caption evidence is too old to justify changing a live feed."
-
-    # Invariant 4: No downstream ADK diagnosis
-    assert res["failed_layer"] is None
-    assert res["adk_execution"] is False
-
-    # Invariant 5: No backup verification or authorization or changeover or annotation
-    assert res["backup_verified"] is False
-    assert res["changeover_executed"] is False
-    assert res["annotation_created"] is False
-    assert res["restored"] is False
-
-
-def test_refusal_arc_deterministic_repeatability():
-    """Verify 3 consecutive runs produce identical refusal terminal states."""
-    runs = []
-    for idx in range(3):
         res = run_single_channel_loop(
             channel_id="sintel",
             human_authorizer="operator:mark",
-            inject_fault=True,
-            inject_stale_evidence=True,
-            run_id=f"repeat_run_{idx}",
+            inject_fault=False,
+            run_id="test_sintel_refusal_1",
         )
-        runs.append(res)
 
-    for res in runs:
+        # Assert non-invocation of all 4 downstream collaborators
+        assert not mock_diag.return_value.diagnose.called
+        assert not mock_ffprobe.called
+        assert not mock_failover.called
+        assert not mock_mcp.return_value.create_annotation.called
+
+        # Terminal status & explanation
         assert res["status"] == "refused_stale_evidence"
-        assert res["failed_layer"] is None
-        assert res["adk_execution"] is False
-        assert res["changeover_executed"] is False
-        assert res["annotation_created"] is False
+        assert res["channel"] == "sintel"
+        assert res["evidence_tier"] == "stale"
         assert res["user_explanation"] == "The available caption evidence is too old to justify changing a live feed."
+
+
+def test_refusal_arc_cross_channel_tears_of_steel():
+    """Prove evidence refusal gate is not Sintel-specific by testing Tears of Steel with stale evidence."""
+    stale_ts = time.time() - 25.0
+    stale_payload = {
+        "data": {
+            "result": [
+                {
+                    "metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": "tears_of_steel"},
+                    "value": [stale_ts, "2.996"]
+                },
+                {
+                    "metric": {"__name__": "feed_liveness_seconds", "channel": "tears_of_steel", "layer": "sign_language"},
+                    "value": [stale_ts, "0.0000789"]
+                }
+            ]
+        }
+    }
+
+    with patch("changeover.agent.loop.Diagnoser") as mock_diag, \
+         patch("changeover.agent.loop.verify_backup_source") as mock_ffprobe, \
+         patch("changeover.agent.loop.execute_failover") as mock_failover, \
+         patch("changeover.agent.loop.GrafanaMCPClient") as mock_mcp:
+
+        mock_mcp.return_value.query_with_retry.return_value = ("fresh", stale_payload)
+
+        res = run_single_channel_loop(
+            channel_id="tears_of_steel",
+            human_authorizer="operator:mark",
+            inject_fault=False,
+            run_id="test_tos_refusal_1",
+        )
+
+        # Assert non-invocation of all 4 downstream collaborators
+        assert not mock_diag.return_value.diagnose.called
+        assert not mock_ffprobe.called
+        assert not mock_failover.called
+        assert not mock_mcp.return_value.create_annotation.called
+
+        # Terminal status & explanation
+        assert res["status"] == "refused_stale_evidence"
+        assert res["channel"] == "tears_of_steel"
+        assert res["evidence_tier"] == "stale"
+        assert res["user_explanation"] == "The available caption evidence is too old to justify changing a live feed."
+
+
+def test_refusal_arc_deterministic_repeatability():
+    """Verify 3 consecutive runs produce identical refusal terminal states using spies."""
+    stale_ts = time.time() - 25.0
+    stale_payload = {
+        "data": {
+            "result": [
+                {
+                    "metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": "sintel"},
+                    "value": [stale_ts, "2.996"]
+                },
+                {
+                    "metric": {"__name__": "feed_liveness_seconds", "channel": "sintel", "layer": "sign_language"},
+                    "value": [stale_ts, "0.0000789"]
+                }
+            ]
+        }
+    }
+
+    for idx in range(3):
+        with patch("changeover.agent.loop.Diagnoser") as mock_diag, \
+             patch("changeover.agent.loop.verify_backup_source") as mock_ffprobe, \
+             patch("changeover.agent.loop.execute_failover") as mock_failover, \
+             patch("changeover.agent.loop.GrafanaMCPClient") as mock_mcp:
+
+            mock_mcp.return_value.query_with_retry.return_value = ("fresh", stale_payload)
+
+            res = run_single_channel_loop(
+                channel_id="sintel",
+                human_authorizer="operator:mark",
+                inject_fault=False,
+                run_id=f"repeat_run_{idx}",
+            )
+
+            assert not mock_diag.return_value.diagnose.called
+            assert not mock_ffprobe.called
+            assert not mock_failover.called
+            assert not mock_mcp.return_value.create_annotation.called
+
+            assert res["status"] == "refused_stale_evidence"
+            assert res["user_explanation"] == "The available caption evidence is too old to justify changing a live feed."
