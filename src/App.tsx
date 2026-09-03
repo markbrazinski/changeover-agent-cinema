@@ -75,8 +75,8 @@ export default function App() {
   useEffect(() => {
     if (currentStage === '09_contention_failing') {
       setContentionStepIndex(1);
-      const t1 = setTimeout(() => setContentionStepIndex(2), 2300);
-      const t2 = setTimeout(() => setContentionStepIndex(3), 4600);
+      const t1 = setTimeout(() => setContentionStepIndex(2), WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2);
+      const t2 = setTimeout(() => setContentionStepIndex(3), WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_3);
       return () => {
         clearTimeout(t1);
         clearTimeout(t2);
@@ -297,8 +297,8 @@ export default function App() {
       setContentionData(res);
 
       // Visual staggering for Agent Spine cards (2.3s per card, slowed down by +0.5s per card)
-      await delay(2300);
-      await delay(2300);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_STEP_2);
 
       setCurrentStage('10_contention_decision');
       setTimecode('PGM-OUT 20:15:14');
@@ -327,13 +327,13 @@ export default function App() {
       logWave2Milestone('restoration_completed');
 
       // 2.0s restoration animation hold
-      await delay(2000);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD);
       setCurrentStage('12_terminal_partially_mitigated');
       setTimecode('PGM-OUT 20:15:25');
       logWave2Milestone('terminal_partially_mitigated');
 
       // Hold terminal state for at least 6 seconds
-      await delay(6000);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.TERMINAL_HOLD);
       logWave2Milestone('closing_lockup_shown');
     } catch (e) {
       console.error('Authorize contention error:', e);
@@ -359,16 +359,16 @@ export default function App() {
       // 2. Right-side Captions Freeze at second 20 (0:20 - 0:21)
       if (walkthroughCancelledRef.current) return;
       await handleInjectFault();
-      await delay(2000); // 2.0s hold after freeze so VO says "And then—the captions stop."
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD); // 2.0s hold after freeze so VO says "And then—the captions stop."
 
       // 3. Staggered Investigation & Backup Verification (0:22 - 0:30)
       if (walkthroughCancelledRef.current) return;
       await handleInvestigate();
-      await delay(3500); // 3.5s hold while Gemini ADK & Grafana MCP evidence populates
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.INVESTIGATION_HOLD); // 3.5s hold while Gemini ADK & Grafana MCP evidence populates
 
       if (walkthroughCancelledRef.current) return;
       await handleVerifyBackup();
-      await delay(2500); // 2.5s hold while ffprobe backup verification populates
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.VERIFY_BACKUP_HOLD); // 2.5s hold while ffprobe backup verification populates
 
       // 4. Human Authorization Gate Ready at ~0:30 (0:30 - 0:48)
       if (walkthroughCancelledRef.current) return;
@@ -417,7 +417,7 @@ export default function App() {
       setTimecode('PGM-OUT 20:15:00');
 
       // 2. T+7.5s: Automatic concurrent caption failure injection after ~7.5s healthy baseline
-      await delay(7500);
+      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_BASELINE_HOLD);
       if (walkthroughCancelledRef.current) return;
 
       // 3. Trigger concurrent fault injection & real natural-speed investigation
@@ -982,6 +982,10 @@ export default function App() {
               ch27Degraded={ch27DegradedInContention}
               isPlayingWalkthrough={isPlayingWalkthrough && showTimer}
               walkthroughElapsedSec={walkthroughElapsedSec}
+              channelName={currentStage === '08_refusal_stale_evidence' ? 'SINTEL' : 'TEARS OF STEEL'}
+              sourceVideoUrl={currentStage === '08_refusal_stale_evidence' ? '/media/sintel_source.mp4' : '/media/tos_source.mp4'}
+              backupVideoUrl={currentStage === '08_refusal_stale_evidence' ? '/media/sintel_backup.mp4' : '/media/tos_backup.mp4'}
+              captionsVttUrl={currentStage === '08_refusal_stale_evidence' ? '/media/captions_sintel.vtt' : '/media/captions_tos.vtt'}
             />
 
             {/* Layer Telemetry Chart Card */}

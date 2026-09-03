@@ -146,10 +146,13 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
   }, [rightState, isContention, ch14Restored, isContentionBaseline]);
 
   // Get active spoken dialogue caption cues per film
-  const rawLeftCue = getCueForTime(TEARS_OF_STEEL_CUES, leftTime);
+  const isSintelChannel = channelName === 'SINTEL' || sourceVideoUrl.includes('sintel');
+  const activeSingleChannelCues = isSintelChannel ? SINTEL_CUES : TEARS_OF_STEEL_CUES;
+
+  const rawLeftCue = getCueForTime(activeSingleChannelCues, leftTime);
   const leftCaptionText = rawLeftCue || '\u00A0';
 
-  const rawRightCue = getCueForTime(TEARS_OF_STEEL_CUES, rightTime);
+  const rawRightCue = getCueForTime(activeSingleChannelCues, rightTime);
   const rightCaptionText = frozenRightCue || rawRightCue || '\u00A0';
 
   const rawSintelCue = getCueForTime(SINTEL_CUES, rightTime);

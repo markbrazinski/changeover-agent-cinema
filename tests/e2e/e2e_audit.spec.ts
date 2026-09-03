@@ -368,6 +368,15 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     expect(spineText).toMatch(/EVIDENCE STALE/i);
     expect(spineText).toMatch(/RECOMMENDATION WITHHELD/i);
 
+    // 6. Verify Sintel video source and video playback progression (currentTime advances over 1.5s)
+    const rightVideo = page.getByTestId('right-video');
+    await expect(rightVideo).toHaveAttribute('src', /\/media\/sintel_source\.mp4/);
+
+    const initialTime = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
+    await page.waitForTimeout(1500);
+    const laterTime = await rightVideo.evaluate((el: HTMLVideoElement) => el.currentTime);
+    expect(laterTime).toBeGreaterThan(initialTime);
+
     console.log('✅ SINTEL EVIDENCE REFUSAL E2E ASSERTIONS PASSED CLEANLY!');
   });
 });
