@@ -26,17 +26,17 @@ logger = logging.getLogger(__name__)
 def run_single_channel_loop(
     channel_id: str = "tears_of_steel",
     human_authorizer: Optional[str] = None,
-    inject_fault: bool = True,
-    state_dir: str = "logs/state",
-    log_dir: str = "logs/traces",
     force_blind: bool = False,
+    inject_fault: bool = True,
+    inject_stale_evidence: bool = False,
+    state_dir: str = "logs/state",
+    log_dir: str = "logs",
     run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Executes single-channel orchestration loop end-to-end.
-    Strictly reads evidence returned by Grafana Cloud MCP query.
-    If Grafana returns empty or is blind, REFUSES to diagnose (won't-guess).
-    Creates and verifies one post-authorization Grafana annotation via MCP.
+    Executes Watch/Detect -> Investigate via Grafana MCP -> Dual-Signal Evidence Gate ->
+    ADK Diagnoser -> Backup Health Verify -> Human Authorization Gate ->
+    Failover Action -> Verification -> Post-Authorization Grafana Annotation & Retrieval.
     """
     if not run_id:
         run_id = f"smoke_run_{int(time.time())}"
@@ -78,15 +78,33 @@ def run_single_channel_loop(
     )
 
     # Remote write live telemetry to Grafana Cloud Prometheus (if not forcing blind state)
-    if not force_blind:
+    if not force_blind and not inject_stale_evidence:
         exporter.update_caption_offset(channel_id, offset, push_remote=True)
         exporter.update_liveness_gap(channel_id, liveness_gap, push_remote=True)
         time.sleep(1.0)  # Short pause to ensure Grafana Cloud ingestion finishes
 
     # 2. Investigate via Real Grafana Cloud MCP Query (Miss-then-Retry)
-    mcp_status, raw_evidence = mcp_client.query_with_retry(channel_id, recorder)
+    if inject_stale_evidence and not force_blind:
+        stale_ts = time.time() - 25.0
+        raw_evidence = {
+            "data": {
+                "result": [
+                    {
+                        "metric": {"__name__": "caption_cue_sync_offset_seconds", "channel": channel_id},
+                        "value": [stale_ts, "2.996"]
+                    },
+                    {
+                        "metric": {"__name__": "feed_liveness_seconds", "channel": channel_id, "layer": "sign_language"},
+                        "value": [stale_ts, "0.0000789"]
+                    }
+                ]
+            }
+        }
+        mcp_status = "fresh"
+    else:
+        mcp_status, raw_evidence = mcp_client.query_with_retry(channel_id, recorder)
 
-    if inject_fault and not force_blind:
+    if inject_fault and not force_blind and not inject_stale_evidence:
         if not raw_evidence or not isinstance(raw_evidence, dict):
             raw_evidence = {"data": {"result": []}}
             mcp_status = "fresh"
@@ -119,14 +137,29 @@ def run_single_channel_loop(
     # STRIP-THE-SPONSOR / WON'T-GUESS GUARDRAIL:
     # If evidence is ABSENT or UNTRUSTED, refuse to diagnose. 0 downstream calls!
     if not evaluation.is_trusted or evaluation.tier in ["absent", "partial", "stale"]:
-        logger.warning(f"Refusing to diagnose: evidence is ABSENT or UNTRUSTED (won't-guess behavior)")
+        is_stale = (evaluation.tier == "stale")
+        status_str = "refused_stale_evidence" if is_stale else "refused_blind"
+        user_explanation = (
+            "The available caption evidence is too old to justify changing a live feed."
+            if is_stale
+            else f"Won't-guess: evidence gate rejected payload ({evaluation.reason})"
+        )
+        logger.warning(f"Refusing to diagnose: evidence is {evaluation.tier.upper()} ({evaluation.reason})")
         return {
             "channel": channel_id,
             "run_id": run_id,
-            "status": "refused_blind",
-            "reason": f"Won't-guess: evidence gate rejected payload ({evaluation.reason})",
+            "status": status_str,
+            "reason": evaluation.reason,
+            "user_explanation": user_explanation,
+            "evidence_tier": evaluation.tier,
+            "evidence_age_seconds": evaluation.age_seconds,
+            "allowed_freshness_threshold_seconds": evidence_gate.heartbeat_threshold,
             "failed_layer": None,
             "restored": False,
+            "adk_execution": False,
+            "backup_verified": False,
+            "changeover_executed": False,
+            "annotation_created": False,
         }
 
     # 4. Diagnoser: Name the failed layer reading VALUE RETURNED BY GRAFANA QUERY
