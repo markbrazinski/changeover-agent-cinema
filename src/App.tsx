@@ -236,7 +236,7 @@ export default function App() {
   const handleExecuteApprove = async () => {
     setIsWorking(true);
     try {
-      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:demo', mode);
+      const res = await agentClient.authorizeFailover('tears_of_steel', 'operator:mark', mode);
       setCurrentStage('06_changed_over');
       setPostSwapOffset(res.post_swap_measured_offset || 0.486);
       setTimecode('PGM-OUT 20:14:33');
@@ -290,7 +290,7 @@ export default function App() {
       setTimecode('PGM-OUT 20:15:10');
 
       logWave2Milestone('investigation_started');
-      const res = await agentClient.runContention('operator:demo', mode);
+      const res = await agentClient.runContention('operator:mark', mode);
       logWave2Milestone('grafana_results_received');
       logWave2Milestone('gemini_synthesis_completed');
       logWave2Milestone('policy_evaluated');
@@ -546,7 +546,7 @@ export default function App() {
       if (currentStage === '10_contention_decision' || currentStage === '11_contention_authorized' || currentStage === '12_terminal_partially_mitigated') {
         spineSteps.push({
           title: 'human_gate:request_prioritization',
-          sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:demo)',
+          sub: currentStage === '10_contention_decision' ? 'AWAITING OPERATOR SELECTION' : 'APPROVED (operator:mark)',
           tone: currentStage === '10_contention_decision' ? 'active' : 'done',
           timestamp: 'T+00:06',
           toolCall: 'request_prioritization(policy_recommendation="CH-14")',
@@ -572,7 +572,7 @@ export default function App() {
           auditReceipt: {
             status: 'PARTIALLY_MITIGATED',
             hash: '0x8f3c4e92a1b5e01f',
-            authorizer: 'operator:demo',
+            authorizer: 'operator:mark',
             restoredMetric: '+0.486s (CH-14 Restored)',
           },
         });
@@ -582,10 +582,10 @@ export default function App() {
           sub: 'Post-decision operational record written & read-back verified',
           tone: 'done',
           timestamp: 'T+00:12',
-          toolCall: 'create_annotation_mcp(run_id="contention_run_1723216382", channels=["ch14","ch27"])',
+          toolCall: 'create_annotation_mcp(run_id="closure_run_contention_1788388918", channels=["tears_of_steel","sintel"])',
           grafanaRecord: {
-            runId: 'contention_run_1723216382',
-            annotationId: 2,
+            runId: 'closure_run_contention_1788388918',
+            annotationId: 6,
             why: '2 concurrent caption failures vs 1 shared backup stream (Scarcity Real)',
             action: 'Authorized prioritization of CH-14 (Emergency Tier)',
             followUp: 'CH-27 (Sintel) unresolved / open incident (General Tier)',
@@ -667,7 +667,7 @@ export default function App() {
     if (currentStage === '05_awaiting_approval' || currentStage === '06_changed_over') {
       spineSteps.push({
         title: 'human_gate:request_authorization',
-        sub: currentStage === '05_awaiting_approval' ? 'AWAITING OPERATOR AUTHORIZATION' : 'APPROVED (operator:demo)',
+        sub: currentStage === '05_awaiting_approval' ? 'AWAITING OPERATOR AUTHORIZATION' : 'APPROVED (operator:mark)',
         tone: currentStage === '05_awaiting_approval' ? 'active' : 'done',
         timestamp: 'T+00:08',
         toolCall: 'request_authorization(action="failover_ch14")',
@@ -696,7 +696,7 @@ export default function App() {
         auditReceipt: {
           status: 'RESTORED',
           hash: '0x3a7b1c90d8ef',
-          authorizer: 'operator:demo',
+          authorizer: 'operator:mark',
           restoredMetric: '+0.486s (Measured Post-Swap)',
         },
       });
@@ -706,12 +706,12 @@ export default function App() {
         sub: 'Post-decision operational record written & read-back verified',
         tone: 'done',
         timestamp: 'T+00:14',
-        toolCall: 'create_annotation_mcp(run_id="smoke_run_1723216382", channel="tears_of_steel")',
+        toolCall: 'create_annotation_mcp(run_id="closure_run_single_1788388918", channel="tears_of_steel")',
         grafanaRecord: {
-          runId: 'smoke_run_1723216382',
-          annotationId: 1,
+          runId: 'closure_run_single_1788388918',
+          annotationId: 6,
           why: 'Caption drift (+2.996s) exceeded ceiling (+0.759s) while feed liveness remained healthy (0.000s)',
-          action: 'Authorized failover to verified backup line (operator:demo)',
+          action: 'Authorized failover to verified backup line (operator:mark)',
           readBackVerified: true,
         },
       });

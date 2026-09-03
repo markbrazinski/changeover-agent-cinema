@@ -599,7 +599,9 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                     >
                       <div style={{ color: '#ff9800', fontWeight: 700, letterSpacing: '0.5px', display: 'flex', justifyContent: 'space-between' }}>
                         <span>OPERATIONAL RECORD WRITTEN</span>
-                        <span style={{ color: '#38d39f', fontSize: '8.5px' }}>✓ READ-BACK VERIFIED</span>
+                        {step.grafanaRecord.readBackVerified && (
+                          <span style={{ color: '#38d39f', fontSize: '8.5px' }}>✓ READ-BACK VERIFIED</span>
+                        )}
                       </div>
                       <div>RUN ID: <code>{step.grafanaRecord.runId}</code> (Annotation #{step.grafanaRecord.annotationId})</div>
                       <div>WHY: <strong style={{ color: '#f5f3ec' }}>{step.grafanaRecord.why}</strong></div>

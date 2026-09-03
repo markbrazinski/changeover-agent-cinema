@@ -3,7 +3,7 @@
  * Freezes timestamps to recorded run time and eliminates backend network round-trips.
  */
 
-export const RECORDED_RUN_TIMESTAMP = 1723216382;
+export const RECORDED_RUN_TIMESTAMP = 1788388918;
 
 export const DETERMINISTIC_RESPONSES = {
   getManifest: {
@@ -88,19 +88,19 @@ export const DETERMINISTIC_RESPONSES = {
     mode: 'deterministic' as const,
   }),
 
-  authorizeFailover: (channel: string = 'tears_of_steel', authorizer: string = 'operator:demo') => ({
+  authorizeFailover: (channel: string = 'tears_of_steel', authorizer: string = 'operator:mark') => ({
     channel,
     status: 'restored',
     previous_source: 'primary',
     new_source: 'backup',
-    human_authorizer: authorizer || 'operator:demo',
+    human_authorizer: authorizer || 'operator:mark',
     post_swap_measured_offset: 0.486,
     restored: true,
     state: {
       channel,
       active_source: 'backup',
       last_action: 'failover_and_verify_restored',
-      human_authorizer: authorizer || 'operator:demo',
+      human_authorizer: authorizer || 'operator:mark',
       timestamp: RECORDED_RUN_TIMESTAMP + 8,
       restored: true,
     },
@@ -116,7 +116,7 @@ export const DETERMINISTIC_RESPONSES = {
     mode: 'deterministic' as const,
   }),
 
-  runContention: (authorizer: string = 'operator:demo') => ({
+  runContention: (authorizer: string = 'operator:mark') => ({
     timestamp: RECORDED_RUN_TIMESTAMP + 18,
     pool_id: 'shared_pool_1',
     demand: 2,
@@ -126,18 +126,18 @@ export const DETERMINISTIC_RESPONSES = {
     degraded_channels: ['sintel'],
     reasoning:
       "Reconciled N=2 active incidents against M=1 shared backup capacity. Allocated backup to 'tears_of_steel' (operator tier: premium). Degraded and flagged 'sintel' (operator tier: standard).",
-    human_authorizer: authorizer || 'operator:demo',
+    human_authorizer: authorizer || 'operator:mark',
     status: 'authorized_and_executed',
     priority_execution: {
       status: 'executed',
       previous_source: 'primary',
       new_source: 'backup',
-      human_authorizer: authorizer || 'operator:demo',
+      human_authorizer: authorizer || 'operator:mark',
       state: {
         channel: 'tears_of_steel',
         active_source: 'backup',
         last_action: 'failover_and_verify_restored',
-        human_authorizer: authorizer || 'operator:demo',
+        human_authorizer: authorizer || 'operator:mark',
         timestamp: RECORDED_RUN_TIMESTAMP + 18,
         restored: true,
       },

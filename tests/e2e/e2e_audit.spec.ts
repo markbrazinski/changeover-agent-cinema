@@ -237,6 +237,12 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     await expect(page.getByTestId('offset-readout')).toContainText(/\+0\.486s/i);
     await expect(page.getByTestId('right-status-pill')).toContainText(/RESTORED/i);
 
+    // Verify Grafana Operational Record provenance
+    await expect(page.locator('main')).not.toContainText('1723216382');
+    if (await page.locator('text=✓ READ-BACK VERIFIED').isVisible()) {
+      await expect(page.locator('main')).toContainText(/closure_run_/);
+    }
+
     // 10. Verify control leaves running state appropriately
     await expect(recoveryBtn).toBeEnabled({ timeout: 10000 });
     await expect(contentionBtn).toBeEnabled();
@@ -295,6 +301,12 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     // 11. Verify final state is PARTIALLY MITIGATED
     const spineTextTerminal = await page.getByTestId('agent-spine').innerText();
     expect(spineTextTerminal).toMatch(/Partially mitigated — 1 restored, 1 incident open/i);
+
+    // Verify Grafana Operational Record provenance
+    await expect(page.locator('main')).not.toContainText('1723216382');
+    if (await page.locator('text=✓ READ-BACK VERIFIED').isVisible()) {
+      await expect(page.locator('main')).toContainText(/closure_run_/);
+    }
 
     // Verify controls leave running state appropriately
     await expect(contentionBtn).toBeEnabled({ timeout: 15000 });

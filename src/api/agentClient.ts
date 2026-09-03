@@ -110,7 +110,7 @@ export const agentClient = {
 
   async authorizeFailover(
     channel: string = 'tears_of_steel',
-    authorizer: string = 'operator:demo',
+    authorizer: string = 'operator:mark',
     _mode: Mode = 'deterministic'
   ): Promise<FailoverResponse> {
     return DETERMINISTIC_RESPONSES.authorizeFailover(channel, authorizer);
@@ -121,7 +121,7 @@ export const agentClient = {
   },
 
   async runContention(
-    authorizer: string = 'operator:demo',
+    authorizer: string = 'operator:mark',
     _mode: Mode = 'deterministic'
   ): Promise<ContentionResponse> {
     return DETERMINISTIC_RESPONSES.runContention(authorizer);
