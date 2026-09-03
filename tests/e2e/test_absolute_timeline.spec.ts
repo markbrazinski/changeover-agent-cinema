@@ -39,15 +39,15 @@ test.describe('Padded Absolute-Time Filming Sequence Qualification', () => {
     expect(cut2Time).toBeGreaterThanOrEqual(70.0);
     expect(cut2Time).toBeLessThanOrEqual(74.5);
 
-    // 96.0s: Act III Contention Human Gate opens (24s mark of Act 3)
+    // 94.5s: Act III Contention Human Gate opens (22.5s mark of Act 3 - 1.5s earlier)
     const contentionAuthBtn = page.getByTestId('authorize-prioritization-button');
     await expect(contentionAuthBtn).toBeVisible({ timeout: 30000 });
 
     // Click authorize during Act III gate window
     await contentionAuthBtn.click();
 
-    // Wait for full 126.0s timeline completion (from 96.0s authorization mark + 30s = 126.0s total)
-    await page.waitForTimeout(30000);
+    // Wait for full 126.0s timeline completion (from 94.5s authorization mark + 31.5s = 126.0s total)
+    await page.waitForTimeout(31500);
 
     const totalDuration = (Date.now() - startTime) / 1000;
     console.log(`[E2E TIMING] Total filming run duration: ${totalDuration.toFixed(2)}s (Target: 126.0s)`);

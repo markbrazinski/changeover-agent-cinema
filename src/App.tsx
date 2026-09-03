@@ -359,10 +359,10 @@ export default function App() {
       logWave2Milestone('policy_evaluated');
       setContentionData(res);
 
-      // Visual staggering for Agent Spine cards (spaced out to 24.0s human gate mark into Act 3)
-      await delay(6500); // Step 2 at 11.0s mark into Act 3 (83.0s abs)
-      await delay(7000); // Step 3 at 18.0s mark into Act 3 (90.0s abs)
-      await delay(6000); // Human Gate renders at 24.0s mark into Act 3 (96.0s abs)
+      // Visual staggering for Agent Spine cards (spaced out to 22.5s human gate mark into Act 3)
+      await delay(6000); // Step 2 at 10.5s mark into Act 3 (82.5s abs)
+      await delay(6000); // Step 3 at 16.5s mark into Act 3 (88.5s abs)
+      await delay(6000); // Human Gate renders at 22.5s mark into Act 3 (94.5s abs)
 
       setCurrentStage('10_contention_decision');
       setTimecode('PGM-OUT 20:15:14');
@@ -486,8 +486,8 @@ export default function App() {
       if (!(await waitUntilAbsoluteSec(76.5, seqId))) return;
       await handleRunContention();
 
-      // 96.0s: ACT 3 HUMAN GATE RENDERS (24.0s Mark into Act 3)
-      if (!(await waitUntilAbsoluteSec(96.0, seqId))) return;
+      // 94.5s: ACT 3 HUMAN GATE RENDERS (22.5s Mark into Act 3 - 1.5s earlier)
+      if (!(await waitUntilAbsoluteSec(94.5, seqId))) return;
       setIsPausedForHuman(true);
 
       // 126.0s: ACT 3 COMPLETE (Total 54s / Total Sequence 126s) -> Master Demo Complete
