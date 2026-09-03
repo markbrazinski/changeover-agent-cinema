@@ -99,43 +99,73 @@ export default function App() {
     console.log(`[WAVE 2 +${elapsedSec}s] ${event}`, detail || '');
   };
 
+  const sequenceIdRef = useRef<number>(0);
+
+  const startNewSequence = () => {
+    sequenceIdRef.current += 1;
+    walkthroughCancelledRef.current = true;
+    setIsPlayingWalkthrough(false);
+    setIsPausedForHuman(false);
+    stopWalkthroughTimer();
+    if (humanApprovedResolverRef.current) {
+      humanApprovedResolverRef.current();
+      humanApprovedResolverRef.current = null;
+    }
+    return sequenceIdRef.current;
+  };
+
+  const delayWithSeq = (ms: number, seqId: number) => {
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        resolve(seqId === sequenceIdRef.current);
+      }, ms);
+    });
+  };
+
+  const isFilmingMode = typeof window !== 'undefined' && window.location.search.includes('mode=film');
+
   // Keyboard shortcut listener:
-  // '1' = Start Part 1 (Clean Walkthrough without timer overlay)
-  // '3' = Start Part 1 (Walkthrough with Training Timer Overlay)
-  // '2' = Single-press Wave 2 Launch (2-channel baseline -> 7.5s fault -> real investigation -> human gate)
-  // 'h' or 'H' = Toggle manual controls header
+  // 'F' = Start Full End-to-End Demo (Act I -> Act II -> Act III -> Ending -> Attribution)
+  // '1' = Act I: Caption Recovery
+  // '2' = Act II: Evidence Refusal
+  // '3' = Act III: Capacity Contention
+  // 'R' = Reset All
+  // 'H' = Toggle manual controls header
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'h' || e.key === 'H') {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const key = e.key.toUpperCase();
+      if (key === 'H') {
         setIsManualOpen((prev) => !prev);
-      } else if (e.key === '1') {
+      } else if (key === 'F') {
         setShowTimer(false);
-        handleRunPart1();
-      } else if (e.key === '3') {
-        setShowTimer(true);
-        handleRunPart1();
-      } else if (e.key === '2') {
-        handleRunKey2();
+        handleRunFullDemo();
+      } else if (key === '1') {
+        setShowTimer(false);
+        handleRunAct1();
+      } else if (key === '2') {
+        setShowTimer(false);
+        handleRunAct2();
+      } else if (key === '3') {
+        setShowTimer(false);
+        handleRunAct3();
+      } else if (key === 'R') {
+        handleResetAll();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode, currentStage, isPlayingWalkthrough]);
-
-  // Key '2' Handler: Single-press Wave 2 launch command
-  const handleRunKey2 = () => {
-    if (
-      currentStage === '09a_contention_baseline' ||
-      currentStage === '09_contention_failing' ||
-      currentStage === '10_contention_decision' ||
-      currentStage === '11_contention_authorized' ||
-      currentStage === '12_terminal_partially_mitigated'
-    ) {
-      console.log('Wave 2 already in progress. Ignoring repeated (2) keypress.');
-      return;
-    }
-    handleRunPart2();
-  };
 
   // Load Video Manifest on startup
   useEffect(() => {
@@ -342,117 +372,209 @@ export default function App() {
     }
   };
 
-  // --- PART 1 RECORDING WALKTHROUGH (Key 1) ---
-  const handleRunPart1 = async () => {
-    if (isPlayingWalkthrough) return;
+  // --- SEQUENCE CONTROLLER (ACT I, ACT II, ACT III, FULL DEMO, RESET) ---
+
+  // FULL END-TO-END DEMO (F Key / FULL DEMO Button)
+  const handleRunFullDemo = async () => {
+    const seqId = startNewSequence();
     setIsPlayingWalkthrough(true);
     walkthroughCancelledRef.current = false;
     startWalkthroughTimer();
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     try {
-      // 1. Reset Demo & Start Movies at 0.0s (0:00 - 0:20 Healthy Baseline)
-      if (walkthroughCancelledRef.current) return;
+      // --- ACT I: CAPTION RECOVERY ---
+      if (seqId !== sequenceIdRef.current) return;
       await handleReset();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST); // 20.0s healthy baseline
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST, seqId))) return;
 
-      // 2. Right-side Captions Freeze at second 20 (0:20 - 0:21)
-      if (walkthroughCancelledRef.current) return;
+      if (seqId !== sequenceIdRef.current) return;
       await handleInjectFault();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD); // 2.0s hold after freeze so VO says "And then—the captions stop."
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD, seqId))) return;
 
-      // 3. Staggered Investigation & Backup Verification (0:22 - 0:30)
-      if (walkthroughCancelledRef.current) return;
+      if (seqId !== sequenceIdRef.current) return;
       await handleInvestigate();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.INVESTIGATION_HOLD); // 3.5s hold while Gemini ADK & Grafana MCP evidence populates
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.INVESTIGATION_HOLD, seqId))) return;
 
-      if (walkthroughCancelledRef.current) return;
+      if (seqId !== sequenceIdRef.current) return;
       await handleVerifyBackup();
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.VERIFY_BACKUP_HOLD); // 2.5s hold while ffprobe backup verification populates
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.VERIFY_BACKUP_HOLD, seqId))) return;
 
-      // 4. Human Authorization Gate Ready at ~0:30 (0:30 - 0:48)
-      if (walkthroughCancelledRef.current) return;
+      if (seqId !== sequenceIdRef.current) return;
       handlePrepareApproval();
       setIsPausedForHuman(true);
-      await waitForHumanClick(); // HALTS INDEFINITELY UNTIL OPERATOR CLICKS AUTHORIZE FAILOVER (CLICK TARGET: 0:48)
+      await waitForHumanClick();
+      if (seqId !== sequenceIdRef.current) return;
 
-      // 5. Failover Execution & Restoration Hold (0:48 - 0:55)
-      if (walkthroughCancelledRef.current) return;
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER);
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER, seqId))) return;
 
+      // --- ACT II: EVIDENCE REFUSAL ---
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('08a_refusal_baseline');
+      setTimecode('PGM-OUT 20:14:35');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_BASELINE_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('08_refusal_stale_evidence');
+      setTimecode('PGM-OUT 20:14:40');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_TERMINAL_HOLD, seqId))) return;
+
+      // --- ACT III: CAPACITY CONTENTION ---
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('09a_contention_baseline');
+      setTimecode('PGM-OUT 20:15:00');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_BASELINE_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      await handleRunContention();
+      if (seqId !== sequenceIdRef.current) return;
+
+      setIsPausedForHuman(true);
+      await waitForHumanClick();
+      if (seqId !== sequenceIdRef.current) return;
+
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.TERMINAL_HOLD, seqId))) return;
+
+      // --- ENDING SLIDE ---
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('13_ending_slide');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.ENDING_SLIDE_HOLD, seqId))) return;
+
+      // --- ATTRIBUTION SLIDE ---
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('14_attribution_slide');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.ATTRIBUTION_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('15_completed');
     } catch (e) {
-      console.error('Part 1 Walkthrough error:', e);
+      console.error('Full demo error:', e);
     } finally {
-      setIsPlayingWalkthrough(false);
-      setIsPausedForHuman(false);
-      stopWalkthroughTimer();
+      if (seqId === sequenceIdRef.current) {
+        setIsPlayingWalkthrough(false);
+        setIsPausedForHuman(false);
+        stopWalkthroughTimer();
+      }
     }
   };
 
-  // --- PART 2 RECORDING WALKTHROUGH (Key 2) ---
-  const handleRunPart2 = async () => {
-    if (
-      currentStage === '09a_contention_baseline' ||
-      currentStage === '09_contention_failing' ||
-      currentStage === '10_contention_decision' ||
-      currentStage === '11_contention_authorized' ||
-      currentStage === '12_terminal_partially_mitigated'
-    ) {
-      return;
-    }
+  // ACT I: CAPTION RECOVERY (Key 1 / CAPTION RECOVERY Button)
+  const handleRunAct1 = async () => {
+    const seqId = startNewSequence();
+    setIsPlayingWalkthrough(true);
+    walkthroughCancelledRef.current = false;
+    startWalkthroughTimer();
 
-    walkthroughCancelledRef.current = true;
+    try {
+      if (seqId !== sequenceIdRef.current) return;
+      await handleReset();
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      await handleInjectFault();
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.POST_FREEZE_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      await handleInvestigate();
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.INVESTIGATION_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      await handleVerifyBackup();
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.VERIFY_BACKUP_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      handlePrepareApproval();
+      setIsPausedForHuman(true);
+      await waitForHumanClick();
+      if (seqId !== sequenceIdRef.current) return;
+
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.STAGE_06_CHANGED_OVER, seqId))) return;
+    } catch (e) {
+      console.error('Act I error:', e);
+    } finally {
+      if (seqId === sequenceIdRef.current) {
+        setIsPlayingWalkthrough(false);
+        setIsPausedForHuman(false);
+        stopWalkthroughTimer();
+      }
+    }
+  };
+
+  // ACT II: EVIDENCE REFUSAL (Key 2 / EVIDENCE REFUSAL Button)
+  const handleRunAct2 = async () => {
+    const seqId = startNewSequence();
+    setIsPlayingWalkthrough(true);
+    walkthroughCancelledRef.current = false;
+    startWalkthroughTimer();
+
+    try {
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('08a_refusal_baseline');
+      setTimecode('PGM-OUT 20:14:35');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_BASELINE_HOLD, seqId))) return;
+
+      if (seqId !== sequenceIdRef.current) return;
+      setCurrentStage('08_refusal_stale_evidence');
+      setTimecode('PGM-OUT 20:14:40');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.REFUSAL_TERMINAL_HOLD, seqId))) return;
+    } catch (e) {
+      console.error('Act II error:', e);
+    } finally {
+      if (seqId === sequenceIdRef.current) {
+        setIsPlayingWalkthrough(false);
+        setIsPausedForHuman(false);
+        stopWalkthroughTimer();
+      }
+    }
+  };
+
+  // ACT III: CAPACITY CONTENTION (Key 3 / CAPACITY CONTENTION Button)
+  const handleRunAct3 = async () => {
+    const seqId = startNewSequence();
     setIsPlayingWalkthrough(true);
     walkthroughCancelledRef.current = false;
     wave2StartTimeRef.current = performance.now();
     logWave2Milestone('wave2_started');
     startWalkthroughTimer();
 
-    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
     try {
-      // 1. T+0.0s: Enter healthy two-channel baseline
-      if (walkthroughCancelledRef.current) return;
+      if (seqId !== sequenceIdRef.current) return;
       setCurrentStage('09a_contention_baseline');
       setTimecode('PGM-OUT 20:15:00');
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_BASELINE_HOLD, seqId))) return;
 
-      // 2. T+7.5s: Automatic concurrent caption failure injection after ~7.5s healthy baseline
-      await delay(WALKTHROUGH_CONFIG.TIMINGS.CONTENTION_BASELINE_HOLD);
-      if (walkthroughCancelledRef.current) return;
-
-      // 3. Trigger concurrent fault injection & real natural-speed investigation
+      if (seqId !== sequenceIdRef.current) return;
       await handleRunContention();
+      if (seqId !== sequenceIdRef.current) return;
 
-      // 4. HALT INDEFINITELY AT HUMAN GATE UNTIL OPERATOR CLICKS AUTHORIZE PRIORITIZATION
-      if (walkthroughCancelledRef.current) return;
       setIsPausedForHuman(true);
-      await waitForHumanClick(); // HALTS INDEFINITELY UNTIL OPERATOR CLICKS
+      await waitForHumanClick();
+      if (seqId !== sequenceIdRef.current) return;
 
+      if (!(await delayWithSeq(WALKTHROUGH_CONFIG.TIMINGS.TERMINAL_HOLD, seqId))) return;
     } catch (e) {
-      console.error('Part 2 Walkthrough error:', e);
+      console.error('Act III error:', e);
     } finally {
-      setIsPlayingWalkthrough(false);
-      setIsPausedForHuman(false);
-      stopWalkthroughTimer();
+      if (seqId === sequenceIdRef.current) {
+        setIsPlayingWalkthrough(false);
+        setIsPausedForHuman(false);
+        stopWalkthroughTimer();
+      }
     }
   };
 
-  // FULL WALKTHROUGH
-  const handleRunWalkthrough = async () => {
-    await handleRunPart1();
-    if (!walkthroughCancelledRef.current) {
-      await handleRunPart2();
-    }
+  // RESET ALL (Key R)
+  const handleResetAll = async () => {
+    startNewSequence();
+    await handleReset();
   };
 
+  // Backward compatibility aliases
+  const handleRunPart1 = handleRunAct1;
+  const handleRunPart2 = handleRunAct3;
+  const handleRunRefusal = handleRunAct2;
+  const handleRunWalkthrough = handleRunFullDemo;
   const handleStopWalkthrough = () => {
-    walkthroughCancelledRef.current = true;
-    setIsPlayingWalkthrough(false);
-    setIsPausedForHuman(false);
-    if (humanApprovedResolverRef.current) {
-      humanApprovedResolverRef.current();
-      humanApprovedResolverRef.current = null;
-    }
+    startNewSequence();
   };
 
   // Determine SplitHero Video State
@@ -470,18 +592,6 @@ export default function App() {
   else if (currentStage === '07_refusal_wont_switch') evidenceChartStatus = 'unconfirmed_backup';
   else if (isChartFrozen) evidenceChartStatus = 'frozen';
   else evidenceChartStatus = 'nominal';
-
-  const handleRunRefusal = async () => {
-    setIsWorking(true);
-    try {
-      setCurrentStage('08_refusal_stale_evidence');
-      setTimecode('PGM-OUT 20:14:45');
-    } catch (e) {
-      console.error('Refusal stale evidence error:', e);
-    } finally {
-      setIsWorking(false);
-    }
-  };
 
   // Contention state flags
   const isContentionStage = currentStage.startsWith('09') || currentStage.startsWith('10') || currentStage.startsWith('11') || currentStage.startsWith('12');
@@ -800,6 +910,14 @@ export default function App() {
         boxSizing: 'border-box',
       }}
     >
+      {/* Hidden Media Preloader for Zero-Latency Hard Cuts */}
+      <div style={{ display: 'none' }} aria-hidden="true">
+        <video preload="auto" src="/media/tos_source.mp4" />
+        <video preload="auto" src="/media/tos_backup.mp4" />
+        <video preload="auto" src="/media/sintel_source.mp4" />
+        <video preload="auto" src="/media/sintel_backup.mp4" />
+      </div>
+
       <div style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--surface)' }}>
         {/* Top Control Bar (Only rendered when isManualOpen = true via 'H' key) */}
         {isManualOpen && (
@@ -853,89 +971,118 @@ export default function App() {
               captions layer
             </span>
 
-            {/* Visible Scenario Controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '4px' }}>
-              <button
-                aria-label="Run caption recovery scenario"
-                data-testid="scenario-caption-recovery-button"
-                onClick={handleRunPart1}
-                disabled={isPlayingWalkthrough || isWorking}
-                style={{
-                  padding: '4px 10px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  color: isScenario1Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
-                  backgroundColor: isScenario1Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
-                  border: isScenario1Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
-                  borderRadius: '4px',
-                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  whiteSpace: 'nowrap',
-                }}
-                className="scenario-btn"
-              >
-                {isScenario1Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
-                CAPTION RECOVERY
-              </button>
+            {/* Scenario Controls (Visible in Judge mode, hidden in Filming mode) */}
+            {!isFilmingMode && (
+              <div data-testid="scenario-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '4px' }}>
+                <button
+                  aria-label="Run full end-to-end demo"
+                  data-testid="scenario-full-demo-button"
+                  onClick={handleRunFullDemo}
+                  disabled={isPlayingWalkthrough || isWorking}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    color: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                    backgroundColor: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                    border: (currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                    borderRadius: '4px',
+                    cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="scenario-btn"
+                >
+                  {(currentStage === '13_ending_slide' || currentStage === '14_attribution_slide' || currentStage === '15_completed') && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                  FULL DEMO
+                </button>
 
-              <button
-                aria-label="Run capacity contention scenario"
-                data-testid="scenario-capacity-contention-button"
-                onClick={handleRunKey2}
-                disabled={isPlayingWalkthrough || isWorking}
-                style={{
-                  padding: '4px 10px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  color: isScenario2Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
-                  backgroundColor: isScenario2Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
-                  border: isScenario2Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
-                  borderRadius: '4px',
-                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  whiteSpace: 'nowrap',
-                }}
-                className="scenario-btn"
-              >
-                {isScenario2Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
-                CAPACITY CONTENTION
-              </button>
+                <button
+                  aria-label="Run caption recovery scenario"
+                  data-testid="scenario-caption-recovery-button"
+                  onClick={handleRunAct1}
+                  disabled={isPlayingWalkthrough || isWorking}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    color: isScenario1Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                    backgroundColor: isScenario1Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                    border: isScenario1Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                    borderRadius: '4px',
+                    cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="scenario-btn"
+                >
+                  {isScenario1Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                  CAPTION RECOVERY
+                </button>
 
-              <button
-                aria-label="Run evidence refusal scenario"
-                data-testid="scenario-evidence-refusal-button"
-                onClick={handleRunRefusal}
-                disabled={isPlayingWalkthrough || isWorking}
-                style={{
-                  padding: '4px 10px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  letterSpacing: '0.5px',
-                  color: isScenario3Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
-                  backgroundColor: isScenario3Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
-                  border: isScenario3Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
-                  borderRadius: '4px',
-                  cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  whiteSpace: 'nowrap',
-                }}
-                className="scenario-btn"
-              >
-                {isScenario3Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
-                EVIDENCE REFUSAL
-              </button>
-            </div>
+                <button
+                  aria-label="Run evidence refusal scenario"
+                  data-testid="scenario-evidence-refusal-button"
+                  onClick={handleRunAct2}
+                  disabled={isPlayingWalkthrough || isWorking}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    color: isScenario3Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                    backgroundColor: isScenario3Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                    border: isScenario3Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                    borderRadius: '4px',
+                    cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="scenario-btn"
+                >
+                  {isScenario3Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                  EVIDENCE REFUSAL
+                </button>
+
+                <button
+                  aria-label="Run capacity contention scenario"
+                  data-testid="scenario-capacity-contention-button"
+                  onClick={handleRunAct3}
+                  disabled={isPlayingWalkthrough || isWorking}
+                  style={{
+                    padding: '4px 10px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    color: isScenario2Active ? '#ffe0b2' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.35)' : '#f5f3ec'),
+                    backgroundColor: isScenario2Active ? 'rgba(255, 152, 0, 0.2)' : (isPlayingWalkthrough || isWorking ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.06)'),
+                    border: isScenario2Active ? '1px solid #ff9800' : (isPlayingWalkthrough || isWorking ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(255, 255, 255, 0.25)'),
+                    borderRadius: '4px',
+                    cursor: (isPlayingWalkthrough || isWorking) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="scenario-btn"
+                >
+                  {isScenario2Active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ff9800' }} className="animate-pulse" />}
+                  CAPACITY CONTENTION
+                </button>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '11px' }}>
@@ -982,10 +1129,10 @@ export default function App() {
               ch27Degraded={ch27DegradedInContention}
               isPlayingWalkthrough={isPlayingWalkthrough && showTimer}
               walkthroughElapsedSec={walkthroughElapsedSec}
-              channelName={currentStage === '08_refusal_stale_evidence' ? 'SINTEL' : 'TEARS OF STEEL'}
-              sourceVideoUrl={currentStage === '08_refusal_stale_evidence' ? '/media/sintel_source.mp4' : '/media/tos_source.mp4'}
-              backupVideoUrl={currentStage === '08_refusal_stale_evidence' ? '/media/sintel_backup.mp4' : '/media/tos_backup.mp4'}
-              captionsVttUrl={currentStage === '08_refusal_stale_evidence' ? '/media/captions_sintel.vtt' : '/media/captions_tos.vtt'}
+              channelName={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? 'SINTEL' : 'TEARS OF STEEL'}
+              sourceVideoUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/sintel_source.mp4' : '/media/tos_source.mp4'}
+              backupVideoUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/sintel_backup.mp4' : '/media/tos_backup.mp4'}
+              captionsVttUrl={currentStage === '08_refusal_stale_evidence' || currentStage === '08a_refusal_baseline' ? '/media/captions_sintel.vtt' : '/media/captions_tos.vtt'}
             />
 
             {/* Layer Telemetry Chart Card */}

@@ -50,8 +50,9 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_01_at_rest.png') });
 
     // --- BEAT 2: FAULT INJECTED (Right caption freezes at ~20.0s while picture keeps moving) ---
-    await page.waitForTimeout(10000); // Wait remaining 10.0s of 20.0s baseline period to trigger fault injection
-    await page.waitForTimeout(800);  // Short pause for freeze to register
+    // Wait for right status pill to flag FROZEN
+    await expect(page.getByTestId('right-status-pill')).toContainText(/FROZEN/i, { timeout: 25000 });
+    await expect(page.getByTestId('left-status-pill')).toContainText(/CAPTIONS LIVE/i);
 
     // Read video time and dialogue text after fault freeze locks in
     const freezeCap1 = await page.getByTestId('right-caption-text').innerText();
@@ -65,10 +66,6 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
     // ASSERT: Video currentTime ADVANCED while Dialogue Caption Text remained FROZEN mid-line!
     expect(freezeVid2).toBeGreaterThan(freezeVid1);
     expect(freezeCap2).toEqual(freezeCap1);
-
-    // ASSERT: Right status pill flags FROZEN once fault is injected!
-    await expect(page.getByTestId('right-status-pill')).toContainText(/FROZEN/i);
-    await expect(page.getByTestId('left-status-pill')).toContainText(/CAPTIONS LIVE/i);
 
     // Assert cap-line alarm attaches and climbing offset readout reaches +2.996s
     await expect(page.getByTestId('cap-line-alarm')).toBeAttached();
@@ -107,8 +104,8 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_06_changed_over.png') });
 
-    // --- BEAT 7a: PRESS '2' FIRST TIME -> 2-CHANNEL BASELINE VIEW (09a_contention_baseline) ---
-    await page.keyboard.press('2');
+    // --- BEAT 7a: PRESS '3' -> CONTENTION CAPACITY SCENARIO (09a_contention_baseline) ---
+    await page.keyboard.press('3');
     await page.waitForTimeout(1000);
     await expect(page.getByTestId('facility-view')).toBeVisible();
     await expect(page.getByTestId('ch14-card')).toBeVisible();
@@ -120,9 +117,8 @@ test.describe('E2E Audit Suite — Changeover Broadcast Cinema', () => {
 
     await page.screenshot({ path: path.join(screenshotsDir, 'beat_07a_contention_baseline.png') });
 
-    // --- BEAT 7b: PRESS '2' SECOND TIME -> TRIGGER CONTENTION FAULT & GATE (09_contention_failing) ---
-    await page.keyboard.press('2');
-    await page.waitForTimeout(6800);
+    // Wait for contention baseline to trigger fault injection and investigation
+    await page.waitForTimeout(7000);
 
     // --- BEAT 8: HUMAN CONTENTION GATE PAUSE (10_contention_decision) ---
     const contentionCard = page.getByTestId('contention-decision-card');

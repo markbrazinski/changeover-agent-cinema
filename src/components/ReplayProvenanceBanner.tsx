@@ -5,6 +5,7 @@ export const ReplayProvenanceBanner: React.FC = () => {
 
   return (
     <div
+      data-testid="replay-provenance-banner"
       style={{
         backgroundColor: '#1b1915',
         color: '#f5f3ec',
