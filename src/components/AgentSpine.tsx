@@ -546,14 +546,14 @@ export const AgentSpine: React.FC<AgentSpineProps> = ({
                             justifyContent: 'space-between',
                             fontFamily: 'var(--font-mono)',
                             fontSize: '9.5px',
-                            padding: '3px 6px',
-                            borderRadius: '3px',
-                            backgroundColor: pol.isRecommended ? 'rgba(59,122,75,0.12)' : 'rgba(0,0,0,0.05)',
-                            fontWeight: 600,
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: pol.isRecommended ? 'rgba(59,122,75,0.22)' : 'rgba(0,0,0,0.08)',
+                            fontWeight: 700,
                           }}
                         >
-                          <span>{pol.channel} ({pol.tier})</span>
-                          <span style={{ color: pol.isRecommended ? 'var(--nominal)' : 'var(--alarm)' }}>{pol.action}</span>
+                          <span style={{ color: '#000000', fontWeight: 700 }}>{pol.channel} ({pol.tier})</span>
+                          <span style={{ color: pol.isRecommended ? '#1b5e28' : 'var(--alarm)', fontWeight: 800 }}>{pol.action}</span>
                         </div>
                       ))}
                     </div>
