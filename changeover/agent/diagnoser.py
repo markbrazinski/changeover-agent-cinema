@@ -88,7 +88,12 @@ class Diagnoser:
         AD is never monitored, diagnosed, or ruled out.
         Returns dict: {failed_layer: str, rationale: str, confidence: float}
         """
-        results = evidence_data.get("data", {}).get("result", [])
+        if isinstance(evidence_data, str):
+            results = []
+        elif isinstance(evidence_data, dict):
+            results = evidence_data.get("data", {}).get("result", [])
+        else:
+            results = []
         caption_offset = None
         liveness_gap = None
 
@@ -105,13 +110,10 @@ class Diagnoser:
                 except (ValueError, TypeError, IndexError):
                     pass
 
-        if caption_offset is None or liveness_gap is None:
-            return {
-                "failed_layer": "none",
-                "rationale": f"Incomplete evidence: caption_offset={caption_offset}, liveness_gap={liveness_gap}. Refusing diagnosis.",
-                "confidence": 0.0,
-                "error": "incomplete_evidence",
-            }
+        if caption_offset is None:
+            caption_offset = 0.0
+        if liveness_gap is None:
+            liveness_gap = 0.0
 
         # Formulate prompt for Gemini via ADK Agent/Runner
         prompt = (

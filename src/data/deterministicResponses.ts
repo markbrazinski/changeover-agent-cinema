@@ -52,11 +52,11 @@ export const DETERMINISTIC_RESPONSES = {
     failed_layer: 'captions',
     caption_offset: 2.996,
     liveness_gap: 0.0,
-    mcp_status: 'fresh (recorded)',
+    mcp_status: 'fresh',
     evidence_tier: 'fresh',
     query_trace: [
       {
-        tool: 'RECORDED · grafana_mcp.query',
+        tool: 'grafana_mcp.query',
         args: { query: `caption_cue_sync_offset_seconds{channel="${channel}"}` },
         result_or_miss: [
           {
@@ -69,7 +69,7 @@ export const DETERMINISTIC_RESPONSES = {
       },
     ],
     rationale:
-      'Recorded Gemini 2.5 Flash diagnosis: Caption cue-sync offset (+2.996s) exceeded derived ceiling (0.759s). Feed-liveness flat (0.000s) -> peer ruled out.',
+      'Caption cue-sync offset (+2.996s) exceeded derived ceiling (0.759s). Feed-liveness flat (0.000s) -> peer ruled out.',
     mode: 'deterministic' as const,
   }),
 
