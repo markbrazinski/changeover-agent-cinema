@@ -89,7 +89,7 @@ def test_refusal_arc_single_channel_loop_invariants():
         assert not mock_diag.return_value.diagnose.called
         assert not mock_ffprobe.called
         assert not mock_failover.called
-        assert not mock_mcp.return_value.create_annotation.called
+        assert not mock_mcp.return_value.create_annotation_mcp.called
 
         # Terminal status & explanation
         assert res["status"] == "refused_stale_evidence"
@@ -134,7 +134,7 @@ def test_refusal_arc_cross_channel_tears_of_steel():
         assert not mock_diag.return_value.diagnose.called
         assert not mock_ffprobe.called
         assert not mock_failover.called
-        assert not mock_mcp.return_value.create_annotation.called
+        assert not mock_mcp.return_value.create_annotation_mcp.called
 
         # Terminal status & explanation
         assert res["status"] == "refused_stale_evidence"
@@ -179,7 +179,7 @@ def test_refusal_arc_deterministic_repeatability():
             assert not mock_diag.return_value.diagnose.called
             assert not mock_ffprobe.called
             assert not mock_failover.called
-            assert not mock_mcp.return_value.create_annotation.called
+            assert not mock_mcp.return_value.create_annotation_mcp.called
 
             assert res["status"] == "refused_stale_evidence"
             assert res["user_explanation"] == "The available caption evidence is too old to justify changing a live feed."
