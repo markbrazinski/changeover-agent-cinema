@@ -432,71 +432,68 @@ export default function App() {
     };
 
     try {
+      // --- ACT 1: CAPTION RECOVERY (TOTAL 54 SECONDS) ---
       // 0.0s: Master Start -> Reset to nominal
       if (seqId !== sequenceIdRef.current) return;
       await handleReset();
       setCurrentStage('01_at_rest');
 
-      // 2.0s: Beat 1 narration begins
-      if (!(await waitUntilAbsoluteSec(2.0, seqId))) return;
-
-      // 17.8s: Beat 1 ends -> Inject fault (caption freeze)
-      if (!(await waitUntilAbsoluteSec(17.8, seqId))) return;
+      // 14.0s: Step 1 -> Inject fault (caption freeze)
+      if (!(await waitUntilAbsoluteSec(14.0, seqId))) return;
       await handleInjectFault();
 
-      // 19.3s: Beat 2 begins -> Investigation
-      if (!(await waitUntilAbsoluteSec(19.3, seqId))) return;
+      // 20.0s: Step 2 -> Investigation & clock drift isolation
+      if (!(await waitUntilAbsoluteSec(20.0, seqId))) return;
       await handleInvestigate();
 
-      // 22.7s: Beat 2 ends -> Verify backup
-      if (!(await waitUntilAbsoluteSec(22.7, seqId))) return;
+      // 26.0s: Step 3 -> Verify backup line container
+      if (!(await waitUntilAbsoluteSec(26.0, seqId))) return;
       await handleVerifyBackup();
 
-      // 23.7s: Beats 3+4 begin -> Human gate opens for Act I
-      if (!(await waitUntilAbsoluteSec(23.7, seqId))) return;
+      // 32.0s: ACT 1 HUMAN GATE RENDERS (32.0s Mark)
+      if (!(await waitUntilAbsoluteSec(32.0, seqId))) return;
       handlePrepareApproval();
       setIsPausedForHuman(true);
 
-      // 58.6s: Beats 3+4 & internal gate padding end (Window closes)
-      if (!(await waitUntilAbsoluteSec(58.6, seqId))) return;
-
-      // 60.6s: Arc I terminal hold ends -> Hard cut to Refusal
-      if (!(await waitUntilAbsoluteSec(60.6, seqId))) return;
+      // 54.0s: ACT 1 COMPLETE (Total 54s) -> Hard Cut 1 to Refusal baseline
+      if (!(await waitUntilAbsoluteSec(54.0, seqId))) return;
       setIsPausedForHuman(false);
       if (!isAct1AuthorizedRef.current) {
-        console.warn('[FILM DIAGNOSTIC] Act I authorization missed/incomplete at 60.6s');
+        console.warn('[FILM DIAGNOSTIC] Act I authorization missed/incomplete at 54.0s');
       }
       setCurrentStage('08a_refusal_baseline');
       setTimecode('PGM-OUT 20:14:35');
 
-      // 62.1s: Refusal narration begins -> Refusal warning
-      if (!(await waitUntilAbsoluteSec(62.1, seqId))) return;
+      // --- ACT 2: EVIDENCE REFUSAL (TOTAL 18 SECONDS) ---
+      // 58.0s: Sintel baseline runs 4 seconds -> Analysis & warning begins
+      if (!(await waitUntilAbsoluteSec(58.0, seqId))) return;
       setCurrentStage('08b_refusal_warning');
       setTimecode('PGM-OUT 20:14:38');
 
-      // 70.0s: Refusal recommendation & policy headline appear (sits on screen 10.3 full seconds before Cut 2 at 80.3s)
-      if (!(await waitUntilAbsoluteSec(70.0, seqId))) return;
+      // 66.0s: ACT 2 POLICY HEADLINE RENDERS (12.0s Mark)
+      if (!(await waitUntilAbsoluteSec(66.0, seqId))) return;
       setCurrentStage('08_refusal_stale_evidence');
       setTimecode('PGM-OUT 20:14:40');
 
-      // 80.3s: Refusal hold ends -> Hard cut to Contention baseline
-      if (!(await waitUntilAbsoluteSec(80.3, seqId))) return;
+      // 72.0s: ACT 2 COMPLETE (Total 18s) -> Hard Cut 2 to Contention baseline
+      if (!(await waitUntilAbsoluteSec(72.0, seqId))) return;
       setCurrentStage('09a_contention_baseline');
       setTimecode('PGM-OUT 20:15:00');
 
-      // 84.3s: Contention baseline films run normally for 4 seconds -> Dual channel failure (pause)
-      if (!(await waitUntilAbsoluteSec(84.3, seqId))) return;
+      // --- ACT 3: CAPACITY CONTENTION (TOTAL 54 SECONDS) ---
+      // 76.5s: Contention baseline films run 4.5 seconds -> Dual channel failure (videos lock up)
+      if (!(await waitUntilAbsoluteSec(76.5, seqId))) return;
       await handleRunContention();
 
-      // 90.0s: Contention investigation completes -> Human gate opens
-      if (!(await waitUntilAbsoluteSec(90.0, seqId))) return;
+      // 106.0s: ACT 3 HUMAN GATE RENDERS (34.0s Mark)
+      if (!(await waitUntilAbsoluteSec(106.0, seqId))) return;
       setIsPausedForHuman(true);
 
-      // 103.0s: Last use case changeover & terminal state completed -> Demo track done
-      if (!(await waitUntilAbsoluteSec(103.0, seqId))) return;
+      // 126.0s: ACT 3 COMPLETE (Total 54s / Total Sequence 126s) -> Master Demo Complete
+      if (!(await waitUntilAbsoluteSec(126.0, seqId))) return;
       setIsPausedForHuman(false);
       if (!isAct3AuthorizedRef.current) {
-        console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 103.0s');
+        console.warn('[FILM DIAGNOSTIC] Act III authorization missed/incomplete at 126.0s');
       }
     } catch (e) {
       console.error('Full demo error:', e);
