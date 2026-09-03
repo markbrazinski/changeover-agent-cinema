@@ -113,7 +113,13 @@ To ensure safe, broadcast-compliant execution:
 
 ## Judge Quickstart
 
-### Prerequisites
+### Live Hosted Demo
+Play with the live, zero-setup production web app deployed on Cloud Run:
+👉 **[https://changeover-judge-620464070103.us-central1.run.app](https://changeover-judge-620464070103.us-central1.run.app)**
+
+---
+
+### Local Quickstart Prerequisites
 - **Node.js**: v18+ (tested on v20+)
 - **Python**: 3.10+ (requires `google-adk` and `mcp`)
 - **Official Grafana MCP**: `mcp-grafana` (`brew install mcp-grafana` or Go binary)
