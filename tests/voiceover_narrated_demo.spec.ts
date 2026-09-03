@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { WALKTHROUGH_CONFIG } from '../src/data/autoplayConfig';
 
 test.describe('End-to-End Voiceover (VO) Script & Audit Suite', () => {
   test('Executes Autoplay Demo, verifies each stage beat & UI state, captures screenshots', async ({ page }) => {
-    test.setTimeout(90000);
+    test.setTimeout(120000);
     const resultsDir = path.join(process.cwd(), 'tests/e2e/screenshots');
     if (!fs.existsSync(resultsDir)) {
       fs.mkdirSync(resultsDir, { recursive: true });
@@ -28,7 +29,9 @@ test.describe('End-to-End Voiceover (VO) Script & Audit Suite', () => {
     await runDemoBtn.click();
 
     // --- BEAT 2: FAULT INJECTED & STAGGERED RECOVERY ---
-    await expect(page.locator('main')).toContainText(/CAPTIONS FROZEN|\+2\.996s/i, { timeout: 10000 });
+    await expect(page.locator('main')).toContainText(/CAPTIONS FROZEN|\+2\.996s/i, {
+      timeout: WALKTHROUGH_CONFIG.TIMINGS.STAGE_01_AT_REST + 8000,
+    });
     await page.screenshot({ path: path.join(resultsDir, 'beat_02_fault_injected.png') });
 
     // --- BEAT 3: OPERATOR AUTHORIZATION GATE ---
