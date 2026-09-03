@@ -474,18 +474,18 @@ export default function App() {
       setCurrentStage('08b_refusal_warning');
       setTimecode('PGM-OUT 20:14:38');
 
-      // 78.3s: Refusal narration ends -> Terminal refusal
-      if (!(await waitUntilAbsoluteSec(78.3, seqId))) return;
+      // 77.3s: Refusal recommendation appears (sits on screen 3 full seconds before Cut 2 at 80.3s)
+      if (!(await waitUntilAbsoluteSec(77.3, seqId))) return;
       setCurrentStage('08_refusal_stale_evidence');
       setTimecode('PGM-OUT 20:14:40');
 
-      // 80.3s: Refusal hold ends -> Hard cut to Contention
+      // 80.3s: Refusal hold ends -> Hard cut to Contention baseline
       if (!(await waitUntilAbsoluteSec(80.3, seqId))) return;
       setCurrentStage('09a_contention_baseline');
       setTimecode('PGM-OUT 20:15:00');
 
-      // 81.8s: Contention narration begins -> Investigation
-      if (!(await waitUntilAbsoluteSec(81.8, seqId))) return;
+      // 84.3s: Contention baseline films run normally for 4 seconds -> Dual channel failure (pause)
+      if (!(await waitUntilAbsoluteSec(84.3, seqId))) return;
       await handleRunContention();
 
       // 106.3s: Beat 6 ends -> Contention human gate opens
