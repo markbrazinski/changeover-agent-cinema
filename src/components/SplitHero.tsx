@@ -93,7 +93,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       setFrozenRightCue(sintelLockedCue);
     }
 
-    // INITIAL ENTRY INTO ACT 3 ONLY (09/10 prefix) -> Seek once (Sintel at 93.0s, 3s later to skip title screen)
+    // INITIAL ENTRY INTO ACT 3 ONLY (09/10 prefix) -> Seek once (Sintel at 104.0s, right after title card in hut scene)
     const isEnteringAct3 =
       Boolean(currentStage?.startsWith('09') || currentStage?.startsWith('10')) &&
       !prevStageRef.current?.startsWith('09') &&
@@ -107,8 +107,8 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         setLeftTime(30.4);
       }
       if (right) {
-        right.currentTime = 93.0; // 3 seconds later in Sintel to skip title screen & CC overlay
-        setRightTime(93.0);
+        right.currentTime = 104.0; // 104.0s is right after the title card, opening in the hut interior
+        setRightTime(104.0);
       }
       savedPlayheadRef.current = 30.4;
       frozenRightCueRef.current = null;
@@ -141,7 +141,7 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
         left.currentTime = activeTime;
       }
       if (right.currentTime === 0) {
-        right.currentTime = isContention ? 93.0 : (activeTime > 0 ? activeTime : 7.0);
+        right.currentTime = isContention ? 104.0 : (activeTime > 0 ? activeTime : 7.0);
       }
 
       left.play().catch(() => {});
