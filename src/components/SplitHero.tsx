@@ -86,15 +86,15 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       setFrozenRightCue(sintelLockedCue);
     }
 
-    if (currentStage === '09a_contention_baseline') {
+    if (currentStage?.startsWith('09')) {
       const left = leftVideoRef.current;
       const right = rightVideoRef.current;
       if (left && right) {
-        left.currentTime = 0.0;
-        right.currentTime = 0.0;
-        savedPlayheadRef.current = 0.0;
-        setLeftTime(0.0);
-        setRightTime(0.0);
+        left.currentTime = 30.4;
+        right.currentTime = 90.0;
+        savedPlayheadRef.current = 30.4;
+        setLeftTime(30.4);
+        setRightTime(90.0);
       }
       frozenRightCueRef.current = null;
       setFrozenRightCue(null);
