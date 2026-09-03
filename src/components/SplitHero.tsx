@@ -75,12 +75,12 @@ export const SplitHero: React.FC<SplitHeroProps> = ({
       const right = rightVideoRef.current;
       if (left && right) {
         left.currentTime = 0.0;
-        right.currentTime = 0.0;
+        right.currentTime = 116.5;
         savedPlayheadRef.current = 0.0;
         setLeftTime(0.0);
-        setRightTime(0.0);
+        setRightTime(116.5);
       }
-      // Lock Sintel cue to an unseen dialogue line from before
+      // Lock Sintel cue to the refusal line from before
       const sintelLockedCue = "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —";
       frozenRightCueRef.current = sintelLockedCue;
       setFrozenRightCue(sintelLockedCue);

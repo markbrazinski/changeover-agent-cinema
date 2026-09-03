@@ -31,20 +31,32 @@ export const TEARS_OF_STEEL_CUES: VttCue[] = [
   { id: 12, startTime: 136.000, endTime: 138.000, text: "— BARLEY: It's not my fault, you know? —" },
 ];
 
-// SINTEL (CH-27) — Exact Spoken Dialogue Cues Only (0s - 30s)
+// SINTEL (CH-27) — Exact Spoken Dialogue Cues Only (0s - 200s)
 export const SINTEL_CUES: VttCue[] = [
-  { id: 1, startTime: 0.000, endTime: 12.000, text: "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —" },
-  { id: 2, startTime: 12.000, endTime: 18.000, text: "— SHAMAN: You're a fool for traveling alone so completely unprepared... —" },
-  { id: 3, startTime: 18.000, endTime: 22.000, text: "— SHAMAN: You're lucky your blood is still flowing. —" },
-  { id: 4, startTime: 22.000, endTime: 25.000, text: "— SINTEL: Thank you. —" },
-  { id: 5, startTime: 25.000, endTime: 30.000, text: "— SHAMAN: So, what brings you to the land of the gatekeepers? —" },
+  // 90.0s - 157.0s: Shaman & Sintel Hut Dialogue
+  { id: 1, startTime: 90.000, endTime: 115.000, text: "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —" },
+  { id: 2, startTime: 115.000, endTime: 125.000, text: "— SHAMAN: You're a fool for traveling alone so completely unprepared... —" },
+  { id: 3, startTime: 125.000, endTime: 127.000, text: "— SINTEL: Thank you. —" },
+  { id: 4, startTime: 127.000, endTime: 133.000, text: "— SHAMAN: So, what brings you to the land of the gatekeepers? —" },
+  { id: 5, startTime: 133.000, endTime: 137.000, text: "— SINTEL: I'm searching for someone... —" },
+  { id: 6, startTime: 137.000, endTime: 143.000, text: "— SINTEL: Someone very dear. A kindred spirit. —" },
+  { id: 7, startTime: 143.000, endTime: 145.000, text: "— SHAMAN: A dragon? —" },
+  { id: 8, startTime: 149.000, endTime: 153.000, text: "— SHAMAN: A dangerous quest for a lone hunter. —" },
+  { id: 9, startTime: 153.000, endTime: 157.000, text: "— SINTEL: I've been alone for as long as I can remember. —" },
+
+  // Wrapped fallback cues (0s - 30s)
+  { id: 10, startTime: 0.000, endTime: 12.000, text: "— SHAMAN: This blade has a dark past. It has shed much innocent blood... —" },
+  { id: 11, startTime: 12.000, endTime: 18.000, text: "— SHAMAN: You're a fool for traveling alone so completely unprepared... —" },
+  { id: 12, startTime: 18.000, endTime: 22.000, text: "— SHAMAN: You're lucky your blood is still flowing. —" },
+  { id: 13, startTime: 22.000, endTime: 25.000, text: "— SINTEL: Thank you. —" },
+  { id: 14, startTime: 25.000, endTime: 30.000, text: "— SHAMAN: So, what brings you to the land of the gatekeepers? —" },
 ];
 
 export function getCueForTime(cues: VttCue[], currentTime: number): string {
   if (!cues || cues.length === 0) return "";
   
-  // Total duration set to 30.0 seconds for continuous 30s video loops
-  const totalDuration = 30.0;
+  // Total duration set to 180s for Tears of Steel, 200s for Sintel
+  const totalDuration = cues === TEARS_OF_STEEL_CUES ? 180.0 : 200.0;
   const wrappedTime = currentTime % totalDuration;
 
   const activeCue = cues.find((c) => wrappedTime >= c.startTime && wrappedTime <= c.endTime);
