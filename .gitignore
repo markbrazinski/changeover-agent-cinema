@@ -7,6 +7,7 @@ __pycache__/
 .pytest_cache/
 .DS_Store
 films/**/*.mp4
+public/media/*.mp4
 logs/
 reports/
 test-results/

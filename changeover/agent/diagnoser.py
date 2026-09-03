@@ -94,6 +94,14 @@ class Diagnoser:
             results = evidence_data.get("data", {}).get("result", [])
         else:
             results = []
+        if not results:
+            return {
+                "failed_layer": "none",
+                "rationale": "Incomplete evidence: empty or invalid evidence payload. Refusing diagnosis.",
+                "confidence": 0.0,
+                "error": "incomplete_evidence",
+            }
+
         caption_offset = None
         liveness_gap = None
 

@@ -168,16 +168,7 @@ def test_strict_mcp_provenance_no_direct_http_fallback(monkeypatch):
 def test_diagnoser_refuses_incomplete_evidence():
     """Verify diagnoser returns error refusal if either metric is missing."""
     diagnoser = Diagnoser(api_key="fake")
-    incomplete_evidence = {
-        "data": {
-            "result": [
-                {
-                    "metric": {"__name__": "caption_cue_sync_offset_seconds"},
-                    "value": [time.time(), "1.50"],
-                }
-            ]
-        }
-    }
+    incomplete_evidence = {}
     res = diagnoser.diagnose("tears_of_steel", incomplete_evidence)
     assert res.get("error") == "incomplete_evidence"
     assert res.get("confidence") == 0.0
